@@ -528,12 +528,12 @@
                             <td class="log-time">{{ s.last_run_time.strftime('%Y-%m-%d %H:%M:%S') if s.last_run_time else '-' }}</td>
                             <td>
                                 <div class="action-cell" style="display:flex; gap:8px;">
-                                    <button type="button" class="btn btn-warning" onclick="editSchedule({{ s.id }}, '{{ s.target_time }}', '{{ s.route_type }}')">编辑</button>
                                     <form action="/runs/manual_trigger" method="POST" style="margin:0;">
                                         <input type="hidden" name="user_id" value="{{ s.user.id }}">
                                         <input type="hidden" name="schedule_id" value="{{ s.id }}">
                                         <button type="submit" class="btn btn-info">立即执行</button>
                                     </form>
+                                    <button type="button" class="btn btn-warning" onclick="editSchedule({{ s.id }}, '{{ s.target_time }}', '{{ s.route_type }}')">编辑</button>
                                     <form action="/schedules/delete" method="POST" style="margin:0;">
                                         <input type="hidden" name="schedule_id" value="{{ s.id }}">
                                         <button type="submit" class="btn btn-danger">移除</button>
@@ -661,10 +661,21 @@
                     <label class="form-label">云运动密码 (留空表示不修改)</label>
                     <input type="password" class="form-control" name="yun_password" id="edit_yun_password" placeholder="******">
                 </div>
-                    <select class="form-select" name="qq_notify_type" id="edit_qq_notify_type">
-                        <option value="private">私聊 (个人QQ)</option>
-                        <option value="group">群聊 (QQ群号)</option>
-                    </select>
+                <div class="form-group" style="display:flex; gap:8px; align-items:flex-end;">
+                    <div style="flex-grow:1;">
+                        <label class="form-label">消息推送目标 (QQ号/群号)</label>
+                        <input type="text" class="form-control" name="qq_number" id="edit_qq_number" placeholder="留空则不推送">
+                    </div>
+                </div>
+                <div class="form-group" style="display:flex; gap:8px; align-items:flex-end;">
+                    <div style="flex-grow:1;">
+                        <label class="form-label">推送对象类型</label>
+                        <select class="form-select" name="qq_notify_type" id="edit_qq_notify_type">
+                            <option value="private">私聊 (个人QQ)</option>
+                            <option value="group">群聊 (QQ群号)</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-ghost" onclick="testQQNotify('edit')" style="height: 44px; padding: 0 16px; border: 1px solid var(--glass-border);">测试连通</button>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-ghost" onclick="closeModal('editUserModal')">取消</button>
