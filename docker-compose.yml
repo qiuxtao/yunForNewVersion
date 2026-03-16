@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  yun_web:
+    build: .
+    container_name: yun_runner
+    restart: always
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./yun.db:/app/yun.db
+      - ./config.ini:/app/config.ini
+    environment:
+      - TZ=Asia/Shanghai
