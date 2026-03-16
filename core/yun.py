@@ -240,3 +240,35 @@ class YunCore:
         }
         resp = self.default_post("/run/finish", json.dumps(data))
         return resp
+
+    def get_recent_history(self):
+        try:
+            resp = self.default_post("/run/listXnYearXqByStudentId", "")
+            try:
+                term_list = json.loads(resp)
+            except:
+                return False, f"List terms failed: {resp[:200]}"
+                
+            if term_list.get("code") != 200:
+                return False, term_list.get("msg", "获取学期失败")
+                
+            terms = term_list.get("data", [])
+            if not terms:
+                return False, "没有任何学期数据"
+                
+            all_runs = []
+            for term in terms[:2]: # At most 2 recent terms
+                run_list_resp = self.default_post("/run/crsReocordInfoList", json.dumps({"tableName": term['value']}))
+                try:
+                    run_list = json.loads(run_list_resp)
+                    if run_list.get("code") == 200:
+                        for month_data in run_list.get("data", {}).get("rank", []):
+                            all_runs.extend(month_data.get("rankList", []))
+                except:
+                    pass
+            
+            return True, all_runs
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return False, str(e)
