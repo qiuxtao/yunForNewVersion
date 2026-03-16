@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 import os
 import random
 
-from database import engine, get_db, init_db
-import models
+from web.database import engine, get_db, init_db
+from web import models
 from scheduler.tasks import init_scheduler, run_job_for_user
 
 # Ensure templates and static dirs exist
