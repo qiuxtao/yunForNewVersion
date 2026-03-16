@@ -246,6 +246,21 @@ async def add_schedule(
     db.commit()
     return RedirectResponse(url="/", status_code=303)
 
+@app.post("/schedules/edit")
+async def edit_schedule(
+    schedule_id: int = Form(...),
+    target_time: str = Form(...),
+    route_type: str = Form(...),
+    db: Session = Depends(get_db),
+    _: bool = Depends(check_admin)
+):
+    sched = db.query(models.Schedule).filter(models.Schedule.id == schedule_id).first()
+    if sched:
+        sched.target_time = target_time
+        sched.route_type = route_type
+        db.commit()
+    return RedirectResponse(url="/", status_code=303)
+
 @app.post("/runs/manual_trigger")
 async def manual_trigger(
     user_id: int = Form(...),
@@ -290,6 +305,56 @@ async def get_user_json(user_id: int, db: Session = Depends(get_db), _: bool = D
         "qq_number": user.qq_number or "",
         "qq_notify_type": user.qq_notify_type or "private",
     })
+
+@app.get("/api/users/{user_id}/history")
+async def get_user_history_json(user_id: int, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    import time as _time
+    import configparser
+    from fastapi.responses import JSONResponse
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return JSONResponse({"success": False, "message": "账户不存在"})
+        
+    conf = configparser.ConfigParser()
+    conf.read("config.ini", encoding="utf-8")
+    
+    school_host = conf.get("Yun", "school_host", fallback="")
+    school_id = conf.get("Yun", "school_id", fallback="195")
+    app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
+    md5key = conf.get("Yun", "md5key", fallback="")
+    platform_str = conf.get("Yun", "platform", fallback="android")
+    school_login_url = conf.get("Yun", "school_login_url", fallback="appLogin")
+    
+    public_key = conf.get("Yun", "PublicKey", fallback="")
+    private_key = conf.get("Yun", "PrivateKey", fallback="")
+    cipherkey = conf.get("Yun", "cipherkey", fallback="")
+    cipherkeyencrypted = conf.get("Yun", "cipherkeyencrypted", fallback="")
+    
+    utc = str(int(_time.time()))
+    try:
+        from core.auth import AuthManager
+        from core.yun import YunCore
+        
+        auth = AuthManager(user.device_id, user.device_name, user.sys_edition, app_edition, md5key, platform_str, cipherkey, cipherkeyencrypted)
+        login_res = auth.login(user.yun_username, user.yun_password, school_id, school_host, school_login_url, user.uuid, utc)
+        
+        if not login_res or not login_res.get("token"):
+            return JSONResponse({"success": False, "message": "云运动登录获取Token失败，请检查账号密码是否失效"})
+            
+        token = login_res["token"]
+        yun = YunCore(token, user.device_id, user.device_name, user.uuid, "", utc,
+                     school_host, school_id, app_edition, md5key, platform_str,
+                     public_key, private_key, cipherkey, cipherkeyencrypted, {})
+                     
+        success, data = yun.get_recent_history()
+        
+        if not success:
+            return JSONResponse({"success": False, "message": data})
+            
+        return JSONResponse({"success": True, "data": data})
+        
+    except Exception as e:
+        return JSONResponse({"success": False, "message": f"内部服务器异常: {str(e)}"})
 
 @app.get("/logs", response_class=HTMLResponse)
 async def view_logs(request: Request, db: Session = Depends(get_db), _: bool = Depends(check_admin)):

@@ -194,6 +194,16 @@
             background: rgba(245, 158, 11, 0.2);
         }
 
+        .btn-info {
+            background: rgba(56, 189, 248, 0.1);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .btn-info:hover {
+            background: rgba(56, 189, 248, 0.2);
+        }
+
         /* Data Tables - Readjusted for premium fit */
         .table-responsive {
             overflow-x: auto;
@@ -532,6 +542,7 @@
                                         <input type="hidden" name="schedule_id" value="{{ s.id }}">
                                         <button type="submit" class="btn btn-warning">立即执行</button>
                                     </form>
+                                    <button type="button" class="btn btn-info" onclick="editSchedule({{ s.id }}, '{{ s.target_time }}', '{{ s.route_type }}')">编辑</button>
                                     <form action="/schedules/delete" method="POST" style="margin:0;">
                                         <input type="hidden" name="schedule_id" value="{{ s.id }}">
                                         <button type="submit" class="btn btn-danger">移除</button>
@@ -676,6 +687,32 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="editScheduleModal">
+        <div class="modal-box">
+            <h2 class="panel-title" style="margin-bottom: 24px;">编辑自动化任务</h2>
+            <form action="/schedules/edit" method="POST">
+                <input type="hidden" name="schedule_id" id="edit_sched_id">
+                <div class="form-group">
+                    <label class="form-label">Cron 定时 (每日执行, 24小时制 HH:MM)</label>
+                    <input type="time" class="form-control" name="target_time" id="edit_sched_time" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">地理围栏路线图集加载方案</label>
+                    <select class="form-select" name="route_type" id="edit_sched_route">
+                        <option value="tasks_else">通用默认 (tasks_else)</option>
+                        <option value="tasks_fch">翡翠湖校区 (tasks_fch)</option>
+                        <option value="tasks_txl">屯溪路校区 (tasks_txl)</option>
+                        <option value="tasks_xc">宣城校区 (tasks_xc)</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost" onclick="closeModal('editScheduleModal')">取消</button>
+                    <button type="submit" class="btn btn-primary">保存修​​改​​</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="scheduleModal">
         <div class="modal-box">
             <h2 class="panel-title" style="margin-bottom: 24px;">创建自动化任务</h2>
@@ -715,6 +752,13 @@
     <script>
         function openModal(id) {
             document.getElementById(id).classList.add('active');
+        }
+
+        function editSchedule(scheduleId, targetTime, routeType) {
+            document.getElementById('edit_sched_id').value = scheduleId;
+            document.getElementById('edit_sched_time').value = targetTime;
+            document.getElementById('edit_sched_route').value = routeType;
+            openModal('editScheduleModal');
         }
         function closeModal(id) {
             document.getElementById(id).classList.remove('active');
