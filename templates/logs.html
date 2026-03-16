@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>云运动守护系统 - 运行日志</title>
+    <title>云运动守护系统 - 运行输出日志</title>
     <link href="/static/index.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -12,7 +12,7 @@
         .log-table th, .log-table td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .log-table th { font-weight: 600; color: var(--text-secondary); }
         .log-table tr:hover { background: rgba(255,255,255,0.02); }
-        .log-message { max-width: 400px; white-space: pre-wrap; word-break: break-all; font-size: 13px; color: var(--text-secondary); }
+        .log-message { max-width: 500px; white-space: pre-wrap; font-family: monospace; line-height: 1.4; word-break: break-all; font-size: 13px; color: var(--text-secondary); background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; margin: 4px 0; }
     </style>
 </head>
 <body>
@@ -26,7 +26,7 @@
         </div>
         <nav class="nav-menu">
             <a href="/" class="nav-item">系统状态</a>
-            <a href="/logs" class="nav-item active">历史日志</a>
+            <a href="/logs" class="nav-item active">运行输出日志</a>
         </nav>
         <div style="flex:1"></div>
         <div style="padding: 24px;">
@@ -37,7 +37,7 @@
     <div class="main-content container">
         <header class="header">
             <div>
-                <h1 style="font-size: 24px; font-weight: 700; background: linear-gradient(to right, #fff, #9ca3af); -webkit-background-clip: text; color: transparent;">运行日志</h1>
+                <h1 style="font-size: 24px; font-weight: 700; background: linear-gradient(to right, #fff, #9ca3af); -webkit-background-clip: text; color: transparent;">运行输出日志</h1>
                 <p style="color: var(--text-secondary); margin-top: 4px;">系统最近 500 条自动调度与交互日志记录。</p>
             </div>
             <a href="/" class="btn btn-ghost">返回首页</a>

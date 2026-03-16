@@ -279,8 +279,16 @@
         }
 
         .log-msg {
-            color: #cbd5e1;
+            color: var(--text-secondary);
             font-size: 13px;
+            margin-top: 6px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 6px;
+            line-height: 1.5;
+            word-break: break-all;
         }
 
         .status-dot {
@@ -401,7 +409,7 @@
                 YunRunner Dashboard
             </div>
             <div style="display:flex; gap:12px;">
-                <a href="/logs" class="btn btn-ghost">历史日志</a>
+                <a href="/logs" class="btn btn-ghost">运行输出日志</a>
                 <a href="/logout" class="btn btn-ghost" style="color:var(--danger)">安全登出</a>
             </div>
         </header>
@@ -546,7 +554,7 @@
         <!-- Logs -->
         <div class="glass-panel">
             <div class="panel-header">
-                <h2 class="panel-title">系统运行日志</h2>
+                <h2 class="panel-title">系统运行输出日志</h2>
             </div>
             <ul class="log-list">
                 {% for log in logs %}
@@ -756,7 +764,7 @@
                 } else {
                     document.getElementById('historyLoading').style.display = 'none';
                     document.getElementById('historyError').style.display = 'block';
-                    document.getElementById('historyError').innerText = '获取失败: ' + result.message;
+                    document.getElementById('historyError').innerText = '获取失败: ' + (result.message || result.data || '未知错误');
                 }
             } catch (error) {
                 document.getElementById('historyLoading').style.display = 'none';
