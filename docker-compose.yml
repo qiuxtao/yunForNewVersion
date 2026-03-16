@@ -8,7 +8,7 @@ services:
     ports:
       - "8001:8000"
     volumes:
-      - ./yun.db:/app/yun.db
+      - ./data:/app/data
       - ./config.ini:/app/config.ini
     environment:
       - TZ=Asia/Shanghai
