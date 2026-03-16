@@ -1,4 +1,5 @@
 from apscheduler.schedulers.background import BackgroundScheduler
+import pytz
 import datetime
 import logging
 from sqlalchemy.orm import Session
@@ -16,7 +17,7 @@ from notifications.qq_bot import notify_run_success, notify_run_failed
 
 logger = logging.getLogger(__name__)
 
-scheduler = BackgroundScheduler()
+scheduler = BackgroundScheduler(timezone=pytz.timezone('Asia/Shanghai'))
 
 # 为了避免在数据库里存所有的学校秘钥，目前从统一的config.ini读取学校API静态配置并供所有用户共用
 # (如果系统要支持多个学校，这部分需要迁入数据库或者做个school_config表)
