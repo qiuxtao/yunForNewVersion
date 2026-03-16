@@ -7,10 +7,14 @@ import os
 import random
 import configparser
 import uuid
+import asyncio
 
 from web.database import engine, get_db, init_db
 from web import models
 from scheduler.tasks import init_scheduler, run_job_for_user
+
+from fastapi import WebSocket, WebSocketDisconnect
+from notifications.qq_bot import manager
 
 # Ensure templates and static dirs exist
 os.makedirs("templates", exist_ok=True)
@@ -40,6 +44,21 @@ def on_startup():
     print("Database initialized.")
     init_scheduler()
     print("APScheduler started.")
+    try:
+        manager.set_loop(asyncio.get_running_loop())
+    except RuntimeError:
+        pass
+
+@app.websocket("/ws/qqbot")
+async def qqbot_ws(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            # We must continuously receive messages to keep the connection alive
+            # OneBot platforms will bounce heartbeats and API responses here
+            data = await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
     
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
