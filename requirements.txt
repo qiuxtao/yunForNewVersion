@@ -8,4 +8,4 @@ requests==2.31.0
 tqdm==4.66.1
 gmssl==3.2.2
 pycryptodome==3.19.0
-websockets==0.0.6
+websockets==12.0
