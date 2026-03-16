@@ -862,18 +862,10 @@
                     } else {
                         termHtml += '<div class="table-responsive" style="margin-bottom:12px;"><table><thead><tr><th>运动时间</th><th>运动里程 (km)</th></tr></thead><tbody>';
                         result.data.forEach(run => {
-                            let rtime = run.endTime || run.recordDate || "-";
-                            const month = run.month_label || '';
-                            
-                            // Combine month and day/time if applicable
-                            let displayTime = '';
-                            if (month && rtime.length <= 10) {
-                                // "2025-03" + "15 14:30" => "2025-03-15 14:30"
-                                // Sometime month is pure int "11月", handle broadly:
-                                displayTime = `${month} ${rtime}`;
-                            } else {
-                                displayTime = rtime;
-                            }
+                            let rtime = run.recordEndTime || run.endTime || run.recordDate || "-";
+                            // The Yun server provides recordEndTime formatted as "2025-02-25 12:04:56"
+                            // so we can display it identically without manual month extraction string ops
+                            let displayTime = rtime;
                             
                             termHtml += `<tr>
                                 <td style="color:var(--text-main);">${displayTime}</td>

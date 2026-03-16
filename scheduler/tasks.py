@@ -28,8 +28,6 @@ def load_app_config():
     return conf
 
 def run_job_for_user(user_id: int, schedule_id: int):
-    log_buffer = [f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 开始执行自动化跑步调度 (UserID: {user_id})"]
-    logger.info(f"Starting schedule execution for user_id={user_id}, schedule_id={schedule_id}")
     db: Session = SessionLocal()
     user = db.query(User).filter(User.id == user_id).first()
     sched = db.query(Schedule).filter(Schedule.id == schedule_id).first()
@@ -37,7 +35,29 @@ def run_job_for_user(user_id: int, schedule_id: int):
     if not user or not sched:
         db.close()
         return
-        
+
+    # 初始化记录，实现在线刷新
+    log_buffer = [f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 开始执行自动化跑步调度 (UserID: {user_id})"]
+    current_log = RunLog(user_id=user.id, status="Running", message="\n".join(log_buffer))
+    db.add(current_log)
+    db.commit()
+    db.refresh(current_log)
+    
+    def update_log(msg: str, status: str = None, inplace: bool = False):
+        if inplace and len(log_buffer) > 1:
+            log_buffer[-1] = msg
+        else:
+            log_buffer.append(msg)
+            
+        current_log.message = "\n".join(log_buffer)
+        if status:
+            current_log.status = status
+            if sched:
+                sched.last_run_status = status
+                sched.last_run_time = datetime.datetime.now()
+        db.commit()
+
+    logger.info(f"Starting schedule execution for user_id={user_id}, schedule_id={schedule_id}")
     conf = load_app_config()
     
     # 提取公共APP参数
@@ -67,19 +87,18 @@ def run_job_for_user(user_id: int, schedule_id: int):
     auth = AuthManager(user.device_id, user.device_name, user.sys_edition, app_edition, md5key, platform, cipherkey, cipherkeyencrypted)
     utc = str(int(time.time()))
     
-    # 尝试登录以获取最新 Token 确保有效
     try:
         login_res = auth.login(user.yun_username, user.yun_password, school_id, school_host, school_login_url, user.uuid, utc)
         user.yun_token = login_res['token']
         db.commit()
-        log_buffer.append(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 登录云运动成功，Token: {user.yun_token[:8]}...")
+        update_log(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 登录云运动成功，Token: {user.yun_token[:8]}...")
     except Exception as e:
         error_msg = f"登录失败: {e}"
         logger.error(error_msg)
-        log_buffer.append(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {error_msg}")
-        add_log(db, user, "Failed", "\n".join(log_buffer), sched)
+        update_log(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {error_msg}", status="Failed")
         if user.qq_number:
             notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
+        db.close()
         return
 
     # 初始化 Yun Core
@@ -92,58 +111,55 @@ def run_job_for_user(user_id: int, schedule_id: int):
     success, msg = core.init_run_info()
     if not success:
         error_msg = f"初始化运行参数失败: {msg}"
-        log_buffer.append(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {error_msg}")
-        add_log(db, user, "Failed", "\n".join(log_buffer), sched)
+        update_log(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {error_msg}", status="Failed")
         if user.qq_number: notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
+        db.close()
         return
-    log_buffer.append(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 获取首页运行信息成功")
+    update_log(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 获取首页运行信息成功")
 
     success, msg = core.start_run()
     if not success:
         error_msg = f"创建跑步记录失败: {msg}"
-        log_buffer.append(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {error_msg}")
-        add_log(db, user, "Failed", "\n".join(log_buffer), sched)
+        update_log(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {error_msg}", status="Failed")
         if user.qq_number: notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
+        db.close()
         return
-    log_buffer.append(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 开始跑步任务成功: {msg}")
+    update_log(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 开始跑步任务成功: {msg}")
 
     # Load Tasks Map
     path_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), sched.route_type)
     if not os.path.exists(path_dir):
         error_msg = f"找不到打卡路线文件夹: {path_dir}"
-        log_buffer.append(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {error_msg}")
-        add_log(db, user, "Failed", "\n".join(log_buffer), sched)
-        if user.qq_number: notify_run_failed(user.qq_number, user.username, error_msg)
+        update_log(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {error_msg}", status="Failed")
+        if user.qq_number: notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
+        db.close()
         return
 
     files = [f for f in os.listdir(path_dir) if f.endswith('.json')]
     if not files:
         error_msg = f"文件夹 {path_dir} 中没有可用路线"
-        log_buffer.append(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {error_msg}")
-        add_log(db, user, "Failed", "\n".join(log_buffer), sched)
-        if user.qq_number: notify_run_failed(user.qq_number, user.username, error_msg)
+        update_log(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {error_msg}", status="Failed")
+        if user.qq_number: notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
+        db.close()
         return
 
-    # Randomly pick route
     file = os.path.join(path_dir, random.choice(files))
     with open(file, 'r', encoding='utf-8') as f:
         task_map = json.loads(f.read())
         
-    # Apply coordinate drift (hardcoded true for bot automation for safety)
     from tools.drift import add_drift
     task_map = add_drift(task_map)
 
-    # Begin Simulation points loop
     points = []
     count = 0
     total_points = len(task_map['data']['pointsList'])
     sleep_time = task_map['data']['duration'] / total_points * split_count
 
-    loop_msg = f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 开始提交轨迹点... 共计 {total_points} 个点"
-    logger.info(loop_msg)
-    log_buffer.append(loop_msg)
+    update_log(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 开始提交轨迹点... 共计 {total_points} 个点")
+    update_log("  0%|                                                                                | 0/{} [00:00<?, ?it/s]".format(total_points))
     
-    for point in task_map['data']['pointsList']:
+    start_t = time.time()
+    for idx, point in enumerate(task_map['data']['pointsList']):
         points.append({
             'point': point['point'],
             'runStatus': '1',
@@ -155,33 +171,43 @@ def run_job_for_user(user_id: int, schedule_id: int):
             "ts": str(int(time.time()))
         })
         count += 1
-        if count == split_count:
-            core.split_by_points_map(points, task_map['data']['recodePace'])
-            time.sleep(sleep_time)
+        if count == split_count or (idx + 1) == total_points:
+            try:
+                core.split_by_points_map(points, task_map['data']['recodePace'])
+            except Exception as e:
+                pass
+            if (idx + 1) < total_points:
+                time.sleep(sleep_time)
             count = 0
             points = []
+            
+            # Draw ASCII Progress Bar mimicking tqdm
+            pct = int((idx + 1) / total_points * 100)
+            bar_len = 80
+            filled = int(bar_len * (idx+1)/total_points)
+            bar = '█' * filled + ' ' * (bar_len - filled)
+            elapsed = int(time.time() - start_t)
+            mins, secs = divmod(elapsed, 60)
+            update_log(f"{pct:>3}%|{bar}| {idx+1}/{total_points} [{mins:02d}:{secs:02d}]", inplace=True)
 
-    if count != 0:
-        core.split_by_points_map(points, task_map['data']['recodePace'])
-
-    # Finalize record
+    update_log(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 发送结束信号...")
     res = core.finish_by_points_map(task_map)
     try:
         final_info = json.loads(res)
         if final_info.get("code") == 200:
-            log_buffer.append(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 结算成功: {res}")
+            update_log(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 结算成功: {res}", status="Success")
             mileage = float(task_map['data']['recordMileage'])
             duration = float(task_map['data']['duration']) / 60.0
-            add_log(db, user, "Success", "\n".join(log_buffer), sched)
             if user.qq_number:
                 notify_run_success(user.qq_number, user.qq_notify_type, user.username, mileage, duration)
         else:
             raise Exception(res)
     except Exception as e:
         error_msg = f"结算跑步成绩失败: {e}"
-        log_buffer.append(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {error_msg}")
-        add_log(db, user, "Failed", "\n".join(log_buffer), sched)
+        update_log(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {error_msg}", status="Failed")
         if user.qq_number: notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
+    
+    db.close()
 
 def add_log(db: Session, user: User, status: str, message: str, sched: Schedule = None):
     log = RunLog(user_id=user.id, status=status, message=message)

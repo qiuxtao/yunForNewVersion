@@ -216,6 +216,46 @@
             color: var(--text-muted);
             font-size: 14px;
         }
+        /* Switch CSS */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255,255,255,0.1);
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
     </style>
 </head>
 <body>
@@ -239,9 +279,18 @@
         </header>
 
         <div class="glass-panel">
-            <div class="panel-header">
-                <h2 class="panel-title">最近自动调度与交互日志记录</h2>
-                <span class="badge badge-success" style="font-size: 11px;">Limit 500</span>
+            <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <h2 class="panel-title">最近自动调度与交互日志记录</h2>
+                    <span class="badge badge-success" style="font-size: 11px;">Limit 500</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:13px; color:var(--text-muted);">自动刷新日志</span>
+                    <label class="switch">
+                        <input type="checkbox" id="autoRefreshToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
             </div>
             
             <div class="table-responsive">
@@ -254,33 +303,81 @@
                             <th style="width: 15%">记录时间</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for log in logs %}
-                        <tr>
-                            <td><strong>{{ log.user.username }}</strong></td>
-                            <td>
-                                {% if log.status == 'Success' %}
-                                <span class="badge badge-success">Success</span>
-                                {% else %}
-                                <span class="badge badge-error">Failed</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="log-msg">{{ log.message }}</div>
-                            </td>
-                            <td class="log-time">{{ log.run_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                        </tr>
-                        {% else %}
+                    <tbody id="logsTableBody">
                         <tr>
                             <td colspan="4">
-                                <div class="empty-state">尚未产生任何日志数据</div>
+                                <div class="empty-state">数据加载中...</div>
                             </td>
                         </tr>
-                        {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+
+    <script>
+        let refreshInterval = null;
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.innerText = text;
+            return div.innerHTML;
+        }
+
+        async function fetchLogs() {
+            try {
+                const response = await fetch('/api/logs/stream');
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    const tbody = document.getElementById('logsTableBody');
+                    if (result.data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">尚未产生任何日志数据</div></td></tr>';
+                        return;
+                    }
+
+                    let html = '';
+                    result.data.forEach(log => {
+                        let badgeHtml = '';
+                        if (log.status === 'Success') {
+                            badgeHtml = '<span class="badge badge-success">Success</span>';
+                        } else if (log.status === 'Running') {
+                            badgeHtml = '<span class="badge badge-info" style="background:rgba(96,165,250,0.1); color:var(--primary); border:1px solid rgba(96,165,250,0.2);">Running...</span>';
+                        } else {
+                            badgeHtml = '<span class="badge badge-error">Failed</span>';
+                        }
+                        
+                        html += `<tr>
+                            <td><strong>${escapeHtml(log.user)}</strong></td>
+                            <td>${badgeHtml}</td>
+                            <td>
+                                <div class="log-msg">${escapeHtml(log.message)}</div>
+                            </td>
+                            <td class="log-time">${log.created_at || '-'}</td>
+                        </tr>`;
+                    });
+                    tbody.innerHTML = html;
+                }
+            } catch (e) {
+                console.error("Failed to load logs stream:", e);
+            }
+        }
+
+        // Initialize fetching
+        fetchLogs();
+        
+        const toggle = document.getElementById('autoRefreshToggle');
+        toggle.addEventListener('change', function() {
+            if (this.checked) {
+                fetchLogs(); // Fetch immediately on toggle
+                refreshInterval = setInterval(fetchLogs, 2500);
+            } else {
+                clearInterval(refreshInterval);
+            }
+        });
+
+        // Set initial interval
+        refreshInterval = setInterval(fetchLogs, 2500);
+    </script>
 </body>
 </html>
