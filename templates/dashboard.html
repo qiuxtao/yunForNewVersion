@@ -421,9 +421,9 @@
         <!-- Users Table -->
         <div class="glass-panel">
             <div class="panel-header">
-                <h2 class="panel-title">受控账户列表</h2>
+                <h2 class="panel-title">账户列表</h2>
                 <button class="btn btn-primary" onclick="openModal('addUserModal')">
-                    添加账户
+                    登录账户
                 </button>
             </div>
             <div class="table-responsive">
@@ -460,6 +460,7 @@
                             </td>
                             <td>
                                 <div class="action-cell">
+                                    <button class="btn btn-info" onclick="viewHistory({{ u.id }})">云端历史</button>
                                     <button class="btn btn-warning" onclick="editUser({{ u.id }})">编辑</button>
                                     <form action="/users/delete" method="POST" style="margin:0;" onsubmit="return confirm('确定要移除此账户吗？将会删除所有关联的调度任务。')">
                                         <input type="hidden" name="user_id" value="{{ u.id }}">
@@ -483,9 +484,9 @@
         <!-- Schedules Table -->
         <div class="glass-panel">
             <div class="panel-header">
-                <h2 class="panel-title">自动化调度规则</h2>
+                <h2 class="panel-title">自动化任务列表</h2>
                 <button class="btn btn-primary" onclick="openModal('scheduleModal')">
-                    配置调度
+                    添加任务
                 </button>
             </div>
             <div class="table-responsive">
@@ -566,10 +567,38 @@
         </div>
     </div>
 
+    <!-- History Modal -->
+    <div class="modal-overlay" id="historyModal">
+        <div class="modal-box" style="max-width: 650px;">
+            <h2 class="panel-title" id="historyModalTitle" style="margin-bottom: 24px;">云端历史记录</h2>
+            <div id="historyLoading" style="display:none; text-align:center; padding: 20px; color: var(--text-secondary);">
+                正在连接云运动获取官方打卡记录数据，请稍候...
+            </div>
+            <div id="historyError" style="display:none; color: var(--danger); text-align: center; padding: 20px;"></div>
+            <div class="table-responsive" id="historyTableContainer" style="display:none; max-height: 400px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>运动时间</th>
+                            <th>运动里程</th>
+                            <th>运动耗时</th>
+                            <th>步频/配速</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('historyModal')">关闭</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Add User Modal -->
     <div class="modal-overlay" id="addUserModal">
         <div class="modal-box">
-            <h2 class="panel-title" style="margin-bottom: 24px;">添加云运动账户</h2>
+            <h2 class="panel-title" style="margin-bottom: 24px;">登录云运动账户</h2>
             <form action="/users/add" method="POST" id="addUserForm">
                 <div class="form-group">
                     <label class="form-label">面板显示名 (备注/姓名)</label>
@@ -594,11 +623,9 @@
                         <option value="group">群聊 (QQ群号)</option>
                     </select>
                 </div>
-                <div id="add_validation_msg" style="font-size:12px; margin-top:-10px; margin-bottom:10px; min-height:18px;"></div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-warning" id="add_validate_btn" onclick="validateCredentials('add')">验证登录</button>
                     <button type="button" class="btn btn-ghost" onclick="closeModal('addUserModal')">取消</button>
-                    <button type="submit" class="btn btn-primary">保存账户</button>
+                    <button type="submit" class="btn btn-primary">登录</button>
                 </div>
             </form>
         </div>
@@ -633,11 +660,9 @@
                         <option value="group">群聊 (QQ群号)</option>
                     </select>
                 </div>
-                <div id="edit_validation_msg" style="font-size:12px; margin-top:-10px; margin-bottom:10px; min-height:18px;"></div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-warning" id="edit_validate_btn" onclick="validateCredentials('edit')">验证登录</button>
                     <button type="button" class="btn btn-ghost" onclick="closeModal('editUserModal')">取消</button>
-                    <button type="submit" class="btn btn-primary">更新账户</button>
+                    <button type="submit" class="btn btn-primary">登录</button>
                 </div>
             </form>
         </div>
@@ -645,7 +670,7 @@
 
     <div class="modal-overlay" id="scheduleModal">
         <div class="modal-box">
-            <h2 class="panel-title" style="margin-bottom: 24px;">创建调度引擎规则</h2>
+            <h2 class="panel-title" style="margin-bottom: 24px;">创建自动化任务</h2>
             <form action="/schedules/add" method="POST">
                 <div class="form-group">
                     <label class="form-label">授权目标实例（可多选）</label>
@@ -696,6 +721,49 @@
                 if (e.target === overlay) closeModal(overlay.id);
             });
         });
+
+        async function viewHistory(userId) {
+            openModal('historyModal');
+            document.getElementById('historyLoading').style.display = 'block';
+            document.getElementById('historyError').style.display = 'none';
+            document.getElementById('historyTableContainer').style.display = 'none';
+            
+            try {
+                const response = await fetch(`/api/users/${userId}/history`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const tbody = document.getElementById('historyTableBody');
+                    tbody.innerHTML = '';
+                    
+                    if (!result.data || result.data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">该学期尚未产生记录</div></td></tr>';
+                    } else {
+                        result.data.forEach(run => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${run.endTime || '-'}</td>
+                                <td><strong>${run.recordMileage || '0'}</strong> km</td>
+                                <td>${run.duration || '0'} 秒</td>
+                                <td>${run.recodeCadence || '0'} / ${run.recodePace || '0'}</td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    }
+                    
+                    document.getElementById('historyLoading').style.display = 'none';
+                    document.getElementById('historyTableContainer').style.display = 'block';
+                } else {
+                    document.getElementById('historyLoading').style.display = 'none';
+                    document.getElementById('historyError').style.display = 'block';
+                    document.getElementById('historyError').innerText = '获取失败: ' + result.message;
+                }
+            } catch (error) {
+                document.getElementById('historyLoading').style.display = 'none';
+                document.getElementById('historyError').style.display = 'block';
+                document.getElementById('historyError').innerText = '网络错误: ' + error;
+            }
+        }
 
         async function editUser(userId) {
             try {
