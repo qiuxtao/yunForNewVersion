@@ -241,7 +241,7 @@ class YunCore:
         resp = self.default_post("/run/finish", json.dumps(data))
         return resp
 
-    def get_recent_history(self):
+    def get_terms(self):
         try:
             resp = self.default_post("/run/listXnYearXqByStudentId", "")
             try:
@@ -256,26 +256,34 @@ class YunCore:
             if not terms:
                 return False, "没有任何学期数据"
                 
-            term_history = []
-            for term in terms[:3]: # Let's fetch 3 recent terms
-                run_list_resp = self.default_post("/run/crsReocordInfoList", json.dumps({"tableName": term['value']}))
-                runs = []
+            filtered_terms = []
+            for term in terms:
+                # 只保留 2025-2026 及以后的学期
                 try:
-                    run_list = json.loads(run_list_resp)
-                    if run_list.get("code") == 200:
-                        for month_data in run_list.get("data", {}).get("rank", []):
-                            runs.extend(month_data.get("rankList", []))
+                    year = int(term['key'][:4])
+                    if year >= 2025:
+                        filtered_terms.append(term)
                 except:
-                    pass
-                term_history.append({
-                    "term_name": f"{term['key']} ({term['sjd']})",
-                    "term_value": term['value'],
-                    "count": len(runs),
-                    "runs": runs
-                })
-            
-            return True, term_history
+                    # 如果解析失败，保守起见保留
+                    filtered_terms.append(term)
+                    
+            return True, filtered_terms
         except Exception as e:
             import traceback
             traceback.print_exc()
+            return False, str(e)
+
+    def get_term_history(self, term_value):
+        try:
+            run_list_resp = self.default_post("/run/crsReocordInfoList", json.dumps({"tableName": term_value}))
+            runs = []
+            run_list = json.loads(run_list_resp)
+            if run_list.get("code") == 200:
+                for month_data in run_list.get("data", {}).get("rank", []):
+                    month_label = month_data.get("month", "") # Extract the month info from parent
+                    for run in month_data.get("rankList", []):
+                        run['month_label'] = month_label
+                        runs.append(run)
+            return True, runs
+        except Exception as e:
             return False, str(e)

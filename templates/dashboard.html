@@ -527,13 +527,13 @@
                             </td>
                             <td class="log-time">{{ s.last_run_time.strftime('%Y-%m-%d %H:%M:%S') if s.last_run_time else '-' }}</td>
                             <td>
-                                <div class="action-cell">
+                                <div class="action-cell" style="display:flex; gap:8px;">
+                                    <button type="button" class="btn btn-warning" onclick="editSchedule({{ s.id }}, '{{ s.target_time }}', '{{ s.route_type }}')">编辑</button>
                                     <form action="/runs/manual_trigger" method="POST" style="margin:0;">
                                         <input type="hidden" name="user_id" value="{{ s.user.id }}">
                                         <input type="hidden" name="schedule_id" value="{{ s.id }}">
-                                        <button type="submit" class="btn btn-warning">立即执行</button>
+                                        <button type="submit" class="btn btn-info">立即执行</button>
                                     </form>
-                                    <button type="button" class="btn btn-info" onclick="editSchedule({{ s.id }}, '{{ s.target_time }}', '{{ s.route_type }}', [{{ s.user.id }}])">编辑</button>
                                     <form action="/schedules/delete" method="POST" style="margin:0;">
                                         <input type="hidden" name="schedule_id" value="{{ s.id }}">
                                         <button type="submit" class="btn btn-danger">移除</button>
@@ -580,7 +580,15 @@
     <!-- History Modal -->
     <div class="modal-overlay" id="historyModal">
         <div class="modal-box" style="max-width: 650px;">
-            <h2 class="panel-title" id="historyModalTitle" style="margin-bottom: 24px;">云端历史记录</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+                <h2 class="panel-title" id="historyModalTitle">云端历史记录</h2>
+                <select id="historyTermSelect" class="form-select" style="width: auto; padding: 6px 30px 6px 14px; display:none;" onchange="loadTermHistory()">
+                </select>
+            </div>
+            
+            <input type="hidden" id="current_history_user">
+            <input type="hidden" id="current_history_token">
+            
             <div id="historyLoading" style="display:none; text-align:center; padding: 20px; color: var(--text-secondary);">
                 正在连接云运动获取官方打卡记录数据，请稍候...
             </div>
@@ -611,16 +619,21 @@
                     <label class="form-label">云运动密码</label>
                     <input type="password" class="form-control" name="yun_password" id="add_yun_password" required>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">消息推送目标 (QQ号/群号)</label>
-                    <input type="text" class="form-control" name="qq_number" placeholder="留空则不推送">
+                <div class="form-group" style="display:flex; gap:8px; align-items:flex-end;">
+                    <div style="flex-grow:1;">
+                        <label class="form-label">消息推送目标 (QQ号/群号)</label>
+                        <input type="text" class="form-control" name="qq_number" id="add_qq_number" placeholder="留空则不推送">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">推送对象类型</label>
-                    <select class="form-select" name="qq_notify_type">
-                        <option value="private">私聊 (个人QQ)</option>
-                        <option value="group">群聊 (QQ群号)</option>
-                    </select>
+                <div class="form-group" style="display:flex; gap:8px; align-items:flex-end;">
+                    <div style="flex-grow:1;">
+                        <label class="form-label">推送对象类型</label>
+                        <select class="form-select" name="qq_notify_type" id="add_qq_notify_type">
+                            <option value="private">私聊 (个人QQ)</option>
+                            <option value="group">群聊 (QQ群号)</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-ghost" onclick="testQQNotify('add')" style="height: 44px; padding: 0 16px; border: 1px solid var(--glass-border);">测试连通</button>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-ghost" onclick="closeModal('addUserModal')">取消</button>
@@ -648,12 +661,6 @@
                     <label class="form-label">云运动密码 (留空表示不修改)</label>
                     <input type="password" class="form-control" name="yun_password" id="edit_yun_password" placeholder="******">
                 </div>
-                <div class="form-group">
-                    <label class="form-label">消息推送目标 (QQ号/群号)</label>
-                    <input type="text" class="form-control" name="qq_number" id="edit_qq_number">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">推送对象类型</label>
                     <select class="form-select" name="qq_notify_type" id="edit_qq_notify_type">
                         <option value="private">私聊 (个人QQ)</option>
                         <option value="group">群聊 (QQ群号)</option>
@@ -672,14 +679,6 @@
             <h2 class="panel-title" style="margin-bottom: 24px;">编辑自动化任务</h2>
             <form action="/schedules/edit" method="POST">
                 <input type="hidden" name="schedule_id" id="edit_sched_id">
-                <div class="form-group">
-                    <label class="form-label">选择目标实例 (按住 Ctrl 可多选，统一应用任务配置)</label>
-                    <select class="form-select" name="user_ids" id="edit_sched_users" multiple style="height: 100px;">
-                        {% for u in users %}
-                        <option value="{{ u.id }}">{{ u.username }} ({{ u.yun_username }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
                 <div class="form-group">
                     <label class="form-label">Cron 定时 (每日执行, 24小时制 HH:MM)</label>
                     <input type="time" class="form-control" name="target_time" id="edit_sched_time" required>
@@ -742,16 +741,10 @@
             document.getElementById(id).classList.add('active');
         }
 
-        function editSchedule(scheduleId, targetTime, routeType, userIds) {
+        function editSchedule(scheduleId, targetTime, routeType) {
             document.getElementById('edit_sched_id').value = scheduleId;
             document.getElementById('edit_sched_time').value = targetTime;
             document.getElementById('edit_sched_route').value = routeType;
-            let select = document.getElementById('edit_sched_users');
-            if (select) {
-                for (let i = 0; i < select.options.length; i++) {
-                    select.options[i].selected = userIds.includes(parseInt(select.options[i].value));
-                }
-            }
             openModal('editScheduleModal');
         }
         function closeModal(id) {
@@ -768,56 +761,130 @@
             });
         });
 
+        async function testQQNotify(type) {
+            const qqNumber = document.getElementById(`${type}_qq_number`).value;
+            const notifyType = document.getElementById(`${type}_qq_notify_type`).value;
+            
+            if (!qqNumber) {
+                alert('请填写 QQ 号/群号');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('qq_number', qqNumber);
+                formData.append('qq_notify_type', notifyType);
+                
+                const response = await fetch('/test_qq_notify', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                alert(result.message);
+            } catch (error) {
+                alert('网络连通异常: ' + error);
+            }
+        }
+
         async function viewHistory(userId) {
             openModal('historyModal');
             document.getElementById('historyLoading').style.display = 'block';
             document.getElementById('historyError').style.display = 'none';
             document.getElementById('historyTableContainer').style.display = 'none';
+            document.getElementById('historyTermSelect').style.display = 'none';
+            document.getElementById('current_history_user').value = userId;
             
             try {
-                const response = await fetch(`/api/users/${userId}/history`);
+                // fetch terms
+                const response = await fetch(`/api/users/${userId}/terms`);
+                const result = await response.json();
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    const select = document.getElementById('historyTermSelect');
+                    select.innerHTML = '';
+                    result.data.forEach(term => {
+                        let opt = document.createElement('option');
+                        opt.value = term.value;
+                        opt.text = term.key;
+                        select.appendChild(opt);
+                    });
+                    
+                    document.getElementById('current_history_token').value = result.token;
+                    select.style.display = 'block';
+                    
+                    // auto trigger the first term record load
+                    await loadTermHistory();
+                } else {
+                    document.getElementById('historyLoading').style.display = 'none';
+                    document.getElementById('historyError').style.display = 'block';
+                    document.getElementById('historyError').innerText = '获取失败: ' + (result.message || '没有任何学期数据');
+                }
+            } catch (error) {
+                document.getElementById('historyLoading').style.display = 'none';
+                document.getElementById('historyError').style.display = 'block';
+                document.getElementById('historyError').innerText = '网络错误: ' + error;
+            }
+        }
+
+        async function loadTermHistory() {
+            document.getElementById('historyLoading').style.display = 'block';
+            document.getElementById('historyTableContainer').style.display = 'none';
+            document.getElementById('historyError').style.display = 'none';
+            
+            const userId = document.getElementById('current_history_user').value;
+            const termVal = document.getElementById('historyTermSelect').value;
+            const termName = document.getElementById('historyTermSelect').options[document.getElementById('historyTermSelect').selectedIndex].text;
+            const token = document.getElementById('current_history_token').value;
+            
+            try {
+                const url = `/api/users/${userId}/history_by_term?term_value=${encodeURIComponent(termVal)}&token=${encodeURIComponent(token)}`;
+                const response = await fetch(url);
                 const result = await response.json();
                 
                 if (result.success) {
                     const tbody = document.getElementById('historyTableBody');
-                    tbody.innerHTML = '';
+                    let termHtml = '<div style="margin-bottom: 24px;">';
+                    termHtml += `<h3 style="color:#60a5fa; margin-bottom:12px; font-size:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px;">${termName} <span class="badge badge-success" style="float:right;">本学期共跑 ${result.data ? result.data.length : 0} 次</span></h3>`;
+                    
                     if (!result.data || result.data.length === 0) {
-                        tbody.innerHTML = '<div class="empty-state">未获取到近期的打卡学期数据</div>';
+                        termHtml += `<div class="empty-state" style="padding:20px;">该学期尚无相关打卡记录</div>`;
                     } else {
-                        result.data.forEach(termData => {
-                            let termHtml = `<div style="margin-bottom: 24px;">`;
-                            termHtml += `<h3 style="color:#60a5fa; margin-bottom:12px; font-size:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px;">${termData.term_name} <span class="badge badge-success" style="float:right;">本学期共跑 ${termData.count} 次</span></h3>`;
+                        termHtml += '<div class="table-responsive" style="margin-bottom:12px;"><table><thead><tr><th>运动时间</th><th>运动里程 (km)</th></tr></thead><tbody>';
+                        result.data.forEach(run => {
+                            let rtime = run.endTime || run.recordDate || "-";
+                            const month = run.month_label || '';
                             
-                            if (!termData.runs || termData.runs.length === 0) {
-                                termHtml += `<div style="color:var(--text-muted); font-size:13px; margin-bottom:8px;">无相关打卡记录</div>`;
+                            // Combine month and day/time if applicable
+                            let displayTime = '';
+                            if (month && rtime.length <= 10) {
+                                // "2025-03" + "15 14:30" => "2025-03-15 14:30"
+                                // Sometime month is pure int "11月", handle broadly:
+                                displayTime = `${month} ${rtime}`;
                             } else {
-                                termHtml += '<div class="table-responsive" style="margin-bottom:12px;"><table><thead><tr><th>运动时间</th><th>运动里程 (km)</th></tr></thead><tbody>';
-                                termData.runs.forEach(run => {
-                                    let rtime = run.endTime || run.recordDate || "-";
-                                    if(rtime.length > 16) rtime = rtime.substring(0, 16);
-                                    termHtml += `<tr>
-                                        <td style="color:var(--text-main);">${rtime}</td>
-                                        <td style="color:var(--success); font-weight:500;">${run.recordMileage || '0'} km</td>
-                                    </tr>`;
-                                });
-                                termHtml += '</tbody></table></div>';
+                                displayTime = rtime;
                             }
-                            termHtml += `</div>`;
-                            tbody.innerHTML += termHtml;
+                            
+                            termHtml += `<tr>
+                                <td style="color:var(--text-main);">${displayTime}</td>
+                                <td style="color:var(--success); font-weight:500;">${run.recordMileage || '0'} km</td>
+                            </tr>`;
                         });
+                        termHtml += '</tbody></table></div>';
                     }
+                    termHtml += '</div>';
+                    tbody.innerHTML = termHtml;
                     
                     document.getElementById('historyLoading').style.display = 'none';
                     document.getElementById('historyTableContainer').style.display = 'block';
                 } else {
                     document.getElementById('historyLoading').style.display = 'none';
                     document.getElementById('historyError').style.display = 'block';
-                    document.getElementById('historyError').innerText = '获取失败: ' + (result.message || result.data || '未知错误');
+                    document.getElementById('historyError').innerText = '学期记录提取失败: ' + (result.message || '未知错误');
                 }
             } catch (error) {
                 document.getElementById('historyLoading').style.display = 'none';
                 document.getElementById('historyError').style.display = 'block';
-                document.getElementById('historyError').innerText = '网络错误: ' + error;
+                document.getElementById('historyError').innerText = '网络异常: ' + error;
             }
         }
 

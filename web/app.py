@@ -225,6 +225,24 @@ async def validate_user_credentials(
     except Exception as e:
         return JSONResponse({"success": False, "message": f"登录失败: {str(e)}"})
 
+@app.post("/test_qq_notify")
+async def test_qq_notify(
+    qq_number: str = Form(...),
+    qq_notify_type: str = Form("private"),
+    _: bool = Depends(check_admin)
+):
+    from fastapi.responses import JSONResponse
+    from notifications.qq_bot import notify_run_success
+    
+    if not qq_number:
+        return JSONResponse({"success": False, "message": "无 QQ 号"})
+        
+    try:
+        notify_run_success(qq_number, qq_notify_type, "测试连通性账户", 1.23, 10.5)
+        return JSONResponse({"success": True, "message": "测试推送信号已提交，请注意查收"})
+    except Exception as e:
+        return JSONResponse({"success": False, "message": f"测试推送失败: {e}"})
+
 @app.post("/schedules/add")
 async def add_schedule(
     request: Request,
@@ -327,8 +345,8 @@ async def get_user_json(user_id: int, db: Session = Depends(get_db), _: bool = D
         "qq_notify_type": user.qq_notify_type or "private",
     })
 
-@app.get("/api/users/{user_id}/history")
-async def get_user_history_json(user_id: int, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+@app.get("/api/users/{user_id}/terms")
+async def get_user_terms_json(user_id: int, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
     import time as _time
     import configparser
     from fastapi.responses import JSONResponse
@@ -360,15 +378,47 @@ async def get_user_history_json(user_id: int, db: Session = Depends(get_db), _: 
         login_res = auth.login(user.yun_username, user.yun_password, school_id, school_host, school_login_url, user.uuid, utc)
         
         if not login_res or not login_res.get("token"):
-            return JSONResponse({"success": False, "message": "云运动登录获取Token失败，请检查账号密码是否失效"})
+            return JSONResponse({"success": False, "message": "云运动登录获取Token失败"})
             
         token = login_res["token"]
         yun = YunCore(token, user.device_id, user.device_name, user.uuid, "", utc,
                      school_host, school_id, app_edition, md5key, platform_str,
                      public_key, private_key, cipherkey, cipherkeyencrypted, {})
                      
-        success, data = yun.get_recent_history()
+        success, data = yun.get_terms()
+        if not success:
+            return JSONResponse({"success": False, "message": data})
+            
+        return JSONResponse({"success": True, "data": data, "token": token}) # optionally return token so the frontend doesn't login twice!
         
+    except Exception as e:
+        return JSONResponse({"success": False, "message": f"内部服务器异常: {str(e)}"})
+
+@app.get("/api/users/{user_id}/history_by_term")
+async def get_user_history_by_term_json(user_id: int, term_value: str, token: str, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    import time as _time
+    import configparser
+    from fastapi.responses import JSONResponse
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return JSONResponse({"success": False, "message": "账户不存在"})
+        
+    conf = configparser.ConfigParser()
+    conf.read("config.ini", encoding="utf-8")
+    
+    school_host = conf.get("Yun", "school_host", fallback="")
+    school_id = conf.get("Yun", "school_id", fallback="195")
+    app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
+    md5key = conf.get("Yun", "md5key", fallback="")
+    platform_str = conf.get("Yun", "platform", fallback="android")
+    
+    try:
+        from core.yun import YunCore
+        yun = YunCore(token, user.device_id, user.device_name, user.uuid, "", str(int(_time.time())),
+                     school_host, school_id, app_edition, md5key, platform_str,
+                     "", "", "", "", {})
+                     
+        success, data = yun.get_term_history(term_value)
         if not success:
             return JSONResponse({"success": False, "message": data})
             
