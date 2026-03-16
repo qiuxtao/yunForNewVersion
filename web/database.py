@@ -1,8 +1,10 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+import os
 from web.models import Base
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./yun.db"
+os.makedirs("data", exist_ok=True)
+SQLALCHEMY_DATABASE_URL = "sqlite:///./data/yun.db"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
