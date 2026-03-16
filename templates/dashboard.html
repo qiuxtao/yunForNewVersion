@@ -389,7 +389,6 @@
         }
     </style>
 </head>
-<body>
     <div class="ambient-layer">
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
@@ -401,7 +400,10 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
                 YunRunner Dashboard
             </div>
-            <a href="/logout" class="btn btn-ghost">注销登录</a>
+            <div style="display:flex; gap:12px;">
+                <a href="/logs" class="btn btn-ghost">历史日志</a>
+                <a href="/logout" class="btn btn-ghost" style="color:var(--danger)">安全登出</a>
+            </div>
         </header>
 
         <!-- Stats Overview -->
@@ -646,12 +648,15 @@
             <h2 class="panel-title" style="margin-bottom: 24px;">创建调度引擎规则</h2>
             <form action="/schedules/add" method="POST">
                 <div class="form-group">
-                    <label class="form-label">授权目标实例</label>
-                    <select class="form-select" name="user_id" required>
+                    <label class="form-label">授权目标实例（可多选）</label>
+                    <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; max-height: 150px; overflow-y: auto;">
                         {% for u in users %}
-                        <option value="{{ u.id }}">{{ u.username }}</option>
+                        <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="user_ids" value="{{ u.id }}" id="usr_{{ u.id }}" style="cursor: pointer;">
+                            <label for="usr_{{ u.id }}" style="cursor: pointer; font-size: 14px; user-select: none;">{{ u.username }} ({{ u.yun_username }})</label>
+                        </div>
                         {% endfor %}
-                    </select>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Cron 定时 (每日执行, 24小时制 HH:MM)</label>

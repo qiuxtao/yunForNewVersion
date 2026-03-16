@@ -118,6 +118,12 @@ async def add_user(
     device_id = str(random.randint(1000000000000000, 9999999999999999))
     uuid_str = device_id
     
+
+    # 强制校验
+    if not _validate_yun_sync(yun_username, yun_password):
+        from fastapi.responses import HTMLResponse
+        return HTMLResponse("<script>alert('【强制校验失败】账号或密码错误，或服务器网络异常。'); history.back();</script>")
+
     new_user = models.User(
         username=username,
         yun_username=yun_username,
@@ -147,6 +153,12 @@ async def edit_user(
 ):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if user:
+        # 强制校验
+        pwd_to_check = yun_password if yun_password else user.yun_password
+        if not _validate_yun_sync(yun_username, pwd_to_check):
+            from fastapi.responses import HTMLResponse
+            return HTMLResponse("<script>alert('【强制校验失败】账号或密码错误，或服务器网络异常。'); history.back();</script>")
+            
         user.username = username
         user.yun_username = yun_username
         if yun_password:
@@ -155,6 +167,28 @@ async def edit_user(
         user.qq_notify_type = qq_notify_type
         db.commit()
     return RedirectResponse(url="/", status_code=303)
+
+def _validate_yun_sync(yun_username, yun_password):
+    import time as _time
+    conf = configparser.ConfigParser()
+    conf.read("config.ini", encoding="utf-8")
+    school_host = conf.get("Yun", "school_host", fallback="")
+    school_id = conf.get("Yun", "school_id", fallback="195")
+    app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
+    md5key = conf.get("Yun", "md5key", fallback="")
+    platform_str = conf.get("Yun", "platform", fallback="android")
+    school_login_url = conf.get("Yun", "school_login_url", fallback="appLogin")
+    cipherkey = conf.get("Yun", "cipherkey", fallback="")
+    cipherkeyencrypted = conf.get("Yun", "cipherkeyencrypted", fallback="")
+    temp_device_id = str(random.randint(1000000000000000, 9999999999999999))
+    utc = str(int(_time.time()))
+    try:
+        from core.auth import AuthManager
+        auth = AuthManager(temp_device_id, "Xiaomi", "14", app_edition, md5key, platform_str, cipherkey, cipherkeyencrypted)
+        login_res = auth.login(yun_username, yun_password, school_id, school_host, school_login_url, temp_device_id, utc)
+        return bool(login_res and login_res.get("token"))
+    except:
+        return False
 
 @app.post("/users/validate")
 async def validate_user_credentials(
@@ -193,19 +227,22 @@ async def validate_user_credentials(
 
 @app.post("/schedules/add")
 async def add_schedule(
-    user_id: int = Form(...),
+    request: Request,
     target_time: str = Form(...),
     route_type: str = Form(...),
     db: Session = Depends(get_db),
     _: bool = Depends(check_admin)
 ):
-    new_sched = models.Schedule(
-        user_id=user_id,
-        target_time=target_time,
-        route_type=route_type,
-        last_run_status="Pending"
-    )
-    db.add(new_sched)
+    form_data = await request.form()
+    user_ids = form_data.getlist("user_ids")
+    for uid in user_ids:
+        new_sched = models.Schedule(
+            user_id=int(uid),
+            target_time=target_time,
+            route_type=route_type,
+            last_run_status="Pending"
+        )
+        db.add(new_sched)
     db.commit()
     return RedirectResponse(url="/", status_code=303)
 
@@ -253,3 +290,8 @@ async def get_user_json(user_id: int, db: Session = Depends(get_db), _: bool = D
         "qq_number": user.qq_number or "",
         "qq_notify_type": user.qq_notify_type or "private",
     })
+
+@app.get("/logs", response_class=HTMLResponse)
+async def view_logs(request: Request, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    logs = db.query(models.RunLog).order_by(models.RunLog.id.desc()).limit(500).all()
+    return templates.TemplateResponse("logs.html", {"request": request, "logs": logs})
