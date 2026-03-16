@@ -3,55 +3,255 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>云运动守护系统 - 运行输出日志</title>
-    <link href="/static/index.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>云运动控制台 - 运行输出日志</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        .container { max-width: 1000px; }
-        .log-table { width: 100%; border-collapse: collapse; }
-        .log-table th, .log-table td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .log-table th { font-weight: 600; color: var(--text-secondary); }
-        .log-table tr:hover { background: rgba(255,255,255,0.02); }
-        .log-message { max-width: 500px; white-space: pre-wrap; font-family: monospace; line-height: 1.4; word-break: break-all; font-size: 13px; color: var(--text-secondary); background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; margin: 4px 0; }
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg-color: #0f172a;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Ambient Background */
+        .ambient-layer {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.4;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+
+        .blob-1 { width: 600px; height: 600px; background: #3b82f6; top: -200px; left: -200px; }
+        .blob-2 { width: 500px; height: 500px; background: #8b5cf6; bottom: -100px; right: 10%; animation-delay: -5s; }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(80px, 40px) scale(1.1); }
+            100% { transform: translate(-40px, 80px) scale(0.9); }
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .brand {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Header Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Glass Cards */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 30px;
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #fff;
+        }
+
+        /* Forms & Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-muted);
+        }
+
+        .btn-ghost:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .badge-success { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .badge-error { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+
+        /* Data Tables - Readjusted for premium fit */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            text-align: left;
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 13px;
+            padding: 16px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        tr {
+            transition: background 0.2s ease;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .log-time {
+            color: var(--text-muted);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .log-msg {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-top: 6px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 6px;
+            line-height: 1.5;
+            word-break: break-all;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <div class="logo">
-            <svg /* ... omitted exact svg for brevity ... */ width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="url(#gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <defs><linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4f46e5" /><stop offset="100%" stop-color="#7c3aed" /></linearGradient></defs>
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-            </svg>
-            <span>云运动守护</span>
-        </div>
-        <nav class="nav-menu">
-            <a href="/" class="nav-item">系统状态</a>
-            <a href="/logs" class="nav-item active">运行输出日志</a>
-        </nav>
-        <div style="flex:1"></div>
-        <div style="padding: 24px;">
-            <a href="/logout" class="btn btn-ghost" style="width:100%; justify-content:center; color: var(--danger)">安全登出</a>
-        </div>
+    <div class="ambient-layer">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
     </div>
-
-    <div class="main-content container">
+    
+    <div class="container">
+        <!-- Header Section -->
         <header class="header">
-            <div>
-                <h1 style="font-size: 24px; font-weight: 700; background: linear-gradient(to right, #fff, #9ca3af); -webkit-background-clip: text; color: transparent;">运行输出日志</h1>
-                <p style="color: var(--text-secondary); margin-top: 4px;">系统最近 500 条自动调度与交互日志记录。</p>
+            <div class="brand">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                运行输出日志
             </div>
-            <a href="/" class="btn btn-ghost">返回首页</a>
+            <div style="display:flex; gap:12px;">
+                <a href="/" class="btn btn-ghost" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main);">返回控制台</a>
+            </div>
         </header>
 
         <div class="glass-panel">
+            <div class="panel-header">
+                <h2 class="panel-title">最近自动调度与交互日志记录</h2>
+                <span class="badge badge-success" style="font-size: 11px;">Limit 500</span>
+            </div>
+            
             <div class="table-responsive">
-                <table class="log-table">
+                <table>
                     <thead>
                         <tr>
-                            <th>执行账户</th>
-                            <th>执行状态</th>
-                            <th>记录内容</th>
-                            <th>记录时间</th>
+                            <th style="width: 15%">执行账户</th>
+                            <th style="width: 10%">执行状态</th>
+                            <th style="width: 60%">记录内容</th>
+                            <th style="width: 15%">记录时间</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -65,7 +265,9 @@
                                 <span class="badge badge-error">Failed</span>
                                 {% endif %}
                             </td>
-                            <td class="log-message">{{ log.message }}</td>
+                            <td>
+                                <div class="log-msg">{{ log.message }}</div>
+                            </td>
                             <td class="log-time">{{ log.run_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                         </tr>
                         {% else %}
