@@ -434,5 +434,19 @@ async def get_user_history_by_term_json(user_id: int, term_value: str, token: st
 
 @app.get("/logs", response_class=HTMLResponse)
 async def view_logs(request: Request, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
-    logs = db.query(models.RunLog).order_by(models.RunLog.id.desc()).limit(500).all()
-    return templates.TemplateResponse("logs.html", {"request": request, "logs": logs})
+    return templates.TemplateResponse("logs.html", {"request": request})
+
+@app.get("/api/logs/stream")
+async def stream_logs_json(limit: int = 500, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    logs = db.query(models.RunLog).order_by(models.RunLog.id.desc()).limit(limit).all()
+    data = []
+    for l in logs:
+        user_name = l.user.username if l.user else "未知"
+        data.append({
+            "id": l.id,
+            "user": user_name,
+            "status": l.status,
+            "created_at": l.created_at.strftime("%Y-%m-%d %H:%M:%S") if l.created_at else "",
+            "message": l.message
+        })
+    return {"success": True, "data": data}
