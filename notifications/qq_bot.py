@@ -72,10 +72,16 @@ def send_private_msg(user_id: str, message: str):
         "message": message
     })
 
-def notify_run_success(qq_number: str, username: str, mileage: float, time_minutes: float):
+def notify_run_success(qq_number: str, notify_type: str, username: str, mileage: float, time_minutes: float):
     msg = f"✅ 云运动打卡成功\n👤 用户: {username}\n🏃 距离: {mileage} 公里\n⏱️ 用时: {time_minutes:.1f} 分钟\n🎉 辛苦了！"
-    send_private_msg(qq_number, msg)
+    if notify_type == "group":
+        send_group_msg(qq_number, msg)
+    else:
+        send_private_msg(qq_number, msg)
 
-def notify_run_failed(qq_number: str, username: str, reason: str):
+def notify_run_failed(qq_number: str, notify_type: str, username: str, reason: str):
     msg = f"❌ 云运动打卡失败\n👤 用户: {username}\n⚠️ 原因: {reason}\n请登录 Web 面板检查。"
-    send_private_msg(qq_number, msg)
+    if notify_type == "group":
+        send_group_msg(qq_number, msg)
+    else:
+        send_private_msg(qq_number, msg)

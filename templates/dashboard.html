@@ -420,7 +420,7 @@
         <div class="glass-panel">
             <div class="panel-header">
                 <h2 class="panel-title">受控账户列表</h2>
-                <button class="btn btn-primary" onclick="openModal('userModal')">
+                <button class="btn btn-primary" onclick="openModal('addUserModal')">
                     添加账户
                 </button>
             </div>
@@ -431,7 +431,8 @@
                             <th>标识名称</th>
                             <th>系统学号</th>
                             <th>设备指纹 (UUID)</th>
-                            <th>通知目标 (QQ)</th>
+                            <th>通知目标</th>
+                            <th>推送类型</th>
                             <th>状态</th>
                             <th>操作</th>
                         </tr>
@@ -444,6 +445,11 @@
                             <td><code>{{ u.device_id }}</code></td>
                             <td>{{ u.qq_number or '-' }}</td>
                             <td>
+                                <span class="badge badge-neutral">
+                                    {{ '私聊' if u.qq_notify_type == 'private' else '群聊' }}
+                                </span>
+                            </td>
+                            <td>
                                 {% if u.is_active %}
                                 <span class="badge badge-success">Active</span>
                                 {% else %}
@@ -451,15 +457,18 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <form action="/users/delete" method="POST" style="margin:0;">
-                                    <input type="hidden" name="user_id" value="{{ u.id }}">
-                                    <button type="submit" class="btn btn-danger">移除</button>
-                                </form>
+                                <div class="action-cell">
+                                    <button class="btn btn-warning" onclick="editUser({{ u.id }})">编辑</button>
+                                    <form action="/users/delete" method="POST" style="margin:0;" onsubmit="return confirm('确定要移除此账户吗？将会删除所有关联的调度任务。')">
+                                        <input type="hidden" name="user_id" value="{{ u.id }}">
+                                        <button type="submit" class="btn btn-danger">移除</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="6">
+                            <td colspan="7">
                                 <div class="empty-state">尚未配置任何自动化账户</div>
                             </td>
                         </tr>
@@ -555,30 +564,78 @@
         </div>
     </div>
 
-    <!-- Modals -->
-    <div class="modal-overlay" id="userModal">
+    <!-- Add User Modal -->
+    <div class="modal-overlay" id="addUserModal">
         <div class="modal-box">
-            <h2 class="panel-title" style="margin-bottom: 24px;">注册云运动网关账户</h2>
-            <form action="/users/add" method="POST">
+            <h2 class="panel-title" style="margin-bottom: 24px;">添加云运动账户</h2>
+            <form action="/users/add" method="POST" id="addUserForm">
                 <div class="form-group">
-                    <label class="form-label">面板显示名 (Alias)</label>
-                    <input type="text" class="form-control" name="username" required>
+                    <label class="form-label">面板显示名 (备注/姓名)</label>
+                    <input type="text" class="form-control" name="username" required placeholder="例如: 张三">
                 </div>
                 <div class="form-group">
                     <label class="form-label">云运动学号</label>
-                    <input type="text" class="form-control" name="yun_username" required>
+                    <input type="text" class="form-control" name="yun_username" id="add_yun_username" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">云运动密码</label>
-                    <input type="password" class="form-control" name="yun_password" required>
+                    <input type="password" class="form-control" name="yun_password" id="add_yun_password" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Webhook 目标 ID (QQ 开放平台 OpenID / 空出则不推送)</label>
-                    <input type="text" class="form-control" name="qq_number">
+                    <label class="form-label">消息推送目标 (QQ号/群号)</label>
+                    <input type="text" class="form-control" name="qq_number" placeholder="留空则不推送">
                 </div>
+                <div class="form-group">
+                    <label class="form-label">推送对象类型</label>
+                    <select class="form-select" name="qq_notify_type">
+                        <option value="private">私聊 (个人QQ)</option>
+                        <option value="group">群聊 (QQ群号)</option>
+                    </select>
+                </div>
+                <div id="add_validation_msg" style="font-size:12px; margin-top:-10px; margin-bottom:10px; min-height:18px;"></div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-ghost" onclick="closeModal('userModal')">取消</button>
-                    <button type="submit" class="btn btn-primary">验证并保存</button>
+                    <button type="button" class="btn btn-warning" id="add_validate_btn" onclick="validateCredentials('add')">验证登录</button>
+                    <button type="button" class="btn btn-ghost" onclick="closeModal('addUserModal')">取消</button>
+                    <button type="submit" class="btn btn-primary">保存账户</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div class="modal-overlay" id="editUserModal">
+        <div class="modal-box">
+            <h2 class="panel-title" style="margin-bottom: 24px;">编辑云运动账户</h2>
+            <form action="/users/edit" method="POST" id="editUserForm">
+                <input type="hidden" name="user_id" id="edit_user_id">
+                <div class="form-group">
+                    <label class="form-label">面板显示名 (备注/姓名)</label>
+                    <input type="text" class="form-control" name="username" id="edit_username" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">云运动学号</label>
+                    <input type="text" class="form-control" name="yun_username" id="edit_yun_username" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">云运动密码 (留空表示不修改)</label>
+                    <input type="password" class="form-control" name="yun_password" id="edit_yun_password" placeholder="******">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">消息推送目标 (QQ号/群号)</label>
+                    <input type="text" class="form-control" name="qq_number" id="edit_qq_number">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">推送对象类型</label>
+                    <select class="form-select" name="qq_notify_type" id="edit_qq_notify_type">
+                        <option value="private">私聊 (个人QQ)</option>
+                        <option value="group">群聊 (QQ群号)</option>
+                    </select>
+                </div>
+                <div id="edit_validation_msg" style="font-size:12px; margin-top:-10px; margin-bottom:10px; min-height:18px;"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" id="edit_validate_btn" onclick="validateCredentials('edit')">验证登录</button>
+                    <button type="button" class="btn btn-ghost" onclick="closeModal('editUserModal')">取消</button>
+                    <button type="submit" class="btn btn-primary">更新账户</button>
                 </div>
             </form>
         </div>
@@ -623,14 +680,74 @@
         }
         function closeModal(id) {
             document.getElementById(id).classList.remove('active');
+            // Reset validation messages
+            if(id === 'addUserModal') document.getElementById('add_validation_msg').innerHTML = '';
+            if(id === 'editUserModal') document.getElementById('edit_validation_msg').innerHTML = '';
         }
         
         // Close modal on click outside
         document.querySelectorAll('.modal-overlay').forEach(overlay => {
             overlay.addEventListener('click', e => {
-                if (e.target === overlay) overlay.classList.remove('active');
+                if (e.target === overlay) closeModal(overlay.id);
             });
         });
+
+        async function editUser(userId) {
+            try {
+                const response = await fetch(`/api/users/${userId}`);
+                const user = await response.json();
+                
+                document.getElementById('edit_user_id').value = user.id;
+                document.getElementById('edit_username').value = user.username;
+                document.getElementById('edit_yun_username').value = user.yun_username;
+                document.getElementById('edit_yun_password').value = ''; // Don't show password
+                document.getElementById('edit_qq_number').value = user.qq_number;
+                document.getElementById('edit_qq_notify_type').value = user.qq_notify_type;
+                
+                openModal('editUserModal');
+            } catch (error) {
+                alert('获取用户信息失败: ' + error);
+            }
+        }
+
+        async function validateCredentials(type) {
+            const username = document.getElementById(`${type}_yun_username`).value;
+            const password = document.getElementById(`${type}_yun_password`).value;
+            const msgDiv = document.getElementById(`${type}_validation_msg`);
+            const btn = document.getElementById(`${type}_validate_btn`);
+
+            if (!username || (type === 'add' && !password)) {
+                msgDiv.innerHTML = '<span style="color:var(--danger)">请先填写学号和密码</span>';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '正在验证...';
+            msgDiv.innerHTML = '<span style="color:var(--warning)">正在连接云运动服务器...</span>';
+
+            try {
+                const formData = new FormData();
+                formData.append('yun_username', username);
+                formData.append('yun_password', password);
+
+                const response = await fetch('/users/validate', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    msgDiv.innerHTML = `<span style="color:var(--success)">${result.message}</span>`;
+                } else {
+                    msgDiv.innerHTML = `<span style="color:var(--danger)">${result.message}</span>`;
+                }
+            } catch (error) {
+                msgDiv.innerHTML = `<span style="color:var(--danger)">请求失败: ${error}</span>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '验证登录';
+            }
+        }
     </script>
 </body>
 </html>

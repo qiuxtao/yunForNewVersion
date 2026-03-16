@@ -22,6 +22,8 @@ class User(Base):
     
     # QQ机器人推送关联的QQ号（留空不推）
     qq_number = Column(String, default="")
+    # 推送类型: 'private' 或 'group'
+    qq_notify_type = Column(String, default="private")
     
     # 每个用户独立绑定的设备信息（防止风控）
     device_id = Column(String)
