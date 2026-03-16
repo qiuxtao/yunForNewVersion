@@ -248,17 +248,38 @@ async def add_schedule(
 
 @app.post("/schedules/edit")
 async def edit_schedule(
+    request: Request,
     schedule_id: int = Form(...),
     target_time: str = Form(...),
     route_type: str = Form(...),
     db: Session = Depends(get_db),
     _: bool = Depends(check_admin)
 ):
+    form_data = await request.form()
+    user_ids = form_data.getlist("user_ids")
+    
     sched = db.query(models.Schedule).filter(models.Schedule.id == schedule_id).first()
     if sched:
         sched.target_time = target_time
         sched.route_type = route_type
-        db.commit()
+    
+    if user_ids:
+        for uid in user_ids:
+            uid_int = int(uid)
+            existing_sched = db.query(models.Schedule).filter(models.Schedule.user_id == uid_int).first()
+            if existing_sched:
+                existing_sched.target_time = target_time
+                existing_sched.route_type = route_type
+            else:
+                new_sched = models.Schedule(
+                    user_id=uid_int,
+                    target_time=target_time,
+                    route_type=route_type,
+                    last_run_status="Pending"
+                )
+                db.add(new_sched)
+                
+    db.commit()
     return RedirectResponse(url="/", status_code=303)
 
 @app.post("/runs/manual_trigger")
