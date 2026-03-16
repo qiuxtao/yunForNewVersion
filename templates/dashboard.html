@@ -424,22 +424,13 @@
             </div>
         </header>
 
-        <!-- Stats Overview -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <span class="stat-label">活跃用户实例</span>
-                <span class="stat-value">{{ users|length }}</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-label">调度任务总数</span>
-                <span class="stat-value">{{ schedules|length }}</span>
-            </div>
-        </div>
-
         <!-- Users Table -->
         <div class="glass-panel">
             <div class="panel-header">
-                <h2 class="panel-title">账户列表</h2>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <h2 class="panel-title">账户列表</h2>
+                    <span class="badge badge-success" style="font-size: 13px;">{{ users|length }} 个活跃实例</span>
+                </div>
                 <button class="btn btn-primary" onclick="openModal('addUserModal')">
                     登录账户
                 </button>
@@ -516,7 +507,7 @@
                             <th>执行路线集</th>
                             <th>上次运行状态</th>
                             <th>上次执行时间</th>
-                            <th>手动交互</th>
+                            <th>操作</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -542,7 +533,7 @@
                                         <input type="hidden" name="schedule_id" value="{{ s.id }}">
                                         <button type="submit" class="btn btn-warning">立即执行</button>
                                     </form>
-                                    <button type="button" class="btn btn-info" onclick="editSchedule({{ s.id }}, '{{ s.target_time }}', '{{ s.route_type }}')">编辑</button>
+                                    <button type="button" class="btn btn-info" onclick="editSchedule({{ s.id }}, '{{ s.target_time }}', '{{ s.route_type }}', [{{ s.user.id }}])">编辑</button>
                                     <form action="/schedules/delete" method="POST" style="margin:0;">
                                         <input type="hidden" name="schedule_id" value="{{ s.id }}">
                                         <button type="submit" class="btn btn-danger">移除</button>
@@ -594,19 +585,8 @@
                 正在连接云运动获取官方打卡记录数据，请稍候...
             </div>
             <div id="historyError" style="display:none; color: var(--danger); text-align: center; padding: 20px;"></div>
-            <div class="table-responsive" id="historyTableContainer" style="display:none; max-height: 400px;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>运动时间</th>
-                            <th>运动里程</th>
-                            <th>运动耗时</th>
-                            <th>步频/配速</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyTableBody">
-                    </tbody>
-                </table>
+            <div id="historyTableContainer" style="display:none; max-height: 450px; overflow-y: auto; padding-right: 8px;">
+                <div id="historyTableBody"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-ghost" onclick="closeModal('historyModal')">关闭</button>
@@ -693,6 +673,14 @@
             <form action="/schedules/edit" method="POST">
                 <input type="hidden" name="schedule_id" id="edit_sched_id">
                 <div class="form-group">
+                    <label class="form-label">选择目标实例 (按住 Ctrl 可多选，统一应用任务配置)</label>
+                    <select class="form-select" name="user_ids" id="edit_sched_users" multiple style="height: 100px;">
+                        {% for u in users %}
+                        <option value="{{ u.id }}">{{ u.username }} ({{ u.yun_username }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
                     <label class="form-label">Cron 定时 (每日执行, 24小时制 HH:MM)</label>
                     <input type="time" class="form-control" name="target_time" id="edit_sched_time" required>
                 </div>
@@ -754,10 +742,16 @@
             document.getElementById(id).classList.add('active');
         }
 
-        function editSchedule(scheduleId, targetTime, routeType) {
+        function editSchedule(scheduleId, targetTime, routeType, userIds) {
             document.getElementById('edit_sched_id').value = scheduleId;
             document.getElementById('edit_sched_time').value = targetTime;
             document.getElementById('edit_sched_route').value = routeType;
+            let select = document.getElementById('edit_sched_users');
+            if (select) {
+                for (let i = 0; i < select.options.length; i++) {
+                    select.options[i].selected = userIds.includes(parseInt(select.options[i].value));
+                }
+            }
             openModal('editScheduleModal');
         }
         function closeModal(id) {
@@ -787,19 +781,29 @@
                 if (result.success) {
                     const tbody = document.getElementById('historyTableBody');
                     tbody.innerHTML = '';
-                    
                     if (!result.data || result.data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">该学期尚未产生记录</div></td></tr>';
+                        tbody.innerHTML = '<div class="empty-state">未获取到近期的打卡学期数据</div>';
                     } else {
-                        result.data.forEach(run => {
-                            const tr = document.createElement('tr');
-                            tr.innerHTML = `
-                                <td>${run.endTime || '-'}</td>
-                                <td><strong>${run.recordMileage || '0'}</strong> km</td>
-                                <td>${run.duration || '0'} 秒</td>
-                                <td>${run.recodeCadence || '0'} / ${run.recodePace || '0'}</td>
-                            `;
-                            tbody.appendChild(tr);
+                        result.data.forEach(termData => {
+                            let termHtml = `<div style="margin-bottom: 24px;">`;
+                            termHtml += `<h3 style="color:#60a5fa; margin-bottom:12px; font-size:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px;">${termData.term_name} <span class="badge badge-success" style="float:right;">本学期共跑 ${termData.count} 次</span></h3>`;
+                            
+                            if (!termData.runs || termData.runs.length === 0) {
+                                termHtml += `<div style="color:var(--text-muted); font-size:13px; margin-bottom:8px;">无相关打卡记录</div>`;
+                            } else {
+                                termHtml += '<div class="table-responsive" style="margin-bottom:12px;"><table><thead><tr><th>运动时间</th><th>运动里程 (km)</th></tr></thead><tbody>';
+                                termData.runs.forEach(run => {
+                                    let rtime = run.endTime || run.recordDate || "-";
+                                    if(rtime.length > 16) rtime = rtime.substring(0, 16);
+                                    termHtml += `<tr>
+                                        <td style="color:var(--text-main);">${rtime}</td>
+                                        <td style="color:var(--success); font-weight:500;">${run.recordMileage || '0'} km</td>
+                                    </tr>`;
+                                });
+                                termHtml += '</tbody></table></div>';
+                            }
+                            termHtml += `</div>`;
+                            tbody.innerHTML += termHtml;
                         });
                     }
                     

@@ -256,18 +256,25 @@ class YunCore:
             if not terms:
                 return False, "没有任何学期数据"
                 
-            all_runs = []
-            for term in terms[:2]: # At most 2 recent terms
+            term_history = []
+            for term in terms[:3]: # Let's fetch 3 recent terms
                 run_list_resp = self.default_post("/run/crsReocordInfoList", json.dumps({"tableName": term['value']}))
+                runs = []
                 try:
                     run_list = json.loads(run_list_resp)
                     if run_list.get("code") == 200:
                         for month_data in run_list.get("data", {}).get("rank", []):
-                            all_runs.extend(month_data.get("rankList", []))
+                            runs.extend(month_data.get("rankList", []))
                 except:
                     pass
+                term_history.append({
+                    "term_name": f"{term['key']} ({term['sjd']})",
+                    "term_value": term['value'],
+                    "count": len(runs),
+                    "runs": runs
+                })
             
-            return True, all_runs
+            return True, term_history
         except Exception as e:
             import traceback
             traceback.print_exc()
