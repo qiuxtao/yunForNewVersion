@@ -124,19 +124,33 @@ class Login():
             "content": content
         }
         # 发送POST请求
+        print(f"DEBUG: Attempting login request to URL: {url}")
+        print(f"DEBUG: Selected school_login_url was: {school_login_url}")
         response = requests.post(url, headers=headers, json=data)
         # 打印响应内容
         result=response.text
 
-        if "{" in result : # 有的学校会直接返回未加密内容 如果是JSON（用最粗暴的方式判断）
-            DecryptedData = response.json()
-        else :
-            DecryptedData = json.loads(decrypt_sm4(result, b64decode(default_key)).decode())
+        try:
+            if "{" in result and result.strip().startswith("{"):
+                DecryptedData = response.json()
+            else:
+                DecryptedData = json.loads(decrypt_sm4(result, b64decode(default_key)).decode())
+        except Exception:
+            try:
+                DecryptedData = json.loads(decrypt_sm4(result, b64decode(default_key)).decode())
+            except Exception as e:
+                print(f"解析返回数据失败，HTTP状态码: {response.status_code}")
+                print(f"原始返回内容: {result}")
+                exit()
         # 判断是否返回错误信息并停止
-        if "500" in str(DecryptedData) :
-            print(DecryptedData["msg"])
+        if "500" in str(DecryptedData):
+            print(DecryptedData.get("msg", "Error 500 without msg"))
             exit()
-
+        
+        if 'data' not in DecryptedData:
+            print(f"ERROR: 'data' key missing in response. Full response: {DecryptedData}")
+            exit()
+            
         token=DecryptedData['data']['token']
 
         if response.status_code == 200: # 成功登录时 返回信息

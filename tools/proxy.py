@@ -49,6 +49,12 @@ class Yun:
 
     def __init__(self):
         self.count = self.get_tasks_else_file_count()
+        # dynamically load school_host
+        conf = configparser.ConfigParser()
+        parentDirPath=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        conf.read(os.path.join(parentDirPath, 'config.ini'), encoding='utf-8')
+        school_host_full = conf.get('Yun', 'school_host', fallback='http://210.45.246.53:8080')
+        self.target_host = school_host_full.split('//')[-1] # e.g. 47.99.163.239:8080
 
     def get_tasks_else_file_count(self):
         tasks_else_path = "./tasks_else"
@@ -58,14 +64,16 @@ class Yun:
             os.mkdir(tasks_else_path)
             file_count = 0
         return file_count
-    def request(flow: mitmproxy.http.HTTPFlow) -> None:
-        if "210.45.246.53:8080" not in flow.request.pretty_url:
-            flow.live = False
+    
+    def request(self, flow: mitmproxy.http.HTTPFlow) -> None:
+        if self.target_host not in flow.request.pretty_url:
+            pass # allow other traffic or you can filter it. Previously it was: flow.live = False
 
     def response(self, flow: mitmproxy.http.HTTPFlow):
         
         req_url = flow.request.url
-        if "210.45.246.53:8080" in req_url :
+        print(f"intercepted: {req_url}")
+        if self.target_host in req_url :
             
             if(self.saved == False and match_str(req_url,["getStudentInfo","AppSysMsgApi","homePageApi","crsReocordInfo"])):
                 
@@ -87,7 +95,8 @@ class Yun:
                 default_key =  "ruC9+TPTkI3YzJTfbuFz9A=="
                 CipherKeyEncrypted = "BIQWEosEECsZ6WdwU1lTkkLAXeN+t2rgDytWN+wMYKAXfDni7XUsfGcxsfQVCPrDrO73Wl6ZJd+/bJN+454r7W3XtWkF0SrqQ+khtaqOV9feXaNtvIB13ACUaWXtYEczSHenDnFfwqR0Y+YnHc+6ml+WY+oed3MfHg=="
                 def proxy_post(data, headers, isBytes=False):   #对default_post函数的模仿
-                    url = "http://210.45.246.53:8080/login/getStudentInfo"
+                    # dynamically construct the url
+                    url = "http://" + self.target_host + "/login/getStudentInfo"
                     data_json = {
                         "cipherKey":CipherKeyEncrypted,
                         "content":encrypt_sm4(data, b64decode(default_key),isBytes=isBytes)
@@ -115,7 +124,7 @@ class Yun:
                         'sign': sign
                     }
                     info = json.loads(proxy_post('',headers=headers))
-                    # print(info)
+                    print(f"login info api response: {info}")
                     if info['code'] == 200:
                         userName = info['data']['userName'] # 学号
                         print("学号：" + userName)
@@ -137,6 +146,11 @@ class Yun:
                         print(f"Using default configuration file: {default_config_file_path}")
                 except configparser.Error as e:
                     print(f"Error reading configuration file: {e}")
+                    return
+                except Exception as e:
+                    print(f"An unexpected error occurred: {e}")
+                    import traceback
+                    traceback.print_exc()
                     return
 
                 # 获取当前的值

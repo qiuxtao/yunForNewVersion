@@ -443,11 +443,17 @@ class Yun_For_New:
         }
         j = json.loads(default_post('/run/start', json.dumps(data)))
         # 发送开始请求
-        if j['code'] == 200:
-            self.recordStartTime = j['data']['recordStartTime']
-            self.crsRunRecordId = j['data']['id']
-            self.userName = j['data']['studentId']
-            print("云运动任务创建成功！\n")
+        if j.get('code') == 200:
+            try:
+                self.recordStartTime = j['data']['recordStartTime']
+                self.crsRunRecordId = j['data']['id']
+                self.userName = j['data']['studentId']
+                print("云运动任务创建成功！\n")
+            except KeyError as e:
+                print(f"API returned 200 but missing field {e}. Full `/run/start` response: {j}")
+                raise
+        else:
+            print(f"API `/run/start` failed. Full response: {j}")
 
     def split(self, points):
         data = {
