@@ -412,11 +412,16 @@ async def get_user_history_by_term_json(user_id: int, term_value: str, token: st
     md5key = conf.get("Yun", "md5key", fallback="")
     platform_str = conf.get("Yun", "platform", fallback="android")
     
+    public_key = conf.get("Yun", "PublicKey", fallback="")
+    private_key = conf.get("Yun", "PrivateKey", fallback="")
+    cipherkey = conf.get("Yun", "cipherkey", fallback="")
+    cipherkeyencrypted = conf.get("Yun", "cipherkeyencrypted", fallback="")
+    
     try:
         from core.yun import YunCore
         yun = YunCore(token, user.device_id, user.device_name, user.uuid, "", str(int(_time.time())),
                      school_host, school_id, app_edition, md5key, platform_str,
-                     "", "", "", "", {})
+                     public_key, private_key, cipherkey, cipherkeyencrypted, {})
                      
         success, data = yun.get_term_history(term_value)
         if not success:
