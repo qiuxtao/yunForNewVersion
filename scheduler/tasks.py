@@ -195,15 +195,15 @@ def run_job_for_user(user_id: int, schedule_id: int):
     try:
         final_info = json.loads(res)
         if final_info.get("code") == 200:
-            update_log(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 结算成功: {res}", status="Success")
+            update_log(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {res}", status="Success")
             mileage = float(task_map['data']['recordMileage'])
             duration = float(task_map['data']['duration']) / 60.0
             if user.qq_number:
-                notify_run_success(user.qq_number, user.qq_notify_type, user.username, mileage, duration)
+                notify_run_success(user.qq_number, user.qq_notify_type, user.username, mileage, duration, res)
         else:
             raise Exception(res)
     except Exception as e:
-        error_msg = f"结算跑步成绩失败: {e}"
+        error_msg = str(e)
         update_log(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {error_msg}", status="Failed")
         if user.qq_number: notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
     
