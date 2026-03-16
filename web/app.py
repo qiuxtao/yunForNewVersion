@@ -111,6 +111,7 @@ async def add_user(
     yun_username: str = Form(...),
     yun_password: str = Form(...),
     qq_number: str = Form(""),
+    qq_notify_type: str = Form("private"),
     db: Session = Depends(get_db),
     _: bool = Depends(check_admin)
 ):
@@ -122,6 +123,7 @@ async def add_user(
         yun_username=yun_username,
         yun_password=yun_password,
         qq_number=qq_number,
+        qq_notify_type=qq_notify_type,
         device_id=device_id,
         device_name="Xiaomi",
         uuid=uuid_str,
@@ -131,6 +133,63 @@ async def add_user(
     db.add(new_user)
     db.commit()
     return RedirectResponse(url="/", status_code=303)
+
+@app.post("/users/edit")
+async def edit_user(
+    user_id: int = Form(...),
+    username: str = Form(...),
+    yun_username: str = Form(...),
+    yun_password: str = Form(""),
+    qq_number: str = Form(""),
+    qq_notify_type: str = Form("private"),
+    db: Session = Depends(get_db),
+    _: bool = Depends(check_admin)
+):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if user:
+        user.username = username
+        user.yun_username = yun_username
+        if yun_password:
+            user.yun_password = yun_password
+        user.qq_number = qq_number
+        user.qq_notify_type = qq_notify_type
+        db.commit()
+    return RedirectResponse(url="/", status_code=303)
+
+@app.post("/users/validate")
+async def validate_user_credentials(
+    yun_username: str = Form(...),
+    yun_password: str = Form(...),
+    _: bool = Depends(check_admin)
+):
+    """在添加/编辑用户前，实时验证云运动学号密码是否能正常登录"""
+    import time as _time
+    from fastapi.responses import JSONResponse
+    conf = configparser.ConfigParser()
+    conf.read("config.ini", encoding="utf-8")
+    
+    school_host = conf.get("Yun", "school_host", fallback="")
+    school_id = conf.get("Yun", "school_id", fallback="195")
+    app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
+    md5key = conf.get("Yun", "md5key", fallback="")
+    platform_str = conf.get("Yun", "platform", fallback="android")
+    school_login_url = conf.get("Yun", "school_login_url", fallback="appLogin")
+    cipherkey = conf.get("Yun", "cipherkey", fallback="")
+    cipherkeyencrypted = conf.get("Yun", "cipherkeyencrypted", fallback="")
+    
+    temp_device_id = str(random.randint(1000000000000000, 9999999999999999))
+    utc = str(int(_time.time()))
+    
+    try:
+        from core.auth import AuthManager
+        auth = AuthManager(temp_device_id, "Xiaomi", "14", app_edition, md5key, platform_str, cipherkey, cipherkeyencrypted)
+        login_res = auth.login(yun_username, yun_password, school_id, school_host, school_login_url, temp_device_id, utc)
+        if login_res and login_res.get("token"):
+            return JSONResponse({"success": True, "message": "登录验证通过"})
+        else:
+            return JSONResponse({"success": False, "message": f"登录返回异常: {login_res}"})
+    except Exception as e:
+        return JSONResponse({"success": False, "message": f"登录失败: {str(e)}"})
 
 @app.post("/schedules/add")
 async def add_schedule(
@@ -179,3 +238,18 @@ async def delete_schedule(schedule_id: int = Form(...), db: Session = Depends(ge
         db.delete(sched)
         db.commit()
     return RedirectResponse(url="/", status_code=303)
+
+@app.get("/api/users/{user_id}")
+async def get_user_json(user_id: int, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    """给前端编辑弹窗提供用户详情的 JSON 接口"""
+    from fastapi.responses import JSONResponse
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return JSONResponse({"error": "用户不存在"}, status_code=404)
+    return JSONResponse({
+        "id": user.id,
+        "username": user.username,
+        "yun_username": user.yun_username,
+        "qq_number": user.qq_number or "",
+        "qq_notify_type": user.qq_notify_type or "private",
+    })

@@ -75,8 +75,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
         logger.error(error_msg)
         add_log(db, user, "Failed", error_msg, sched)
         if user.qq_number:
-            # 假设一个群可以绑定，目前暂时发到 qq_number (当做一个内部群处理或者私聊)
-            notify_run_failed(user.qq_number, user.username, error_msg)
+            notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
         return
 
     # 初始化 Yun Core
@@ -90,14 +89,14 @@ def run_job_for_user(user_id: int, schedule_id: int):
     if not success:
         error_msg = f"初始化运行参数失败: {msg}"
         add_log(db, user, "Failed", error_msg, sched)
-        if user.qq_number: notify_run_failed(user.qq_number, user.username, error_msg)
+        if user.qq_number: notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
         return
 
     success, msg = core.start_run()
     if not success:
         error_msg = f"创建跑步记录失败: {msg}"
         add_log(db, user, "Failed", error_msg, sched)
-        if user.qq_number: notify_run_failed(user.qq_number, user.username, error_msg)
+        if user.qq_number: notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
         return
 
     # Load Tasks Map
@@ -162,13 +161,13 @@ def run_job_for_user(user_id: int, schedule_id: int):
             duration = float(task_map['data']['duration']) / 60.0
             add_log(db, user, "Success", success_msg, sched)
             if user.qq_number:
-                notify_run_success(user.qq_number, user.username, mileage, duration)
+                notify_run_success(user.qq_number, user.qq_notify_type, user.username, mileage, duration)
         else:
             raise Exception(res)
     except Exception as e:
         error_msg = f"结算跑步成绩失败: {e}"
         add_log(db, user, "Failed", error_msg, sched)
-        if user.qq_number: notify_run_failed(user.qq_number, user.username, error_msg)
+        if user.qq_number: notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
 
 def add_log(db: Session, user: User, status: str, message: str, sched: Schedule = None):
     log = RunLog(user_id=user.id, status=status, message=message[:500])
