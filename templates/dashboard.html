@@ -853,6 +853,8 @@
                 document.getElementById('historyError').style.display = 'block';
                 document.getElementById('historyError').innerText = '网络错误: ' + error;
             }
+        }
+
         async function viewLocalHistory(userId, username) {
             document.getElementById('localHistoryModalTitle').innerText = `本地运行输出日志 - ${username}`;
             document.getElementById('localHistoryLoading').style.display = 'block';
