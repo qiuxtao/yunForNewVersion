@@ -3,3 +3,7 @@ t.py
 cfg_my.ini
 t.ipynb
 show.json
+data/
+logs/
+config.ini
+tasks_*/
