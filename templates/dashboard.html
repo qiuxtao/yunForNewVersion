@@ -686,7 +686,6 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
                 <h2 class="panel-title" id="historyModalTitle">云端记录</h2>
                 <div style="display:flex; gap:8px;">
-                    <button class="btn btn-secondary" id="exportTermHistoryBtn" style="display:none; padding:6px 16px; font-size:13px;" onclick="exportTermHistory()">导出本学期(CSV)</button>
                     <button class="btn btn-info" id="loadDetailsBtn" style="display:none; padding:6px 16px; font-size:13px;" onclick="loadAllRunDetails()">补全配速(耗时较长)</button>
                     <select id="historyTermSelect" class="form-select" style="width: auto; padding: 6px 30px 6px 14px; display:none;" onchange="loadTermHistory()">
                     </select>
@@ -989,32 +988,6 @@
             downloadFile("本地运行日志.csv", csv);
         }
 
-        function exportTermHistory() {
-            if (!window.currentHistoryData || window.currentHistoryData.length === 0) {
-                alert("没有云记录可导出");
-                return;
-            }
-            let csv = "运动时间,耗时,配速,运动里程(km)\n";
-            window.currentHistoryData.forEach(run => {
-                let rtime = run.recordEndTime || run.endTime || run.recordDate || "-";
-                
-                let rawDur = run.duration || 0;
-                let durDisplay = Math.floor(rawDur / 60) + "分" + (rawDur % 60) + "秒";
-                
-                let rawPace = run.recodePace || 0;
-                let paceDisplay = "-";
-                if (rawPace > 0) {
-                    let m = Math.floor(rawPace);
-                    let s = Math.round((rawPace % 1) * 60).toString().padStart(2, '0');
-                    paceDisplay = m + "'" + s + '"';
-                }
-                
-                csv += `"${rtime}","${durDisplay}","${paceDisplay}","${run.recordMileage || '0'}"\n`;
-            });
-            let termName = document.getElementById('historyTermSelect').options[document.getElementById('historyTermSelect').selectedIndex].text.replace(/ /g, "_");
-            downloadFile(`云端记录_${termName}.csv`, csv);
-        }
-
         async function exportRunDetail(runId, mileage) {
             const userId = document.getElementById('current_history_user').value;
             const termVal = document.getElementById('historyTermSelect').value;
@@ -1146,7 +1119,6 @@
                     
                     document.getElementById('historyLoading').style.display = 'none';
                     document.getElementById('historyTableContainer').style.display = 'block';
-                    document.getElementById('exportTermHistoryBtn').style.display = 'block';
                     document.getElementById('loadDetailsBtn').style.display = 'block';
                 } else {
                     document.getElementById('historyLoading').style.display = 'none';
@@ -1523,9 +1495,10 @@
                     const response = await fetch(url);
                     const result = await response.json();
                     
-                    if (result.success && result.data) {
-                        run.duration = result.data.duration || 0;
-                        run.recodePace = result.data.recodePace || 0;
+                    if (result.success && result.data && result.data.data) {
+                        const runDetail = result.data.data;
+                        run.duration = runDetail.duration || 0;
+                        run.recodePace = runDetail.recodePace || 0;
                         
                         let durDisplay = Math.floor(run.duration / 60) + "分" + (run.duration % 60) + "秒";
                         let paceDisplay = "-";
