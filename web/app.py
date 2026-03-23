@@ -585,6 +585,17 @@ async def delete_route_group_entire(group_name: str, _: bool = Depends(check_adm
         try:
             shutil.rmtree(group_name)
             return JSONResponse({"success": True})
+        except OSError:
+            # Docker volumes bound to the host cannot be rmtree'd directly due to 'Device or resource busy'. 
+            # Fallback: empty all json files inside the folder manually.
+            try:
+                for f in os.listdir(group_name):
+                    path = os.path.join(group_name, f)
+                    if os.path.isfile(path):
+                        os.remove(path)
+                return JSONResponse({"success": True})
+            except Exception as e2:
+                return JSONResponse({"success": False, "message": f"清空线路组内容失败: {e2}"})
         except Exception as e:
             return JSONResponse({"success": False, "message": f"删除失败: {e}"})
     return JSONResponse({"success": False, "message": "线路组不存在"})

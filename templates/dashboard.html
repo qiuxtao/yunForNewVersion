@@ -470,7 +470,7 @@
         <div class="nav-tabs">
             <button class="nav-tab active" onclick="switchTab('accounts')" id="tab-btn-accounts">账户授权中心</button>
             <button class="nav-tab" onclick="switchTab('schedules')" id="tab-btn-schedules">定时任务调度</button>
-            <button class="nav-tab" onclick="switchTab('routes')" id="tab-btn-routes">线路库管理</button>
+            <button class="nav-tab" onclick="switchTab('routes')" id="tab-btn-routes">跑步线路管理</button>
             <button class="nav-tab" onclick="switchTab('logs')" id="tab-btn-logs">系统运行日志</button>
         </div>
 
@@ -612,7 +612,7 @@
         <div id="tab-pane-routes" class="tab-pane">
             <div class="glass-panel">
                 <div class="panel-header">
-                    <h2 class="panel-title">服务端线路组架构 (Route Groups)</h2>
+                    <h2 class="panel-title">线路组管理</h2>
                     <button class="btn btn-primary" onclick="promptCreateRouteGroup()">
                         建立新线路组
                     </button>
@@ -1397,14 +1397,14 @@
                                 <td>${f.filename}</td>
                                 <td>${f.size_kb} KB</td>
                                 <td>
-                                    <button class="btn btn-warning" style="padding:4px 8px; font-size:12px;" onclick="renameRouteFile('${groupName}', '${f.filename}')">改名</button>
+                                    <button class="btn btn-warning" style="padding:4px 8px; font-size:12px;" onclick="renameRouteFile('${groupName}', '${f.filename}')">重命名</button>
                                     <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteRouteFile('${groupName}', '${f.filename}')">删除</button>
                                 </td>
                             </tr>
                         `).join('');
                     }
                     html += `</tbody></table></div>`;
-                    document.getElementById('routeGroupsTableBody').parentNode.parentNode.innerHTML = html;
+                    document.getElementById('routesTableContainer').innerHTML = html;
                 } else {
                     alert("加载文件失败:" + result.message);
                 }
