@@ -15,6 +15,27 @@ from scheduler.tasks import init_scheduler, run_job_for_user
 
 from fastapi import WebSocket, WebSocketDisconnect
 from notifications.qq_bot import manager
+import sys
+
+# 设置日志目录并重定向标准输出/错误，以抓取所有 print/logger/tqdm 输出用于网页仿真终端
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
+class Tee(object):
+    def __init__(self, name, mode, stream):
+        self.file = open(name, mode, encoding='utf-8')
+        self.stream = stream
+    def write(self, data):
+        self.file.write(data)
+        self.file.flush()
+        self.stream.write(data)
+        self.stream.flush()
+    def flush(self):
+        self.file.flush()
+        self.stream.flush()
+
+sys.stdout = Tee('logs/system.log', 'a', sys.stdout)
+sys.stderr = Tee('logs/system.log', 'a', sys.stderr)
 
 # Ensure templates and static dirs exist
 os.makedirs("templates", exist_ok=True)
@@ -437,16 +458,29 @@ async def view_logs(request: Request, db: Session = Depends(get_db), _: bool = D
     return templates.TemplateResponse("logs.html", {"request": request})
 
 @app.get("/api/logs/stream")
-async def stream_logs_json(limit: int = 500, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
-    logs = db.query(models.RunLog).order_by(models.RunLog.id.desc()).limit(limit).all()
+async def stream_logs_json(_: bool = Depends(check_admin)):
+    log_path = 'logs/system.log'
+    if not os.path.exists(log_path):
+        return {"success": True, "data": "暂无系统日志..."}
+        
+    try:
+        # Read the last 200 lines
+        with open(log_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            # return joined text up to approx 200 lines
+            return {"success": True, "data": "".join(lines[-200:])}
+    except Exception as e:
+        return {"success": False, "data": f"读取日志错误: {e}"}
+
+@app.get("/api/users/{user_id}/local_logs")
+async def get_user_local_logs(user_id: int, limit: int = 50, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    logs = db.query(models.RunLog).filter(models.RunLog.user_id == user_id).order_by(models.RunLog.id.desc()).limit(limit).all()
     data = []
     for l in logs:
-        user_name = l.user.username if l.user else "未知"
         data.append({
             "id": l.id,
-            "user": user_name,
             "status": l.status,
-            "created_at": l.run_time.strftime("%Y-%m-%d %H:%M:%S") if l.run_time else "",
+            "run_time": l.run_time.strftime("%Y-%m-%d %H:%M:%S") if l.run_time else "",
             "message": l.message
         })
     return {"success": True, "data": data}

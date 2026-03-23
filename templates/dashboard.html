@@ -204,6 +204,16 @@
             background: rgba(56, 189, 248, 0.2);
         }
 
+        .btn-secondary {
+            background: rgba(148, 163, 184, 0.1);
+            color: #cbd5e1;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(148, 163, 184, 0.2);
+        }
+
         /* Data Tables - Readjusted for premium fit */
         .table-responsive {
             overflow-x: auto;
@@ -468,8 +478,9 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <div class="action-cell">
+                                <div class="action-cell" style="display:flex; gap:8px;">
                                     <button class="btn btn-info" onclick="viewHistory({{ u.id }})">云端历史</button>
+                                    <button class="btn btn-secondary" onclick="viewLocalHistory({{ u.id }}, '{{ u.username }}')">本地运行输出日志</button>
                                     <button class="btn btn-warning" onclick="editUser({{ u.id }})">编辑</button>
                                     <form action="/users/delete" method="POST" style="margin:0;" onsubmit="return confirm('确定要移除此账户吗？将会删除所有关联的调度任务。')">
                                         <input type="hidden" name="user_id" value="{{ u.id }}">
@@ -553,27 +564,34 @@
             </div>
         </div>
 
-        <!-- Logs -->
-        <div class="glass-panel">
-            <div class="panel-header">
-                <h2 class="panel-title">系统运行输出日志</h2>
+        <!-- Logs removed as requested (Now in top menu and local buttons) -->
+    </div>
+
+    <!-- Local History Modal -->
+    <div class="modal-overlay" id="localHistoryModal">
+        <div class="modal-box" style="max-width: 750px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+                <h2 class="panel-title" id="localHistoryModalTitle">本地运行输出日志</h2>
             </div>
-            <ul class="log-list">
-                {% for log in logs %}
-                <li class="log-item">
-                    <div class="log-header">
-                        <span>
-                            <span class="status-dot {{ 'success' if log.status == 'Success' else 'error' }}"></span>
-                            {{ log.user.username }}
-                        </span>
-                        <span class="log-time">{{ log.run_time.strftime('%Y-%m-%d %H:%M:%S') }}</span>
-                    </div>
-                    <div class="log-msg">{{ log.message }}</div>
-                </li>
-                {% else %}
-                <li class="empty-state">暂无日志数据</li>
-                {% endfor %}
-            </ul>
+            <div id="localHistoryLoading" style="display:none; text-align:center; padding: 20px; color: var(--text-secondary);">
+                正在加载本地日志...
+            </div>
+            <div id="localHistoryError" style="display:none; color: var(--danger); text-align: center; padding: 20px;"></div>
+            <div id="localHistoryTableContainer" style="display:none; max-height: 450px; overflow-y: auto; padding-right: 8px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 25%">记录时间</th>
+                            <th style="width: 15%">执行状态</th>
+                            <th style="width: 60%">结果输出</th>
+                        </tr>
+                    </thead>
+                    <tbody id="localHistoryTableBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('localHistoryModal')">关闭</button>
+            </div>
         </div>
     </div>
 
@@ -834,6 +852,52 @@
                 document.getElementById('historyLoading').style.display = 'none';
                 document.getElementById('historyError').style.display = 'block';
                 document.getElementById('historyError').innerText = '网络错误: ' + error;
+            }
+        async function viewLocalHistory(userId, username) {
+            document.getElementById('localHistoryModalTitle').innerText = `本地运行输出日志 - ${username}`;
+            document.getElementById('localHistoryLoading').style.display = 'block';
+            document.getElementById('localHistoryTableContainer').style.display = 'none';
+            document.getElementById('localHistoryError').style.display = 'none';
+            
+            openModal('localHistoryModal');
+            
+            try {
+                const response = await fetch(`/api/users/${userId}/local_logs`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const tbody = document.getElementById('localHistoryTableBody');
+                    if (!result.data || result.data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state">尚无本地打卡日志记录</div></td></tr>';
+                    } else {
+                        let html = '';
+                        result.data.forEach(log => {
+                            let badgeHtml = '';
+                            if (log.status === 'Success') badgeHtml = '<span class="badge badge-success">Success</span>';
+                            else if (log.status === 'Running') badgeHtml = '<span class="badge badge-info">Running</span>';
+                            else badgeHtml = '<span class="badge badge-error">Failed</span>';
+                            
+                            html += `<tr>
+                                <td style="color:var(--text-muted); font-size:13px;">${log.run_time}</td>
+                                <td>${badgeHtml}</td>
+                                <td>
+                                    <div style="background:rgba(0,0,0,0.2); padding:8px; border-radius:6px; font-family:monospace; font-size:12px; white-space:pre-wrap; word-break:break-all; color:var(--text-secondary);">${log.message}</div>
+                                </td>
+                            </tr>`;
+                        });
+                        tbody.innerHTML = html;
+                    }
+                    document.getElementById('localHistoryLoading').style.display = 'none';
+                    document.getElementById('localHistoryTableContainer').style.display = 'block';
+                } else {
+                    document.getElementById('localHistoryLoading').style.display = 'none';
+                    document.getElementById('localHistoryError').style.display = 'block';
+                    document.getElementById('localHistoryError').innerText = '数据获取失败: ' + (result.message || '未知错误');
+                }
+            } catch (error) {
+                document.getElementById('localHistoryLoading').style.display = 'none';
+                document.getElementById('localHistoryError').style.display = 'block';
+                document.getElementById('localHistoryError').innerText = '网络异常: ' + error;
             }
         }
 
