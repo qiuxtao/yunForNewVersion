@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, Request, Form, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import os
 import random
