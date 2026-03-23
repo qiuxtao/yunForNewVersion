@@ -912,7 +912,6 @@
                 
                 if (result.success && result.data && result.data.length > 0) {
                     const select = document.getElementById('historyTermSelect');
-                    document.getElementById('exportHistoryBtn').style.display = 'block';
                     select.innerHTML = '';
                     result.data.forEach(term => {
                         let opt = document.createElement('option');
