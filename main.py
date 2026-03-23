@@ -141,12 +141,7 @@ def main():
 
     path_dir = args.task_path if args.auto_run else "./tasks_else"
     if not args.auto_run:
-        print("请选择校区（1.翡翠湖校区,2.屯溪路校区,3.宣城校区,4.自定义(文件夹tasks_else)）")
-        choice = input("选(默认4): ") or "4"
-        if choice == '1': path_dir = "./tasks_fch"
-        elif choice == '2': path_dir = "./tasks_txl"
-        elif choice == '3': path_dir = "./tasks_xc"
-        else: path_dir = "./tasks_else"
+        print("默认使用邮电操场路线(文件夹tasks_else)")
         
     is_drift = False
     if not args.auto_run:

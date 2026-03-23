@@ -572,6 +572,7 @@
         <div class="modal-box" style="max-width: 750px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
                 <h2 class="panel-title" id="localHistoryModalTitle">运行日志</h2>
+                <button class="btn btn-secondary" id="exportLocalHistoryBtn" style="display:none; padding:6px 16px; font-size:13px;" onclick="exportLocalHistory()">导出日志</button>
             </div>
             <div id="localHistoryLoading" style="display:none; text-align:center; padding: 20px; color: var(--text-secondary);">
                 正在加载本地日志...
@@ -600,8 +601,11 @@
         <div class="modal-box" style="max-width: 650px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
                 <h2 class="panel-title" id="historyModalTitle">云端记录</h2>
-                <select id="historyTermSelect" class="form-select" style="width: auto; padding: 6px 30px 6px 14px; display:none;" onchange="loadTermHistory()">
-                </select>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn btn-primary" id="exportHistoryBtn" style="display:none; padding:6px 16px; font-size:13px;" onclick="exportTermHistory()">导出历史</button>
+                    <select id="historyTermSelect" class="form-select" style="width: auto; padding: 6px 30px 6px 14px; display:none;" onchange="loadTermHistory()">
+                    </select>
+                </div>
             </div>
             
             <input type="hidden" id="current_history_user">
@@ -715,10 +719,7 @@
                 <div class="form-group">
                     <label class="form-label">地理围栏路线图集加载方案</label>
                     <select class="form-select" name="route_type" id="edit_sched_route">
-                        <option value="tasks_else">通用默认 (tasks_else)</option>
-                        <option value="tasks_fch">翡翠湖校区 (tasks_fch)</option>
-                        <option value="tasks_txl">屯溪路校区 (tasks_txl)</option>
-                        <option value="tasks_xc">宣城校区 (tasks_xc)</option>
+                        <option value="tasks_else">邮电操场 (tasks_else)</option>
                     </select>
                 </div>
                 <div class="modal-footer">
@@ -751,10 +752,7 @@
                 <div class="form-group">
                     <label class="form-label">地理围栏路线图集加载方案</label>
                     <select class="form-select" name="route_type">
-                        <option value="tasks_else">通用默认 (tasks_else)</option>
-                        <option value="tasks_fch">翡翠湖校区 (tasks_fch)</option>
-                        <option value="tasks_txl">屯溪路校区 (tasks_txl)</option>
-                        <option value="tasks_xc">宣城校区 (tasks_xc)</option>
+                        <option value="tasks_else">邮电操场 (tasks_else)</option>
                     </select>
                 </div>
                 <div class="modal-footer">
@@ -830,6 +828,7 @@
                 
                 if (result.success && result.data && result.data.length > 0) {
                     const select = document.getElementById('historyTermSelect');
+                    document.getElementById('exportHistoryBtn').style.display = 'block';
                     select.innerHTML = '';
                     result.data.forEach(term => {
                         let opt = document.createElement('option');
@@ -855,6 +854,45 @@
             }
         }
 
+        function downloadCsv(filename, csvContent) {
+            const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function exportLocalHistory() {
+            if (!window.currentLocalLogs || window.currentLocalLogs.length === 0) {
+                alert("没有日志记录可导出");
+                return;
+            }
+            let csv = "记录时间,执行状态,结果输出\n";
+            window.currentLocalLogs.forEach(log => {
+                let msg = (log.message || "").replace(/"/g, '""');
+                csv += `"${log.run_time}","${log.status}","${msg}"\n`;
+            });
+            downloadCsv("本地运行日志.csv", csv);
+        }
+
+        function exportTermHistory() {
+            if (!window.currentHistoryData || window.currentHistoryData.length === 0) {
+                alert("没有云记录可导出");
+                return;
+            }
+            let csv = "运动时间,运动里程(km)\n";
+            window.currentHistoryData.forEach(run => {
+                let rtime = run.recordEndTime || run.endTime || run.recordDate || "-";
+                csv += `"${rtime}","${run.recordMileage || '0'}"\n`;
+            });
+            let termName = document.getElementById('historyTermSelect').options[document.getElementById('historyTermSelect').selectedIndex].text.replace(/ /g, "_");
+            downloadCsv(`云端记录_${termName}.csv", csv);
+        }
+
         async function viewLocalHistory(userId, username) {
             document.getElementById('localHistoryModalTitle').innerText = `运行日志 - ${username}`;
             document.getElementById('localHistoryLoading').style.display = 'block';
@@ -868,9 +906,12 @@
                 const result = await response.json();
                 
                 if (result.success) {
+                    window.currentLocalLogs = result.data;
+                    document.getElementById('exportLocalHistoryBtn').style.display = 'block';
+                    
                     const tbody = document.getElementById('localHistoryTableBody');
                     if (!result.data || result.data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state">尚无本地打卡日志记录</div></td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state">尚无打卡日志记录</div></td></tr>';
                     } else {
                         let html = '';
                         result.data.forEach(log => {
@@ -919,6 +960,7 @@
                 const result = await response.json();
                 
                 if (result.success) {
+                    window.currentHistoryData = result.data;
                     const tbody = document.getElementById('historyTableBody');
                     let termHtml = '<div style="margin-bottom: 24px;">';
                     termHtml += `<h3 style="color:#60a5fa; margin-bottom:12px; font-size:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px;">${termName} <span class="badge badge-success" style="float:right;">本学期共跑 ${result.data ? result.data.length : 0} 次</span></h3>`;
