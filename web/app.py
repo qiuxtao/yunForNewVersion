@@ -559,7 +559,7 @@ async def rename_route_in_group(group_name: str, filename: str, req: RouteRename
     new_fname = req.new_name if req.new_name.endswith('.json') else f"{req.new_name}.json"
     new_path = os.path.join(group_name, new_fname)
     if not os.path.exists(old_path):
-        return JSONResponse({"success": False, "message": "原路线不存在"})
+        return JSONResponse({"success": False, "message": "原线路不存在"})
     try:
         os.rename(old_path, new_path)
         return JSONResponse({"success": True})
@@ -574,7 +574,20 @@ async def delete_route_in_group(group_name: str, filename: str, _: bool = Depend
     if os.path.exists(path):
         os.remove(path)
         return JSONResponse({"success": True})
-    return JSONResponse({"success": False, "message": "路线不存在"})
+    return JSONResponse({"success": False, "message": "线路不存在"})
+
+@app.delete("/api/route_groups/{group_name}")
+async def delete_route_group_entire(group_name: str, _: bool = Depends(check_admin)):
+    if not group_name.startswith("tasks_") or ".." in group_name:
+        return JSONResponse({"success": False, "message": "非法路径"})
+    import shutil
+    if os.path.exists(group_name):
+        try:
+            shutil.rmtree(group_name)
+            return JSONResponse({"success": True})
+        except Exception as e:
+            return JSONResponse({"success": False, "message": f"删除失败: {e}"})
+    return JSONResponse({"success": False, "message": "线路组不存在"})
 
 @app.get("/logs", response_class=HTMLResponse)
 async def view_logs(request: Request, db: Session = Depends(get_db), _: bool = Depends(check_admin)):

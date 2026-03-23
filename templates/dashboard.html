@@ -463,7 +463,6 @@
                 YunRunner Dashboard
             </div>
             <div style="display:flex; gap:12px;">
-                <a href="/logs" class="btn btn-ghost" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main);">运行日志</a>
                 <a href="/logout" class="btn btn-ghost" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--danger);">安全登出</a>
             </div>
         </header>
@@ -471,7 +470,8 @@
         <div class="nav-tabs">
             <button class="nav-tab active" onclick="switchTab('accounts')" id="tab-btn-accounts">账户授权中心</button>
             <button class="nav-tab" onclick="switchTab('schedules')" id="tab-btn-schedules">定时任务调度</button>
-            <button class="nav-tab" onclick="switchTab('routes')" id="tab-btn-routes">路线图库管理</button>
+            <button class="nav-tab" onclick="switchTab('routes')" id="tab-btn-routes">线路库管理</button>
+            <button class="nav-tab" onclick="switchTab('logs')" id="tab-btn-logs">系统运行日志</button>
         </div>
 
         <!-- Tab: Accounts -->
@@ -612,27 +612,42 @@
         <div id="tab-pane-routes" class="tab-pane">
             <div class="glass-panel">
                 <div class="panel-header">
-                    <h2 class="panel-title">服务端图集体系 (Route Groups)</h2>
+                    <h2 class="panel-title">服务端线路组架构 (Route Groups)</h2>
                     <button class="btn btn-primary" onclick="promptCreateRouteGroup()">
                         建立新线路组
                     </button>
                 </div>
-                <div class="table-responsive">
+                <div class="table-responsive" id="routesTableContainer">
                     <table style="table-layout: fixed;">
                         <thead>
                             <tr>
                                 <th style="width: 40%">线路组目录名</th>
-                                <th style="width: 30%">包含路线数 (.json)</th>
+                                <th style="width: 30%">包含线路数 (.json)</th>
                                 <th style="width: 30%">操作</th>
                             </tr>
                         </thead>
                         <tbody id="routeGroupsTableBody">
-                            <tr><td colspan="3"><div class="empty-state">正在加载图库数据...</div></td></tr>
+                            <tr><td colspan="3"><div class="empty-state">正在加载线路库数据...</div></td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div> <!-- End Tab Routes -->
+
+        <!-- Tab: Logs -->
+        <div id="tab-pane-logs" class="tab-pane">
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">系统日志仿真终端</h2>
+                    <button class="btn btn-info" onclick="fetchLogs()" id="refreshLogBtn">
+                        手动刷新
+                    </button>
+                </div>
+                <div style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px;">
+                    <pre id="logContent" style="margin: 0; color: #a3b8cc; font-family: monospace; font-size: 13px; line-height: 1.5; white-space: pre-wrap; overflow-y: auto; max-height: 60vh; min-height: 300px;">正在连接日志流...</pre>
+                </div>
+            </div>
+        </div> <!-- End Tab Logs -->
 
     </div>
 
@@ -1172,13 +1187,56 @@
             document.getElementById('tab-btn-' + tabId).classList.add('active');
             if (tabId === 'routes') {
                 loadRouteGroups();
+            } else if (tabId === 'logs') {
+                fetchLogs();
+            }
+        }
+        
+        async function fetchLogs() {
+            const contentEl = document.getElementById("logContent");
+            const btn = document.getElementById("refreshLogBtn");
+            const wasAtBottom = (contentEl.scrollHeight - contentEl.scrollTop <= contentEl.clientHeight + 10);
+            
+            btn.innerHTML = '正在拉取...';
+            try {
+                const response = await fetch('/api/logs/stream');
+                const result = await response.json();
+                if(result.success) {
+                    contentEl.textContent = result.data;
+                    if(wasAtBottom) {
+                        contentEl.scrollTop = contentEl.scrollHeight;
+                    }
+                } else {
+                    contentEl.textContent = "日志获取失败: " + result.data;
+                }
+            } catch(e) {
+                contentEl.textContent = "网络通讯异常: " + e;
+            } finally {
+                btn.innerHTML = '手动刷新';
             }
         }
 
         // ================= Route Management =================
         async function loadRouteGroups() {
+            const container = document.getElementById('routesTableContainer');
+            if (!document.getElementById('routeGroupsTableBody')) {
+                container.innerHTML = `
+                    <table style="table-layout: fixed;">
+                        <thead>
+                            <tr>
+                                <th style="width: 40%">线路组目录名</th>
+                                <th style="width: 30%">包含线路数 (.json)</th>
+                                <th style="width: 30%">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="routeGroupsTableBody">
+                            <tr><td colspan="3"><div class="empty-state">正在加载线路库数据...</div></td></tr>
+                        </tbody>
+                    </table>
+                `;
+            }
             const tbody = document.getElementById('routeGroupsTableBody');
-            tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state">正在加载图库数据...</div></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state">正在加载线路库数据...</div></td></tr>';
             try {
                 const res = await fetch('/api/route_groups');
                 const result = await res.json();
@@ -1189,10 +1247,11 @@
                         tbody.innerHTML = result.data.map(g => `
                             <tr>
                                 <td><strong><i style="color:#fbbf24; margin-right:6px;">📁</i>${g.name}</strong></td>
-                                <td><span class="badge badge-neutral">${g.count} 张地形图</span></td>
+                                <td><span class="badge badge-neutral">${g.count} 条线路</span></td>
                                 <td>
                                     <div class="action-cell" style="display:flex; gap:8px;">
-                                        <button class="btn btn-info" style="padding:4px 10px; font-size:13px;" onclick="viewGroupRoutes('${g.name}')">管理图集</button>
+                                        <button class="btn btn-info" style="padding:4px 10px; font-size:13px;" onclick="viewGroupRoutes('${g.name}')">管理线路</button>
+                                        <button class="btn btn-danger" style="padding:4px 10px; font-size:13px;" onclick="deleteRouteGroup('${g.name}')">删除</button>
                                     </div>
                                 </td>
                             </tr>
@@ -1234,7 +1293,7 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert('图库组创建成功！');
+                    alert('线路组创建成功！');
                     loadRouteGroups();
                 } else {
                     alert('创建失败: ' + result.message);
@@ -1252,7 +1311,7 @@
                     const sel = document.getElementById('save_route_group_select');
                     sel.innerHTML = result.data.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
                     if (result.data.length === 0) {
-                        alert("现在还没有任何线路组！请先在【路线图库管理】中创建一个组。");
+                        alert("现在还没有任何线路组！请先在【线路库管理】中创建一个组。");
                         return;
                     }
                     document.getElementById('save_route_run_id').value = runId;
@@ -1286,7 +1345,7 @@
                 const detailResult = await detailRes.json();
                 
                 if (!detailResult.success) {
-                    alert("官方原始路线拉取/解密失败: " + detailResult.message);
+                    alert("官方原始线路拉取/解密失败: " + detailResult.message);
                     return;
                 }
                 
@@ -1302,7 +1361,7 @@
                 });
                 const saveResult = await saveRes.json();
                 if (saveResult.success) {
-                    alert("路线落盘保存成功！已入库。");
+                    alert("线路落盘保存成功！已入库。");
                     closeModal('saveRouteModal');
                 } else {
                     alert("服务器落盘写入失败: " + saveResult.message);
@@ -1323,15 +1382,15 @@
                 if (result.success) {
                     let html = `<div style="padding:16px;">
                         <h3 style="margin-bottom:16px; color:#fff; display:flex; justify-content:space-between;">
-                            <span>${groupName} / 包含路线概览</span>
+                            <span>${groupName} / 包含线路概览</span>
                             <button class="btn btn-ghost" onclick="loadRouteGroups()" style="padding:4px 8px;">返回列表</button>
                         </h3>
                         <table>
-                            <thead><tr><th>图集文件名</th><th>体积大小</th><th>操作</th></tr></thead>
+                            <thead><tr><th>线路文件名</th><th>体积大小</th><th>操作</th></tr></thead>
                             <tbody>
                     `;
                     if (result.data.length === 0) {
-                        html += `<tr><td colspan="3"><div class="empty-state">该图库内空空如也，快去云端记录存入吧</div></td></tr>`;
+                        html += `<tr><td colspan="3"><div class="empty-state">该线路库内空空如也，快去云端记录存入吧</div></td></tr>`;
                     } else {
                         html += result.data.map(f => `
                             <tr>
@@ -1355,14 +1414,6 @@
         }
 
         async function reloadGroupViewAfterOperation(groupName) {
-            // Restore HTML structure then call viewGroupRoutes again
-            const outerDiv = document.querySelector('#tab-pane-routes .table-responsive');
-            outerDiv.innerHTML = `
-                <table style="table-layout: fixed;">
-                    <thead><tr><th style="width: 40%">线路组目录名</th><th style="width: 30%">包含路子数量</th><th style="width: 30%">操作</th></tr></thead>
-                    <tbody id="routeGroupsTableBody"><tr><td colspan="3">...</td></tr></tbody>
-                </table>
-            `;
             viewGroupRoutes(groupName);
         }
 
