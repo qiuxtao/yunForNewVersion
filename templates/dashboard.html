@@ -429,8 +429,8 @@
                 YunRunner Dashboard
             </div>
             <div style="display:flex; gap:12px;">
-                <a href="/logs" class="btn btn-ghost">运行输出日志</a>
-                <a href="/logout" class="btn btn-ghost" style="color:var(--danger)">安全登出</a>
+                <a href="/logs" class="btn btn-primary">运行日志</a>
+                <a href="/logout" class="btn btn-danger">安全登出</a>
             </div>
         </header>
 
@@ -479,8 +479,8 @@
                             </td>
                             <td>
                                 <div class="action-cell" style="display:flex; gap:8px;">
-                                    <button class="btn btn-info" onclick="viewHistory({{ u.id }})">云端历史</button>
-                                    <button class="btn btn-secondary" onclick="viewLocalHistory({{ u.id }}, '{{ u.username }}')">本地运行输出日志</button>
+                                    <button class="btn btn-info" onclick="viewHistory({{ u.id }})">云端记录</button>
+                                    <button class="btn btn-secondary" onclick="viewLocalHistory({{ u.id }}, '{{ u.username }}')">运行日志</button>
                                     <button class="btn btn-warning" onclick="editUser({{ u.id }})">编辑</button>
                                     <form action="/users/delete" method="POST" style="margin:0;" onsubmit="return confirm('确定要移除此账户吗？将会删除所有关联的调度任务。')">
                                         <input type="hidden" name="user_id" value="{{ u.id }}">
@@ -571,7 +571,7 @@
     <div class="modal-overlay" id="localHistoryModal">
         <div class="modal-box" style="max-width: 750px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
-                <h2 class="panel-title" id="localHistoryModalTitle">本地运行输出日志</h2>
+                <h2 class="panel-title" id="localHistoryModalTitle">运行日志</h2>
             </div>
             <div id="localHistoryLoading" style="display:none; text-align:center; padding: 20px; color: var(--text-secondary);">
                 正在加载本地日志...
@@ -599,7 +599,7 @@
     <div class="modal-overlay" id="historyModal">
         <div class="modal-box" style="max-width: 650px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
-                <h2 class="panel-title" id="historyModalTitle">云端历史记录</h2>
+                <h2 class="panel-title" id="historyModalTitle">云端记录</h2>
                 <select id="historyTermSelect" class="form-select" style="width: auto; padding: 6px 30px 6px 14px; display:none;" onchange="loadTermHistory()">
                 </select>
             </div>
@@ -856,7 +856,7 @@
         }
 
         async function viewLocalHistory(userId, username) {
-            document.getElementById('localHistoryModalTitle').innerText = `本地运行输出日志 - ${username}`;
+            document.getElementById('localHistoryModalTitle').innerText = `运行日志 - ${username}`;
             document.getElementById('localHistoryLoading').style.display = 'block';
             document.getElementById('localHistoryTableContainer').style.display = 'none';
             document.getElementById('localHistoryError').style.display = 'none';
