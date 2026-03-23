@@ -49,7 +49,10 @@ class Schedule(Base):
     target_time = Column(String)
     
     # 使用哪条跑步路线 (tasks_fch / tasks_txl / tasks_xc 等)
-    route_type = Column(String, default="tasks_else")
+    route_type = Column(String, default="tasks_youdian")
+    
+    # 防止规律性风控的随机延迟执行范围 (分钟)
+    random_delay_minutes = Column(Integer, default=0)
     
     # 最新一次执行状态记录
     last_run_status = Column(String, default="未运行")

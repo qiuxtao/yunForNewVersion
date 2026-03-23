@@ -587,7 +587,7 @@
                                         <input type="hidden" name="schedule_id" value="{{ s.id }}">
                                         <button type="submit" class="btn btn-info">立即执行</button>
                                     </form>
-                                    <button type="button" class="btn btn-warning" onclick="editSchedule({{ s.id }}, '{{ s.target_time }}', '{{ s.route_type }}')">编辑</button>
+                                    <button type="button" class="btn btn-warning" onclick="editSchedule({{ s.id }}, '{{ s.target_time }}', '{{ s.route_type }}', {{ s.random_delay_minutes or 0 }})">编辑</button>
                                     <form action="/schedules/delete" method="POST" style="margin:0;">
                                         <input type="hidden" name="schedule_id" value="{{ s.id }}">
                                         <button type="submit" class="btn btn-danger">移除</button>
@@ -805,6 +805,10 @@
                         <option value="tasks_else">邮电操场 (tasks_else)</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label class="form-label">防风控随机等待时长 (选填, 最大几分钟)</label>
+                    <input type="number" class="form-control" name="random_delay_minutes" id="edit_sched_delay" min="0" max="1440" value="0" placeholder="为 0 则准点执行">
+                </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-ghost" onclick="closeModal('editScheduleModal')">取消</button>
                     <button type="submit" class="btn btn-primary">保存修​​改​​</button>
@@ -838,6 +842,10 @@
                         <option value="tasks_else">邮电操场 (tasks_else)</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label class="form-label">防风控随机等待时长 (选填, 最大几分钟)</label>
+                    <input type="number" class="form-control" name="random_delay_minutes" min="0" max="1440" value="0" placeholder="为 0 则准点执行">
+                </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-ghost" onclick="closeModal('scheduleModal')">取消</button>
                     <button type="submit" class="btn btn-primary">挂载服务</button>
@@ -868,10 +876,11 @@
             document.getElementById(id).classList.add('active');
         }
 
-        function editSchedule(scheduleId, targetTime, routeType) {
+        function editSchedule(scheduleId, targetTime, routeType, randomDelay) {
             document.getElementById('edit_sched_id').value = scheduleId;
             document.getElementById('edit_sched_time').value = targetTime;
             document.getElementById('edit_sched_route').value = routeType;
+            document.getElementById('edit_sched_delay').value = randomDelay || 0;
             openModal('editScheduleModal');
         }
         function closeModal(id) {

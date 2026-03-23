@@ -20,3 +20,9 @@ def get_db():
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+    try:
+        with engine.begin() as conn:
+            from sqlalchemy import text
+            conn.execute(text("ALTER TABLE schedules ADD COLUMN random_delay_minutes INTEGER DEFAULT 0"))
+    except Exception:
+        pass

@@ -271,6 +271,7 @@ async def add_schedule(
     request: Request,
     target_time: str = Form(...),
     route_type: str = Form(...),
+    random_delay_minutes: int = Form(0),
     db: Session = Depends(get_db),
     _: bool = Depends(check_admin)
 ):
@@ -281,6 +282,7 @@ async def add_schedule(
             user_id=int(uid),
             target_time=target_time,
             route_type=route_type,
+            random_delay_minutes=random_delay_minutes,
             last_run_status="Pending"
         )
         db.add(new_sched)
@@ -293,6 +295,7 @@ async def edit_schedule(
     schedule_id: int = Form(...),
     target_time: str = Form(...),
     route_type: str = Form(...),
+    random_delay_minutes: int = Form(0),
     db: Session = Depends(get_db),
     _: bool = Depends(check_admin)
 ):
@@ -303,23 +306,9 @@ async def edit_schedule(
     if sched:
         sched.target_time = target_time
         sched.route_type = route_type
-    
-    if user_ids:
-        for uid in user_ids:
-            uid_int = int(uid)
-            existing_sched = db.query(models.Schedule).filter(models.Schedule.user_id == uid_int).first()
-            if existing_sched:
-                existing_sched.target_time = target_time
-                existing_sched.route_type = route_type
-            else:
-                new_sched = models.Schedule(
-                    user_id=uid_int,
-                    target_time=target_time,
-                    route_type=route_type,
-                    last_run_status="Pending"
-                )
-                db.add(new_sched)
-                
+        sched.random_delay_minutes = random_delay_minutes
+        if user_ids:
+            sched.user_id = int(user_ids[0])
     db.commit()
     return RedirectResponse(url="/", status_code=303)
 

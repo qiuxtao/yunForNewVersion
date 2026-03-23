@@ -234,13 +234,28 @@ def scan_and_run_schedules():
         if sched.last_run_time and sched.last_run_time.strftime("%Y-%m-%d %H:%M") == now.strftime("%Y-%m-%d %H:%M"):
             continue
             
-        logger.info(f"Triggering automated run for User {sched.user.username} at {current_time_str}")
-        # Run in background via apscheduler executor
-        scheduler.add_job(
-            run_job_for_user,
-            args=[sched.user_id, sched.id],
-            misfire_grace_time=300
-        )
+        import random
+        delay_secs = random.randint(0, sched.random_delay_minutes * 60) if sched.random_delay_minutes and sched.random_delay_minutes > 0 else 0
+        
+        if delay_secs > 0:
+            import datetime as dt
+            run_time = now + dt.timedelta(seconds=delay_secs)
+            logger.info(f"Triggering automated run for User {sched.user.username} at {current_time_str} (Delayed randomly by {delay_secs//60}m {delay_secs%60}s to {run_time.strftime('%H:%M:%S')})")
+            scheduler.add_job(
+                run_job_for_user,
+                'date',
+                run_date=run_time,
+                args=[sched.user_id, sched.id],
+                misfire_grace_time=300 + delay_secs
+            )
+        else:
+            logger.info(f"Triggering automated run for User {sched.user.username} at {current_time_str}")
+            # Run in background via apscheduler executor
+            scheduler.add_job(
+                run_job_for_user,
+                args=[sched.user_id, sched.id],
+                misfire_grace_time=300
+            )
     db.close()
 
 def init_scheduler():
