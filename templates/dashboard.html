@@ -686,6 +686,8 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
                 <h2 class="panel-title" id="historyModalTitle">云端记录</h2>
                 <div style="display:flex; gap:8px;">
+                    <button class="btn btn-secondary" id="exportTermHistoryBtn" style="display:none; padding:6px 16px; font-size:13px;" onclick="exportTermHistory()">导出本学期(CSV)</button>
+                    <button class="btn btn-info" id="loadDetailsBtn" style="display:none; padding:6px 16px; font-size:13px;" onclick="loadAllRunDetails()">补全配速(耗时较长)</button>
                     <select id="historyTermSelect" class="form-select" style="width: auto; padding: 6px 30px 6px 14px; display:none;" onchange="loadTermHistory()">
                     </select>
                 </div>
@@ -1129,8 +1131,8 @@
                             
                             termHtml += `<tr>
                                 <td style="color:var(--text-main);">${displayTime}</td>
-                                <td>${durDisplay}</td>
-                                <td>${paceDisplay}</td>
+                                <td id="dur_${run.id}">${durDisplay}</td>
+                                <td id="pace_${run.id}">${paceDisplay}</td>
                                 <td style="color:var(--success); font-weight:500;">${run.recordMileage || '0'} km</td>
                                 <td>
                                     <button class="btn btn-secondary" style="white-space:nowrap; padding:4px 8px; font-size:12px;" onclick="promptSaveRoute('${run.id}', '${run.recordMileage || 0}')">保存路线</button>
@@ -1144,6 +1146,8 @@
                     
                     document.getElementById('historyLoading').style.display = 'none';
                     document.getElementById('historyTableContainer').style.display = 'block';
+                    document.getElementById('exportTermHistoryBtn').style.display = 'block';
+                    document.getElementById('loadDetailsBtn').style.display = 'block';
                 } else {
                     document.getElementById('historyLoading').style.display = 'none';
                     document.getElementById('historyError').style.display = 'block';
@@ -1483,6 +1487,73 @@
             } catch(e) {
                 alert("网络异常: " + e);
             }
+        }
+        async function loadAllRunDetails() {
+            if (!window.currentHistoryData || window.currentHistoryData.length === 0) {
+                alert("当前学期没有任何历史记录");
+                return;
+            }
+            
+            const btn = document.getElementById('loadDetailsBtn');
+            btn.disabled = true;
+            const originalText = btn.innerHTML;
+            
+            const userId = document.getElementById('current_history_user').value;
+            const termVal = document.getElementById('historyTermSelect').value;
+            const token = document.getElementById('current_history_token').value;
+            
+            let loadedCount = 0;
+            const totalCount = window.currentHistoryData.length;
+            
+            for (let i = 0; i < totalCount; i++) {
+                let run = window.currentHistoryData[i];
+                
+                // If it already seems correctly hydrated (not zeroes), skip to save time.
+                // But Yun api might natively have zeroes if the run was truly 0 duration, 
+                // we'll fetch anyway if it's currently 0 to be sure.
+                if (run.duration > 0 || run.recodePace > 0) {
+                    loadedCount++;
+                    continue;
+                }
+                
+                btn.innerHTML = `正在获取... (${loadedCount+1}/${totalCount})`;
+                
+                try {
+                    const url = `/api/users/${userId}/history_detail?term_value=${encodeURIComponent(termVal)}&run_id=${encodeURIComponent(run.id)}&token=${encodeURIComponent(token)}`;
+                    const response = await fetch(url);
+                    const result = await response.json();
+                    
+                    if (result.success && result.data) {
+                        run.duration = result.data.duration || 0;
+                        run.recodePace = result.data.recodePace || 0;
+                        
+                        let durDisplay = Math.floor(run.duration / 60) + "分" + (run.duration % 60) + "秒";
+                        let paceDisplay = "-";
+                        if (run.recodePace > 0) {
+                            let m = Math.floor(run.recodePace);
+                            let s = Math.round((run.recodePace % 1) * 60).toString().padStart(2, '0');
+                            paceDisplay = m + "'" + s + '"';
+                        }
+                        
+                        const durTd = document.getElementById(`dur_${run.id}`);
+                        const paceTd = document.getElementById(`pace_${run.id}`);
+                        if (durTd) durTd.innerText = durDisplay;
+                        if (paceTd) paceTd.innerText = paceDisplay;
+                    }
+                } catch(e) {
+                    console.error("加载详情失败: ", e);
+                }
+                
+                loadedCount++;
+                // Avoid ratelimiting the Yun server (sleep 650 ms)
+                await new Promise(r => setTimeout(r, 650));
+            }
+            
+            btn.innerHTML = "配速同步完成";
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }, 3000);
         }
     </script>
 </body>
