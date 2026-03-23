@@ -558,50 +558,19 @@
                         <tr>
                             <th>账户归属</th>
                             <th>触发时间</th>
+                            <th style="color:#fbbf24;">随机延迟</th>
                             <th>执行路线集</th>
                             <th>上次运行状态</th>
                             <th>上次执行时间</th>
                             <th>操作</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for s in schedules %}
+                    <tbody id="schedulesTableBody">
                         <tr>
-                            <td>{{ s.user.username }}</td>
-                            <td style="font-weight:600; color:var(--primary);">{{ s.target_time }}</td>
-                            <td><code>{{ s.route_type }}</code></td>
-                            <td>
-                                {% if s.last_run_status == 'Success' %}
-                                    <span class="badge badge-success">Completed</span>
-                                {% elif s.last_run_status == 'Failed' %}
-                                    <span class="badge badge-error">Failed</span>
-                                {% else %}
-                                    <span class="badge badge-neutral">{{ s.last_run_status }}</span>
-                                {% endif %}
-                            </td>
-                            <td class="log-time">{{ s.last_run_time.strftime('%Y-%m-%d %H:%M:%S') if s.last_run_time else '-' }}</td>
-                            <td>
-                                <div class="action-cell" style="display:flex; gap:8px;">
-                                    <form action="/runs/manual_trigger" method="POST" style="margin:0;">
-                                        <input type="hidden" name="user_id" value="{{ s.user.id }}">
-                                        <input type="hidden" name="schedule_id" value="{{ s.id }}">
-                                        <button type="submit" class="btn btn-info">立即执行</button>
-                                    </form>
-                                    <button type="button" class="btn btn-warning" onclick="editSchedule({{ s.id }}, '{{ s.target_time }}', '{{ s.route_type }}', {{ s.random_delay_minutes or 0 }})">编辑</button>
-                                    <form action="/schedules/delete" method="POST" style="margin:0;">
-                                        <input type="hidden" name="schedule_id" value="{{ s.id }}">
-                                        <button type="submit" class="btn btn-danger">移除</button>
-                                    </form>
-                                </div>
+                            <td colspan="7">
+                                <div class="empty-state">正在加载任务列表...</div>
                             </td>
                         </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="6">
-                                <div class="empty-state">尚未创建任何调度规则</div>
-                            </td>
-                        </tr>
-                        {% endfor %}
                     </tbody>
                 </table>
             </div>
@@ -1199,6 +1168,8 @@
                 loadRouteGroups();
             } else if (tabId === 'logs') {
                 fetchLogs();
+            } else if (tabId === 'schedules') {
+                loadSchedules();
             }
         }
         
@@ -1251,6 +1222,7 @@
                 const res = await fetch('/api/route_groups');
                 const result = await res.json();
                 if (result.success) {
+                    window.availableGroups = result.data.map(g => g.name);
                     if (result.data.length === 0) {
                         tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state">尚未创建任何线路组文件夹</div></td></tr>';
                     } else {
@@ -1269,7 +1241,9 @@
                     }
                     
                     // Automatically update the options in schedule panels
-                    updateScheduleRouteOptions(result.data.map(g => g.name));
+                    updateScheduleRouteOptions(window.availableGroups);
+                    // Also refresh schedules to handle "Deleted" state
+                    loadSchedules();
                 } else {
                     tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state" style="color:var(--danger)">加载失败: ${result.message}</div></td></tr>`;
                 }
@@ -1283,11 +1257,19 @@
                 document.getElementById('edit_sched_route'),
                 document.querySelector('#scheduleModal select[name="route_type"]')
             ];
+            const placeholder = '<option value="" disabled selected>-- 请选择线路组 --</option>';
+            const options = groupNames.map(g => `<option value="${g}">${g}</option>`).join('');
+            
             selects.forEach(sel => {
                 if(!sel) return;
                 const prevVal = sel.value;
-                sel.innerHTML = groupNames.map(g => `<option value="${g}">${g}</option>`).join('');
-                if (groupNames.includes(prevVal)) sel.value = prevVal;
+                sel.innerHTML = placeholder + options;
+                if (groupNames.includes(prevVal)) {
+                    sel.value = prevVal;
+                } else if (prevVal === "") {
+                    sel.value = "";
+                }
+                // If the previous value is gone, it stays on the disabled placeholder
             });
         }
 
@@ -1445,6 +1427,62 @@
                 alert("网络异常: " + e);
             }
         }
+
+        async function loadSchedules() {
+            const tbody = document.getElementById('schedulesTableBody');
+            if (!tbody) return;
+            
+            try {
+                const res = await fetch('/api/schedules');
+                const result = await res.json();
+                if (result.success) {
+                    if (result.data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">尚未创建任何调度规则</div></td></tr>';
+                    } else {
+                        tbody.innerHTML = result.data.map(s => {
+                            let statusBadge = `<span class="badge badge-neutral">${s.last_run_status}</span>`;
+                            if (s.last_run_status === 'Success') statusBadge = '<span class="badge badge-success">Completed</span>';
+                            else if (s.last_run_status === 'Failed') statusBadge = '<span class="badge badge-error">Failed</span>';
+                            
+                            // Check if group still exists
+                            const isMissing = window.availableGroups && !window.availableGroups.includes(s.route_type);
+                            const routeDisplay = isMissing ? `<code style="color:var(--danger); text-decoration:line-through;">${s.route_type}</code> <span style="font-size:10px; color:var(--danger)">(库已删)</span>` : `<code>${s.route_type}</code>`;
+
+                            return `
+                            <tr>
+                                <td>${s.username}</td>
+                                <td style="font-weight:600; color:var(--primary);">${s.target_time}</td>
+                                <td style="color:#fbbf24;">+${s.random_delay_minutes} 分钟随机</td>
+                                <td>${routeDisplay}</td>
+                                <td>${statusBadge}</td>
+                                <td class="log-time">${s.last_run_time}</td>
+                                <td>
+                                    <div class="action-cell" style="display:flex; gap:8px;">
+                                        <form action="/runs/manual_trigger" method="POST" style="margin:0;">
+                                            <input type="hidden" name="user_id" value="${s.user_id}">
+                                            <input type="hidden" name="schedule_id" value="${s.id}">
+                                            <button type="submit" class="btn btn-info">立即执行</button>
+                                        </form>
+                                        <button type="button" class="btn btn-warning" onclick="editSchedule(${s.id}, '${s.target_time}', '${s.route_type}', ${s.random_delay_minutes})">编辑</button>
+                                        <form action="/schedules/delete" method="POST" style="margin:0;">
+                                            <input type="hidden" name="schedule_id" value="${s.id}">
+                                            <button type="submit" class="btn btn-danger">移除</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>`;
+                        }).join('');
+                    }
+                }
+            } catch(e) {
+                console.error("加载任务列表失败:", e);
+            }
+        }
+
+        // Handle initial load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRouteGroups(); // This will also trigger loadSchedules via the callback
+        });
 
         async function deleteRouteFile(groupName, filename) {
             if (!confirm(`确定要从 ${groupName} 库中无情删除 ${filename} 吗？`)) return;

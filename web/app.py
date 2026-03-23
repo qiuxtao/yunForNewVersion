@@ -342,6 +342,25 @@ async def delete_schedule(schedule_id: int = Form(...), db: Session = Depends(ge
         db.commit()
     return RedirectResponse(url="/", status_code=303)
 
+@app.get("/api/schedules")
+async def get_schedules_json(db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    """获取所有定时任务的 JSON 列表"""
+    from fastapi.responses import JSONResponse
+    schedules = db.query(models.Schedule).all()
+    results = []
+    for s in schedules:
+        results.append({
+            "id": s.id,
+            "user_id": s.user_id,
+            "username": s.user.username if s.user else "Unknown",
+            "target_time": s.target_time,
+            "route_type": s.route_type,
+            "random_delay_minutes": s.random_delay_minutes,
+            "last_run_status": s.last_run_status,
+            "last_run_time": s.last_run_time.strftime('%Y-%m-%d %H:%M:%S') if s.last_run_time else '-'
+        })
+    return JSONResponse({"success": True, "data": results})
+
 @app.get("/api/users/{user_id}")
 async def get_user_json(user_id: int, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
     """给前端编辑弹窗提供用户详情的 JSON 接口"""
