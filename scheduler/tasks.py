@@ -117,7 +117,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
     logger.info(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 开始跑步任务成功: {msg}")
 
     # Load Tasks Map
-    path_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), sched.route_type)
+    path_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "tasks", sched.route_type)
     if not os.path.exists(path_dir):
         error_msg = f"找不到打卡路线文件夹: {path_dir}"
         logger.error(error_msg)

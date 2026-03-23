@@ -492,10 +492,12 @@ async def get_user_history_detail(user_id: int, term_value: str, run_id: str, to
 @app.get("/api/route_groups")
 async def list_route_groups(_: bool = Depends(check_admin)):
     groups = []
-    base_dir = "."
+    base_dir = "data/tasks"
+    os.makedirs(base_dir, exist_ok=True)
     for item in os.listdir(base_dir):
-        if os.path.isdir(item) and item.startswith("tasks_"):
-            jsons = [f for f in os.listdir(item) if f.endswith('.json')]
+        item_path = os.path.join(base_dir, item)
+        if os.path.isdir(item_path) and item.startswith("tasks_"):
+            jsons = [f for f in os.listdir(item_path) if f.endswith('.json')]
             groups.append({"name": item, "count": len(jsons)})
     return JSONResponse({"success": True, "data": groups})
 
@@ -509,22 +511,25 @@ async def create_route_group(req: RouteGroupCreate, _: bool = Depends(check_admi
         name = "tasks_" + name
     if ".." in name or "/" in name or "\\" in name:
         return JSONResponse({"success": False, "message": "非法名称"})
-    if os.path.exists(name):
+    
+    group_path = os.path.join("data/tasks", name)
+    if os.path.exists(group_path):
         return JSONResponse({"success": False, "message": "该线路组已存在"})
-    os.makedirs(name)
+    os.makedirs(group_path)
     return JSONResponse({"success": True})
 
 @app.get("/api/route_groups/{group_name}")
 async def list_routes_in_group(group_name: str, _: bool = Depends(check_admin)):
     if not group_name.startswith("tasks_") or ".." in group_name:
         return JSONResponse({"success": False, "message": "非法的线路组名"})
-    if not os.path.exists(group_name):
+    group_path = os.path.join("data/tasks", group_name)
+    if not os.path.exists(group_path):
         return JSONResponse({"success": False, "message": "线路组不存在"})
         
     files = []
-    for f in os.listdir(group_name):
+    for f in os.listdir(group_path):
         if f.endswith(".json"):
-            path = os.path.join(group_name, f)
+            path = os.path.join(group_path, f)
             size = os.path.getsize(path)
             files.append({"filename": f, "size_kb": round(size / 1024, 2)})
     return JSONResponse({"success": True, "data": files})
@@ -537,10 +542,11 @@ class RouteSaveReq(BaseModel):
 async def save_route_to_group(group_name: str, req: RouteSaveReq, _: bool = Depends(check_admin)):
     if not group_name.startswith("tasks_") or ".." in group_name or ".." in req.filename:
         return JSONResponse({"success": False, "message": "非法路径"})
-    if not os.path.exists(group_name):
-        os.makedirs(group_name)
+    group_path = os.path.join("data/tasks", group_name)
+    if not os.path.exists(group_path):
+        os.makedirs(group_path)
     fname = req.filename if req.filename.endswith('.json') else f"{req.filename}.json"
-    path = os.path.join(group_name, fname)
+    path = os.path.join(group_path, fname)
     try:
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(req.content, f, ensure_ascii=False, indent=2)
@@ -555,9 +561,10 @@ class RouteRenameReq(BaseModel):
 async def rename_route_in_group(group_name: str, filename: str, req: RouteRenameReq, _: bool = Depends(check_admin)):
     if ".." in group_name or ".." in filename or ".." in req.new_name:
         return JSONResponse({"success": False, "message": "非法路径"})
-    old_path = os.path.join(group_name, filename)
+    group_path = os.path.join("data/tasks", group_name)
+    old_path = os.path.join(group_path, filename)
     new_fname = req.new_name if req.new_name.endswith('.json') else f"{req.new_name}.json"
-    new_path = os.path.join(group_name, new_fname)
+    new_path = os.path.join(group_path, new_fname)
     if not os.path.exists(old_path):
         return JSONResponse({"success": False, "message": "原线路不存在"})
     try:
@@ -570,7 +577,8 @@ async def rename_route_in_group(group_name: str, filename: str, req: RouteRename
 async def delete_route_in_group(group_name: str, filename: str, _: bool = Depends(check_admin)):
     if ".." in group_name or ".." in filename:
         return JSONResponse({"success": False, "message": "非法路径"})
-    path = os.path.join(group_name, filename)
+    group_path = os.path.join("data/tasks", group_name)
+    path = os.path.join(group_path, filename)
     if os.path.exists(path):
         os.remove(path)
         return JSONResponse({"success": True})
@@ -581,16 +589,16 @@ async def delete_route_group_entire(group_name: str, _: bool = Depends(check_adm
     if not group_name.startswith("tasks_") or ".." in group_name:
         return JSONResponse({"success": False, "message": "非法路径"})
     import shutil
-    if os.path.exists(group_name):
+    group_path = os.path.join("data/tasks", group_name)
+    if os.path.exists(group_path):
         try:
-            shutil.rmtree(group_name)
+            shutil.rmtree(group_path)
             return JSONResponse({"success": True})
         except OSError:
-            # Docker volumes bound to the host cannot be rmtree'd directly due to 'Device or resource busy'. 
-            # Fallback: empty all json files inside the folder manually.
+            # Fallback for protected directories if any
             try:
-                for f in os.listdir(group_name):
-                    path = os.path.join(group_name, f)
+                for f in os.listdir(group_path):
+                    path = os.path.join(group_path, f)
                     if os.path.isfile(path):
                         os.remove(path)
                 return JSONResponse({"success": True})

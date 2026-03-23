@@ -8,11 +8,8 @@ services:
     ports:
       - "8001:8000"
     volumes:
-      - ./data:/app/data
       - ./config.ini:/app/config.ini
-      - ./tasks_else:/app/tasks_else
-      - ./tasks_fch:/app/tasks_fch
-      - ./tasks_txl:/app/tasks_txl
-      - ./tasks_xc:/app/tasks_xc
+      - ./data:/app/data
+      - ./logs:/app/logs
     environment:
       - TZ=Asia/Shanghai
