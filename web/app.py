@@ -9,6 +9,7 @@ import random
 import configparser
 import uuid
 import asyncio
+import json
 
 from web.database import engine, get_db, init_db
 from web import models
@@ -460,7 +461,8 @@ async def get_user_history_detail(user_id: int, term_value: str, run_id: str, to
     if not user:
         return JSONResponse({"success": False, "message": "User not found."})
         
-    conf = load_app_config()
+    conf = configparser.ConfigParser()
+    conf.read("config.ini", encoding="utf-8")
     school_host = conf.get("Yun", "school_host", fallback="")
     school_id = conf.get("Yun", "school_id", fallback="195")
     app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
