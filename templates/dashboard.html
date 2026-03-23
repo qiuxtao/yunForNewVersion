@@ -992,10 +992,22 @@
                 alert("没有云记录可导出");
                 return;
             }
-            let csv = "运动时间,运动里程(km)\n";
+            let csv = "运动时间,耗时,配速,运动里程(km)\n";
             window.currentHistoryData.forEach(run => {
                 let rtime = run.recordEndTime || run.endTime || run.recordDate || "-";
-                csv += `"${rtime}","${run.recordMileage || '0'}"\n`;
+                
+                let rawDur = run.duration || 0;
+                let durDisplay = Math.floor(rawDur / 60) + "分" + (rawDur % 60) + "秒";
+                
+                let rawPace = run.recodePace || 0;
+                let paceDisplay = "-";
+                if (rawPace > 0) {
+                    let m = Math.floor(rawPace);
+                    let s = Math.round((rawPace % 1) * 60).toString().padStart(2, '0');
+                    paceDisplay = m + "'" + s + '"';
+                }
+                
+                csv += `"${rtime}","${durDisplay}","${paceDisplay}","${run.recordMileage || '0'}"\n`;
             });
             let termName = document.getElementById('historyTermSelect').options[document.getElementById('historyTermSelect').selectedIndex].text.replace(/ /g, "_");
             downloadFile(`云端记录_${termName}.csv`, csv);
@@ -1097,15 +1109,28 @@
                     if (!result.data || result.data.length === 0) {
                         termHtml += `<div class="empty-state" style="padding:20px;">该学期尚无相关打卡记录</div>`;
                     } else {
-                        termHtml += '<div class="table-responsive" style="margin-bottom:12px;"><table><thead><tr><th>运动时间</th><th>运动里程 (km)</th><th style="width: 80px;">操作</th></tr></thead><tbody>';
+                        termHtml += '<div class="table-responsive" style="margin-bottom:12px;"><table><thead><tr><th>运动时间</th><th>耗时</th><th>配速</th><th>运动里程 (km)</th><th style="width: 80px;">操作</th></tr></thead><tbody>';
                         result.data.forEach(run => {
                             let rtime = run.recordEndTime || run.endTime || run.recordDate || "-";
                             // The Yun server provides recordEndTime formatted as "2025-02-25 12:04:56"
                             // so we can display it identically without manual month extraction string ops
                             let displayTime = rtime;
                             
+                            let rawDur = run.duration || 0;
+                            let durDisplay = Math.floor(rawDur / 60) + "分" + (rawDur % 60) + "秒";
+                            
+                            let rawPace = run.recodePace || 0;
+                            let paceDisplay = "-";
+                            if (rawPace > 0) {
+                                let m = Math.floor(rawPace);
+                                let s = Math.round((rawPace % 1) * 60).toString().padStart(2, '0');
+                                paceDisplay = m + "'" + s + '"';
+                            }
+                            
                             termHtml += `<tr>
                                 <td style="color:var(--text-main);">${displayTime}</td>
+                                <td>${durDisplay}</td>
+                                <td>${paceDisplay}</td>
                                 <td style="color:var(--success); font-weight:500;">${run.recordMileage || '0'} km</td>
                                 <td>
                                     <button class="btn btn-secondary" style="white-space:nowrap; padding:4px 8px; font-size:12px;" onclick="promptSaveRoute('${run.id}', '${run.recordMileage || 0}')">保存路线</button>
