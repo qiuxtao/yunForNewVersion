@@ -453,6 +453,39 @@ async def get_user_history_by_term_json(user_id: int, term_value: str, token: st
     except Exception as e:
         return JSONResponse({"success": False, "message": f"内部服务器异常: {str(e)}"})
 
+@app.get("/api/users/{user_id}/history_detail")
+async def get_user_history_detail(user_id: int, term_value: str, run_id: str, token: str, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return JSONResponse({"success": False, "message": "User not found."})
+        
+    conf = load_app_config()
+    school_host = conf.get("Yun", "school_host", fallback="")
+    school_id = conf.get("Yun", "school_id", fallback="195")
+    app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
+    md5key = conf.get("Yun", "md5key", fallback="")
+    platform_str = conf.get("Yun", "platform", fallback="android")
+    public_key = conf.get("Yun", "PublicKey", fallback="")
+    private_key = conf.get("Yun", "PrivateKey", fallback="")
+    cipherkey = conf.get("Yun", "cipherkey", fallback="")
+    cipherkeyencrypted = conf.get("Yun", "cipherkeyencrypted", fallback="")
+    
+    try:
+        from core.yun import YunCore
+        import time as _time
+        yun = YunCore(token, user.device_id, user.device_name, user.uuid, "", str(int(_time.time())),
+                     school_host, school_id, app_edition, md5key, platform_str,
+                     public_key, private_key, cipherkey, cipherkeyencrypted, {})
+                     
+        success, data = yun.get_run_detail(run_id, term_value)
+        if not success:
+            return JSONResponse({"success": False, "message": str(data)})
+            
+        return JSONResponse({"success": True, "data": data})
+        
+    except Exception as e:
+        return JSONResponse({"success": False, "message": f"内部服务器异常: {str(e)}"})
+
 @app.get("/logs", response_class=HTMLResponse)
 async def view_logs(request: Request, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
     return templates.TemplateResponse("logs.html", {"request": request})

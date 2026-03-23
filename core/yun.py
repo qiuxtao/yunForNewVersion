@@ -287,3 +287,41 @@ class YunCore:
             return True, runs
         except Exception as e:
             return False, str(e)
+
+    def get_run_detail(self, run_id, table_name):
+        try:
+            payload = json.dumps({"id": run_id, "tableName": table_name})
+            
+            my_utc = str(int(time.time()))
+            headers = {
+                'token': self.my_token,
+                'isApp': 'app',
+                'deviceId': self.my_device_id,
+                'deviceName': self.my_device_name,
+                'version': self.my_app_edition,
+                'platform': 'android',
+                'Content-Type': 'application/json; charset=utf-8',
+                'Connection': 'Keep-Alive',
+                'Accept-Encoding': 'gzip',
+                'User-Agent': 'okhttp/4.9.1',
+                'utc': my_utc,
+                'uuid': self.my_uuid,
+                'sign': self.getsign(my_utc, self.my_uuid)
+            }
+            
+            sm4_key = self.generate_sm4()
+            data_json = {
+                "cipherKey": self.encrypt_sm2(sm4_key),
+                "content": self.encrypt_sm4(payload, b64decode(sm4_key), isBytes=False)
+            }
+            
+            url = self.my_host + "/run/crsReocordInfo"
+            req = requests.post(url=url, data=json.dumps(data_json), headers=headers)
+            
+            import gzip
+            decrypted_bytes = self.decrypt_sm4(req.text, b64decode(sm4_key))
+            text = gzip.decompress(decrypted_bytes).decode('utf-8')
+            
+            return True, json.loads(text)
+        except Exception as e:
+            return False, str(e)
