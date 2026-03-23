@@ -446,7 +446,7 @@ async def stream_logs_json(limit: int = 500, db: Session = Depends(get_db), _: b
             "id": l.id,
             "user": user_name,
             "status": l.status,
-            "created_at": l.created_at.strftime("%Y-%m-%d %H:%M:%S") if l.created_at else "",
+            "created_at": l.run_time.strftime("%Y-%m-%d %H:%M:%S") if l.run_time else "",
             "message": l.message
         })
     return {"success": True, "data": data}
