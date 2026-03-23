@@ -415,6 +415,40 @@
             font-size: 12px;
             color: #93c5fd;
         }
+
+        .nav-tabs { display: flex; gap: 12px; margin-bottom: 24px; }
+        .nav-tab {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            padding: 10px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .nav-tab:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.1);
+        }
+        .nav-tab.active {
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            color: #93c5fd;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+        }
+        
+        .tab-pane {
+            display: none;
+            animation: tabFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .tab-pane.active { display: block; }
+        
+        @keyframes tabFadeIn {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
     <div class="ambient-layer">
@@ -434,8 +468,15 @@
             </div>
         </header>
 
-        <!-- Users Table -->
-        <div class="glass-panel">
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('accounts')" id="tab-btn-accounts">账户授权中心</button>
+            <button class="nav-tab" onclick="switchTab('schedules')" id="tab-btn-schedules">定时任务调度</button>
+            <button class="nav-tab" onclick="switchTab('routes')" id="tab-btn-routes">路线图库管理</button>
+        </div>
+
+        <!-- Tab: Accounts -->
+        <div id="tab-pane-accounts" class="tab-pane active">
+            <div class="glass-panel">
             <div class="panel-header">
                 <div style="display:flex; align-items:center; gap:12px;">
                     <h2 class="panel-title">账户列表</h2>
@@ -500,10 +541,12 @@
                 </table>
             </div>
         </div>
+        </div> <!-- End Tab Accounts -->
 
-        <!-- Schedules Table -->
-        <div class="glass-panel">
-            <div class="panel-header">
+        <!-- Tab: Schedules -->
+        <div id="tab-pane-schedules" class="tab-pane">
+            <div class="glass-panel">
+                <div class="panel-header">
                 <h2 class="panel-title">自动化任务列表</h2>
                 <button class="btn btn-primary" onclick="openModal('scheduleModal')">
                     添加任务
@@ -602,7 +645,6 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
                 <h2 class="panel-title" id="historyModalTitle">云端记录</h2>
                 <div style="display:flex; gap:8px;">
-                    <button class="btn btn-primary" id="exportHistoryBtn" style="display:none; padding:6px 16px; font-size:13px;" onclick="exportTermHistory()">导出历史</button>
                     <select id="historyTermSelect" class="form-select" style="width: auto; padding: 6px 30px 6px 14px; display:none;" onchange="loadTermHistory()">
                     </select>
                 </div>
@@ -760,6 +802,23 @@
                     <button type="submit" class="btn btn-primary">挂载服务</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+        <!-- Save Route Modal -->
+    <div class="modal-overlay" id="saveRouteModal">
+        <div class="modal-box">
+            <h2 class="panel-title" style="margin-bottom: 24px;">抽取云端路线至图库</h2>
+            <div class="form-group">
+                <label class="form-label">请选择目标存放线路组 (作为图集库)</label>
+                <select id="save_route_group_select" class="form-select"></select>
+            </div>
+            <input type="hidden" id="save_route_run_id">
+            <input type="hidden" id="save_route_mileage">
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('saveRouteModal')">取消</button>
+                <button class="btn btn-primary" id="save_route_btn" onclick="executeSaveRoute()">确定保存</button>
+            </div>
         </div>
     </div>
 
@@ -1000,7 +1059,7 @@
                                 <td style="color:var(--text-main);">${displayTime}</td>
                                 <td style="color:var(--success); font-weight:500;">${run.recordMileage || '0'} km</td>
                                 <td>
-                                    <button class="btn btn-secondary" style="padding:4px 8px; font-size:12px;" onclick="exportRunDetail('${run.id}', '${run.recordMileage || 0}')">导出路线</button>
+                                    <button class="btn btn-secondary" style="white-space:nowrap; padding:4px 8px; font-size:12px;" onclick="promptSaveRoute('${run.id}', '${run.recordMileage || 0}')">保存路线</button>
                                 </td>
                             </tr>`;
                         });
@@ -1077,6 +1136,243 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '验证登录';
+            }
+        }
+
+        // ================= Tab System =================
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-pane-' + tabId).classList.add('active');
+            document.getElementById('tab-btn-' + tabId).classList.add('active');
+            if (tabId === 'routes') {
+                loadRouteGroups();
+            }
+        }
+
+        // ================= Route Management =================
+        async function loadRouteGroups() {
+            const tbody = document.getElementById('routeGroupsTableBody');
+            tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state">正在加载图库数据...</div></td></tr>';
+            try {
+                const res = await fetch('/api/route_groups');
+                const result = await res.json();
+                if (result.success) {
+                    if (result.data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state">尚未创建任何线路组文件夹</div></td></tr>';
+                    } else {
+                        tbody.innerHTML = result.data.map(g => `
+                            <tr>
+                                <td><strong><i style="color:#fbbf24; margin-right:6px;">📁</i>${g.name}</strong></td>
+                                <td><span class="badge badge-neutral">${g.count} 张地形图</span></td>
+                                <td>
+                                    <div class="action-cell" style="display:flex; gap:8px;">
+                                        <button class="btn btn-info" style="padding:4px 10px; font-size:13px;" onclick="viewGroupRoutes('${g.name}')">管理图集</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+                    
+                    // Automatically update the options in schedule panels
+                    updateScheduleRouteOptions(result.data.map(g => g.name));
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state" style="color:var(--danger)">加载失败: ${result.message}</div></td></tr>`;
+                }
+            } catch(e) {
+                tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state" style="color:var(--danger)">网络异常: ${e}</div></td></tr>`;
+            }
+        }
+
+        function updateScheduleRouteOptions(groupNames) {
+            const selects = [
+                document.getElementById('edit_sched_route'),
+                document.querySelector('#scheduleModal select[name="route_type"]')
+            ];
+            selects.forEach(sel => {
+                if(!sel) return;
+                const prevVal = sel.value;
+                sel.innerHTML = groupNames.map(g => `<option value="${g}">${g}</option>`).join('');
+                if (groupNames.includes(prevVal)) sel.value = prevVal;
+                else if (groupNames.includes('tasks_else')) sel.value = 'tasks_else';
+            });
+        }
+
+        async function promptCreateRouteGroup() {
+            const name = prompt("请输入新线路组的基础名称 (例如: fch_campus):\n系统会自动加上 'tasks_' 前缀");
+            if (!name) return;
+            try {
+                const res = await fetch('/api/route_groups', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({name: name})
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert('图库组创建成功！');
+                    loadRouteGroups();
+                } else {
+                    alert('创建失败: ' + result.message);
+                }
+            } catch(e) {
+                alert('网络异常: ' + e);
+            }
+        }
+
+        async function promptSaveRoute(runId, mileage) {
+            try {
+                const res = await fetch('/api/route_groups');
+                const result = await res.json();
+                if (result.success) {
+                    const sel = document.getElementById('save_route_group_select');
+                    sel.innerHTML = result.data.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
+                    if (result.data.length === 0) {
+                        alert("现在还没有任何线路组！请先在【路线图库管理】中创建一个组。");
+                        return;
+                    }
+                    document.getElementById('save_route_run_id').value = runId;
+                    document.getElementById('save_route_mileage').value = mileage;
+                    openModal('saveRouteModal');
+                } else {
+                    alert("获取线路组失败: " + result.message);
+                }
+            } catch(e) {
+                alert("网络异常: " + e);
+            }
+        }
+
+        async function executeSaveRoute() {
+            const groupName = document.getElementById('save_route_group_select').value;
+            const runId = document.getElementById('save_route_run_id').value;
+            const mileage = document.getElementById('save_route_mileage').value;
+            
+            const userId = document.getElementById('current_history_user').value;
+            const termVal = document.getElementById('historyTermSelect').value;
+            const token = document.getElementById('current_history_token').value;
+            
+            const btn = document.getElementById('save_route_btn');
+            btn.innerHTML = '正在拉取写入...';
+            btn.disabled = true;
+
+            try {
+                // Fetch the actual raw GPS nodes first
+                const detailUrl = `/api/users/${userId}/history_detail?term_value=${encodeURIComponent(termVal)}&run_id=${encodeURIComponent(runId)}&token=${encodeURIComponent(token)}`;
+                const detailRes = await fetch(detailUrl);
+                const detailResult = await detailRes.json();
+                
+                if (!detailResult.success) {
+                    alert("官方原始路线拉取/解密失败: " + detailResult.message);
+                    return;
+                }
+                
+                // Save it to our specific Route Group Route API
+                const saveUrl = `/api/route_groups/${encodeURIComponent(groupName)}/save`;
+                const saveRes = await fetch(saveUrl, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        filename: `tasklist_${mileage}km_${runId}.json`,
+                        content: detailResult.data
+                    })
+                });
+                const saveResult = await saveRes.json();
+                if (saveResult.success) {
+                    alert("路线落盘保存成功！已入库。");
+                    closeModal('saveRouteModal');
+                } else {
+                    alert("服务器落盘写入失败: " + saveResult.message);
+                }
+            } catch(e) {
+                alert("流程异常: " + e);
+            } finally {
+                btn.innerHTML = '确定保存';
+                btn.disabled = false;
+            }
+        }
+
+        // Inner Route Editor viewer (Since the user wants an editor for inside a group without leaving)
+        async function viewGroupRoutes(groupName) {
+            try {
+                const res = await fetch(`/api/route_groups/${groupName}`);
+                const result = await res.json();
+                if (result.success) {
+                    let html = `<div style="padding:16px;">
+                        <h3 style="margin-bottom:16px; color:#fff; display:flex; justify-content:space-between;">
+                            <span>${groupName} / 包含路线概览</span>
+                            <button class="btn btn-ghost" onclick="loadRouteGroups()" style="padding:4px 8px;">返回列表</button>
+                        </h3>
+                        <table>
+                            <thead><tr><th>图集文件名</th><th>体积大小</th><th>操作</th></tr></thead>
+                            <tbody>
+                    `;
+                    if (result.data.length === 0) {
+                        html += `<tr><td colspan="3"><div class="empty-state">该图库内空空如也，快去云端记录存入吧</div></td></tr>`;
+                    } else {
+                        html += result.data.map(f => `
+                            <tr>
+                                <td>${f.filename}</td>
+                                <td>${f.size_kb} KB</td>
+                                <td>
+                                    <button class="btn btn-warning" style="padding:4px 8px; font-size:12px;" onclick="renameRouteFile('${groupName}', '${f.filename}')">改名</button>
+                                    <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteRouteFile('${groupName}', '${f.filename}')">删除</button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+                    html += `</tbody></table></div>`;
+                    document.getElementById('routeGroupsTableBody').parentNode.parentNode.innerHTML = html;
+                } else {
+                    alert("加载文件失败:" + result.message);
+                }
+            } catch(e) {
+                alert("网络异常: " + e);
+            }
+        }
+
+        async function reloadGroupViewAfterOperation(groupName) {
+            // Restore HTML structure then call viewGroupRoutes again
+            const outerDiv = document.querySelector('#tab-pane-routes .table-responsive');
+            outerDiv.innerHTML = `
+                <table style="table-layout: fixed;">
+                    <thead><tr><th style="width: 40%">线路组目录名</th><th style="width: 30%">包含路子数量</th><th style="width: 30%">操作</th></tr></thead>
+                    <tbody id="routeGroupsTableBody"><tr><td colspan="3">...</td></tr></tbody>
+                </table>
+            `;
+            viewGroupRoutes(groupName);
+        }
+
+        async function renameRouteFile(groupName, filename) {
+            const newName = prompt(`将 ${filename} 重命名为:`, filename);
+            if (!newName || newName === filename) return;
+            try {
+                const res = await fetch(`/api/route_groups/${groupName}/${filename}/rename`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({new_name: newName})
+                });
+                const result = await res.json();
+                if (result.success) {
+                    reloadGroupViewAfterOperation(groupName);
+                } else {
+                    alert("重命名失败: " + result.message);
+                }
+            } catch(e) {
+                alert("网络异常: " + e);
+            }
+        }
+
+        async function deleteRouteFile(groupName, filename) {
+            if (!confirm(`确定要从 ${groupName} 库中无情删除 ${filename} 吗？`)) return;
+            try {
+                const res = await fetch(`/api/route_groups/${groupName}/${filename}`, { method: 'DELETE' });
+                const result = await res.json();
+                if (result.success) {
+                    reloadGroupViewAfterOperation(groupName);
+                } else {
+                    alert("删除失败: " + result.message);
+                }
+            } catch(e) {
+                alert("网络异常: " + e);
             }
         }
     </script>
