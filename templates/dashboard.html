@@ -605,9 +605,34 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+        </div> <!-- End Tab Schedules -->
 
-        <!-- Logs removed as requested (Now in top menu and local buttons) -->
+        <!-- Tab: Routes -->
+        <div id="tab-pane-routes" class="tab-pane">
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">服务端图集体系 (Route Groups)</h2>
+                    <button class="btn btn-primary" onclick="promptCreateRouteGroup()">
+                        建立新线路组
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table style="table-layout: fixed;">
+                        <thead>
+                            <tr>
+                                <th style="width: 40%">线路组目录名</th>
+                                <th style="width: 30%">包含路线数 (.json)</th>
+                                <th style="width: 30%">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="routeGroupsTableBody">
+                            <tr><td colspan="3"><div class="empty-state">正在加载图库数据...</div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div> <!-- End Tab Routes -->
+
     </div>
 
     <!-- Local History Modal -->
