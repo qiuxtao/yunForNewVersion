@@ -1278,8 +1278,6 @@
                 const prevVal = sel.value;
                 sel.innerHTML = groupNames.map(g => `<option value="${g}">${g}</option>`).join('');
                 if (groupNames.includes(prevVal)) sel.value = prevVal;
-                else if (groupNames.includes('tasks_youdian')) sel.value = 'tasks_youdian';
-                else if (groupNames.length > 0) sel.value = groupNames[0];
             });
         }
 
