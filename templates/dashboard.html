@@ -890,7 +890,7 @@
                 csv += `"${rtime}","${run.recordMileage || '0'}"\n`;
             });
             let termName = document.getElementById('historyTermSelect').options[document.getElementById('historyTermSelect').selectedIndex].text.replace(/ /g, "_");
-            downloadCsv(`云端记录_${termName}.csv", csv);
+            downloadCsv(`云端记录_${termName}.csv`, csv);
         }
 
         async function viewLocalHistory(userId, username) {
