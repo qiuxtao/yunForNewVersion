@@ -18,6 +18,19 @@ from scheduler.tasks import init_scheduler, run_job_for_user
 from fastapi import WebSocket, WebSocketDisconnect
 from notifications.qq_bot import manager
 import sys
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    force=True
+)
+
+for name in ("uvicorn", "uvicorn.access", "uvicorn.error"):
+    l = logging.getLogger(name)
+    l.handlers = []
+    l.propagate = True
 
 # 设置日志目录并重定向标准输出/错误，以抓取所有 print/logger/tqdm 输出用于网页仿真终端
 if not os.path.exists('logs'):
