@@ -655,7 +655,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
                 <h2 class="panel-title" id="historyModalTitle">云端记录</h2>
                 <div style="display:flex; gap:8px;">
-                    <button class="btn btn-info" id="loadDetailsBtn" style="display:none; padding:6px 16px; font-size:13px;" onclick="loadAllRunDetails()">补全配速(耗时较长)</button>
+                    <button class="btn btn-info" id="loadDetailsBtn" style="display:none; padding:6px 16px; font-size:13px;" onclick="loadAllRunDetails()">补全信息</button>
                     <select id="historyTermSelect" class="form-select" style="width: auto; padding: 6px 30px 6px 14px; display:none;" onchange="loadTermHistory()">
                     </select>
                 </div>
@@ -1062,40 +1062,45 @@
                         }).length;
                     }
                     
-                    termHtml += `<h3 style="color:#60a5fa; margin-bottom:12px; font-size:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px;">${termName} <div style="float:right;"><span class="badge badge-success" style="margin-right:8px;">总计 ${totalRuns} 次</span><span class="badge badge-success" style="background:rgba(16,185,129,0.2); color:#10b981; border:1px solid rgba(16,185,129,0.3);">合格 <span id="termQualifiedCount">${qualifiedRuns}</span> 次</span></div></h3>`;
+                    termHtml += `<h3 style="color:#60a5fa; margin-bottom:12px; font-size:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <span>${termName}</span>
+                        <div style="font-size:13px; font-weight:normal;">
+                            <span class="badge badge-info" style="margin-right:8px;">总计 ${totalRuns} 次</span>
+                            <span class="badge badge-success">合格 <span id="termQualifiedCount" style="font-weight:bold;">${qualifiedRuns}</span> 次</span>
+                        </div>
+                    </h3>`;
                     
                     if (!result.data || result.data.length === 0) {
                         termHtml += `<div class="empty-state" style="padding:20px;">该学期尚无相关打卡记录</div>`;
                     } else {
-                        termHtml += '<div class="table-responsive" style="margin-bottom:12px;"><table><thead><tr><th style="white-space:nowrap;">运动时间</th><th style="white-space:nowrap;">状态</th><th style="white-space:nowrap;">耗时</th><th style="white-space:nowrap;">配速</th><th style="white-space:nowrap;">运动里程 (km)</th><th style="width: 80px; white-space:nowrap;">操作</th></tr></thead><tbody>';
+                        termHtml += '<div class="table-responsive" style="margin-bottom:12px;"><table><thead><tr><th style="white-space:nowrap; text-align:center;">运动时间 (开始)</th><th style="white-space:nowrap;">状态</th><th style="white-space:nowrap;">耗时</th><th style="white-space:nowrap;">配速</th><th style="white-space:nowrap;">运动里程 (km)</th><th style="width: 80px; white-space:nowrap;">操作</th></tr></thead><tbody>';
                         result.data.forEach(run => {
-                            let rtime = run.recordEndTime || run.endTime || run.recordDate || "-";
-                            // The Yun server provides recordEndTime formatted as "2025-02-25 12:04:56"
-                            // so we can display it identically without manual month extraction string ops
-                            let displayTime = rtime;
+                            let rtime = run.recordStartTime || run.startTime || run.recordDate || "-";
+                            // Split "YYYY-MM-DD HH:MM:SS" into two lines
+                            let displayTime = rtime.split(' ').join('<br>');
                             
                             let rawDur = run.duration || 0;
-                            let durDisplay = Math.floor(rawDur / 60) + "分" + (rawDur % 60) + "秒";
+                            let durDisplay = (rawDur === 0) ? '<span style="color:var(--text-secondary); font-size:12px;">待补全</span>' : (Math.floor(rawDur / 60) + "分" + (rawDur % 60) + "秒");
                             
                             let rawPace = run.recodePace || 0;
-                            let paceDisplay = "-";
+                            let paceDisplay = (rawPace === 0) ? '<span style="color:var(--text-secondary); font-size:12px;">待补全</span>' : "-";
                             if (rawPace > 0) {
                                 let m = Math.floor(rawPace);
                                 let s = Math.round((rawPace % 1) * 60).toString().padStart(2, '0');
                                 paceDisplay = m + "'" + s + '"';
                             }
                             
-                            let statusDisplay = '<span class="badge badge-neutral" id="status_' + run.id + '">待同步</span>';
+                            let statusDisplay = '<span class="badge badge-neutral" id="status_' + run.id + '">待补全</span>';
                             // If the list API already provides it (sometimes it does as 'qualified')
                             if (run.qualified === 1 || run.isQualified === 1) {
                                 statusDisplay = '<span class="badge badge-success" id="status_' + run.id + '">合格</span>';
                             } else if (run.qualified === 0 || run.isQualified === 0) {
-                                // Only show 'unqualified' if it's explicitly 0, otherwise stay in '待同步'
+                                // Only show 'unqualified' if it's explicitly 0, otherwise stay in '待补全'
                                 statusDisplay = '<span class="badge badge-error" id="status_' + run.id + '">未合格</span>';
                             }
 
                             termHtml += `<tr>
-                                <td style="color:var(--text-main); white-space:nowrap;">${displayTime}</td>
+                                <td style="color:var(--text-main); white-space:nowrap; text-align:center; line-height:1.4;">${displayTime}</td>
                                 <td style="white-space:nowrap;">${statusDisplay}</td>
                                 <td id="dur_${run.id}" style="white-space:nowrap;">${durDisplay}</td>
                                 <td id="pace_${run.id}" style="white-space:nowrap;">${paceDisplay}</td>
