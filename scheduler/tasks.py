@@ -111,6 +111,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
             add_log(db, user, "Failed", error_msg, sched)
             if user.qq_number: notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
             return
+        start_run_time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         logger.info(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 开始跑步任务成功: {msg}")
 
         # Load Tasks Map
@@ -185,12 +186,14 @@ def run_job_for_user(user_id: int, schedule_id: int):
         try:
             final_info = json.loads(res)
             if final_info.get("code") == 200:
+                end_run_time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 logger.info(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 结算成功: {res}")
                 mileage = float(task_map['data']['recordMileage'])
                 duration = float(task_map['data']['duration']) / 60.0
-                add_log(db, user, "Success", res, sched)
+                full_log_msg = f"开始时间: {start_run_time_str}\n结束时间: {end_run_time_str}\n结算数据: {res}"
+                add_log(db, user, "Success", full_log_msg, sched)
                 if user.qq_number:
-                    notify_run_success(user.qq_number, user.qq_notify_type, user.username, mileage, duration, res)
+                    notify_run_success(user.qq_number, user.qq_notify_type, user.username, mileage, duration, full_log_msg)
             else:
                 raise Exception(res)
         except Exception as e:
