@@ -45,7 +45,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
         if not user or not sched:
             return
 
-        logger.info(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 开始执行自动化跑步调度 (UserID: {user_id}, Name: {user.username})")
+        logger.info(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [{user.yun_username}] 开始执行自动化跑步调度 (UserID: {user_id}, Name: {user.username})")
         conf = load_app_config()
         
         # 提取公共APP参数
@@ -79,7 +79,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
             login_res = auth.login(user.yun_username, user.yun_password, school_id, school_host, school_login_url, user.uuid, utc)
             user.yun_token = login_res['token']
             db.commit()
-            logger.info(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 登录云运动成功，Token: {user.yun_token[:8]}...")
+            logger.info(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] [{user.yun_username}] 登录云运动成功，Token: {user.yun_token[:8]}...")
         except Exception as e:
             error_msg = f"登录失败: {e}"
             logger.error(error_msg)
@@ -102,7 +102,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
             add_log(db, user, "Failed", error_msg, sched)
             if user.qq_number: notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
             return
-        logger.info(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 获取首页运行信息成功")
+        logger.info(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] [{user.yun_username}] 获取首页运行信息成功")
 
         success, msg = core.start_run()
         if not success:
@@ -112,7 +112,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
             if user.qq_number: notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
             return
         start_run_time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        logger.info(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 开始跑步任务成功: {msg}")
+        logger.info(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] [{user.yun_username}] 开始跑步任务成功: {msg}")
 
         # Load Tasks Map
         path_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "tasks", sched.route_type)
@@ -143,8 +143,8 @@ def run_job_for_user(user_id: int, schedule_id: int):
         total_points = len(task_map['data']['pointsList'])
         sleep_time = task_map['data']['duration'] / total_points * split_count
 
-        logger.info(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 开始提交轨迹点... 共计 {total_points} 个点")
-        print("  0%|                                                                                | 0/{} [00:00<?, ?it/s]".format(total_points))
+        logger.info(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] [{user.yun_username}] 开始提交轨迹点... 共计 {total_points} 个点")
+        print(f"[{user.yun_username}]   0%|{' '*80}| 0/{total_points} [00:00<?, ?it/s]")
         
         start_t = time.time()
         for idx, point in enumerate(task_map['data']['pointsList']):
@@ -177,17 +177,17 @@ def run_job_for_user(user_id: int, schedule_id: int):
                 elapsed = int(time.time() - start_t)
                 mins, secs = divmod(elapsed, 60)
                 # Use carriage return \r to print dynamic lines in system terminal without spamming thousands of disjoint rows
-                sys.stdout.write(f"\r{pct:>3}%|{bar}| {idx+1}/{total_points} [{mins:02d}:{secs:02d}]")
+                sys.stdout.write(f"\r[{user.yun_username}] {pct:>3}%|{bar}| {idx+1}/{total_points} [{mins:02d}:{secs:02d}]")
                 sys.stdout.flush()
 
         print() # Jump to next line after \r finished
-        logger.info(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 发送结束信号...")
+        logger.info(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] [{user.yun_username}] 发送结束信号...")
         res = core.finish_by_points_map(task_map)
         try:
             final_info = json.loads(res)
             if final_info.get("code") == 200:
                 end_run_time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                logger.info(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 结算成功: {res}")
+                logger.info(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] [{user.yun_username}] 结算成功: {res}")
                 mileage = float(task_map['data']['recordMileage'])
                 duration = float(task_map['data']['duration']) / 60.0
                 # 获取该用户跑次统计数据
@@ -202,13 +202,13 @@ def run_job_for_user(user_id: int, schedule_id: int):
                             total_runs = len(h_data)
                             qualified_runs = sum(1 for r in h_data if str(r.get('qualified', '')) == '1' or r.get('qualified') is True or str(r.get('isQualified', '')) == '1' or r.get('isQualified') is True or str(r.get('qualifiedStatus', '')) in ['1', '合格'])
                 except Exception as e:
-                    logger.warning(f"Failed to fetch history for notification: {e}")
+                    logger.warning(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] [{user.yun_username}] Failed to fetch history for notification: {e}")
 
                 full_log_msg = f"开始时间: {start_run_time_str}\n结束时间: {end_run_time_str}\n结算数据: {res}"
                 if total_runs > 0:
-                    stats_msg = f"🏁 总计次数: {total_runs}次\n🎯 合格次数: {qualified_runs}次\n📅 开始时间: {start_run_time_str}\n⏳ 结束时间: {end_run_time_str}"
+                    stats_msg = f"🏁 总计次数: {total_runs}次\n🎯 合格次数: {qualified_runs}次\n📅 开始时间: {start_run_time_str}\n⏳ 结束时间: {end_run_time_str}\n📄 结算数据: {res}"
                 else:
-                    stats_msg = f"📅 开始时间: {start_run_time_str}\n⏳ 结束时间: {end_run_time_str}"
+                    stats_msg = f"📅 开始时间: {start_run_time_str}\n⏳ 结束时间: {end_run_time_str}\n📄 结算数据: {res}"
 
                 add_log(db, user, "Success", full_log_msg, sched)
                 if user.qq_number:
@@ -217,7 +217,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
                 raise Exception(res)
         except Exception as e:
             error_msg = str(e)
-            logger.error(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {error_msg}")
+            logger.error(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] [{user.yun_username}] {error_msg}")
             add_log(db, user, "Failed", error_msg, sched)
             if user.qq_number: notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
     finally:
