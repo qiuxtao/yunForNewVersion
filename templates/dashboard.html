@@ -508,7 +508,7 @@
                     stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)">
                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                 </svg>
-                YunRunner Dashboard
+                云运动控制台
             </div>
             <div style="display:flex; gap:12px;">
                 <a href="/logout" class="btn btn-ghost"
@@ -642,7 +642,7 @@
                         <thead>
                             <tr>
                                 <th style="width: 40%">线路组目录名</th>
-                                <th style="width: 30%">包含线路数 (.json)</th>
+                                <th style="width: 30%">包含线路数</th>
                                 <th style="width: 30%">操作</th>
                             </tr>
                         </thead>
@@ -1338,7 +1338,7 @@
                         <thead>
                             <tr>
                                 <th style="width: 40%">线路组目录名</th>
-                                <th style="width: 30%">包含线路数 (.json)</th>
+                                <th style="width: 30%">包含线路数</th>
                                 <th style="width: 30%">操作</th>
                             </tr>
                         </thead>
@@ -1360,12 +1360,12 @@
                     } else {
                         tbody.innerHTML = result.data.map(g => `
                             <tr>
-                                <td><strong><i style="color:#fbbf24; margin-right:6px;">📁</i>${g.name}</strong></td>
+                                <td><strong>${g.name}</strong></td>
                                 <td><span class="badge badge-neutral">${g.count} 条线路</span></td>
                                 <td>
                                     <div class="action-cell" style="display:flex; gap:8px;">
-                                        <button class="btn btn-info" style="padding:4px 10px; font-size:13px;" onclick="viewGroupRoutes('${g.name}')">管理线路</button>
-                                        <button class="btn btn-danger" style="padding:4px 10px; font-size:13px;" onclick="deleteRouteGroup('${g.name}')">删除</button>
+                                        <button class="btn btn-info" onclick="viewGroupRoutes('${g.name}')">管理线路</button>
+                                        <button class="btn btn-danger" onclick="deleteRouteGroup('${g.name}')">删除</button>
                                     </div>
                                 </td>
                             </tr>
@@ -1505,7 +1505,7 @@
                 if (result.success) {
                     let html = `<div style="padding:16px;">
                         <h3 style="margin-bottom:16px; color:#fff; display:flex; justify-content:space-between;">
-                            <span>${groupName} / 包含线路概览</span>
+                            <span>包含线路概览</span>
                             <button class="btn btn-ghost" onclick="loadRouteGroups()" style="padding:4px 8px;">返回列表</button>
                         </h3>
                         <div class="table-responsive">
@@ -1658,10 +1658,10 @@
                                         <div style="display:flex; justify-content: space-between; align-items: center;">
                                             <div>
                                                 <i class="fas fa-chevron-right" id="icon-${group.group_id}" style="margin-right: 10px; width: 14px;"></i>
-                                                <span style="font-size: 16px; font-weight: 600; color:var(--primary);">🕰️ ${group.target_time}</span>
-                                                <span style="margin-left: 20px; color:#fbbf24;">⏳ 0~${group.random_delay_minutes}分钟延迟</span>
-                                                <span style="margin-left: 20px;">🗺️ ${routeDisplay}</span>
-                                                <span style="margin-left: 20px; color:var(--success);">👥 包含 ${group.tasks.length} 名账户</span>
+                                                <span style="font-size: 16px; font-weight: 600; color:var(--primary);">${group.target_time}</span>
+                                                <span style="margin-left: 20px; color:#fbbf24;">0~${group.random_delay_minutes}分钟延迟</span>
+                                                <span style="margin-left: 20px;">${routeDisplay}</span>
+                                                <span style="margin-left: 20px; color:var(--success);">包含 ${group.tasks.length} 名账户</span>
                                             </div>
                                             <div style="display:flex; gap:8px;" onclick="event.stopPropagation();">
                                                 <form action="/runs/manual_trigger_group" method="POST" style="margin:0;">
@@ -1691,14 +1691,14 @@
                                             <input type="checkbox" ${s.is_active ? 'checked' : ''} onchange="toggleTaskActive(${s.id}, this)">
                                             <span class="slider"></span>
                                         </label>
-                                        <span style="margin-left: 10px;">👤 ${s.username}</span>
+                                        <span style="margin-left: 10px;">${s.username}</span>
                                     </td>
-                                    <td><span style="color:#aaa; font-size:12px;">↘ 继承父组</span></td>
-                                    <td><span style="color:#aaa; font-size:12px;">↘ 继承父组</span></td>
-                                    <td><span style="color:#aaa; font-size:12px;">↘ 继承父组</span></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
                                     <td>${statusBadge}</td>
                                     <td class="log-time">${s.last_run_time}</td>
-                                    <td><span style="color:#aaa; font-size:12px;">通过组操作</span></td>
+                                    <td></td>
                                 </tr>`;
                             });
                         });
