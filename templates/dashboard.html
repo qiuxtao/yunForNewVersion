@@ -37,6 +37,7 @@
             color: var(--text-main);
             min-height: 100vh;
             overflow-x: hidden;
+            overflow-y: scroll;
             position: relative;
         }
 
@@ -236,6 +237,9 @@
             border-collapse: separate;
             border-spacing: 0;
             text-align: left;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
         }
 
         th {
@@ -607,13 +611,13 @@
                     <table style="table-layout: fixed; width: 100%;">
                         <thead>
                             <tr>
-                                <th style="width: 15%">账户归属</th>
+                                <th style="width: 12%">账户归属</th>
                                 <th style="width: 10%">触发时间</th>
-                                <th style="width: 15%; color:#fbbf24;">随机延迟</th>
+                                <th style="width: 14%; color:#fbbf24;">随机延迟</th>
                                 <th style="width: 18%">执行路线集</th>
-                                <th style="width: 12%">上次运行状态</th>
-                                <th style="width: 16%">上次执行结束时间</th>
-                                <th style="width: 14%">操作</th>
+                                <th style="width: 10%">上次运行状态</th>
+                                <th style="width: 14%">上次执行结束时间</th>
+                                <th style="width: 22%">操作</th>
                             </tr>
                         </thead>
                         <tbody id="schedulesTableBody">
@@ -1365,9 +1369,9 @@
                                 <td><strong>${g.name}</strong></td>
                                 <td><span class="badge badge-neutral">${g.count} 条线路</span></td>
                                 <td>
-                                    <div class="action-cell" style="display:flex; gap:8px;">
-                                        <button class="btn btn-info" onclick="viewGroupRoutes('${g.name}')">管理线路</button>
-                                        <button class="btn btn-danger" onclick="deleteRouteGroup('${g.name}')">删除</button>
+                                    <div class="action-cell" style="display:flex; gap:8px; flex-wrap:wrap;">
+                                        <button class="btn btn-info" style="white-space:nowrap;" onclick="viewGroupRoutes('${g.name}')">管理线路</button>
+                                        <button class="btn btn-danger" style="white-space:nowrap;" onclick="deleteRouteGroup('${g.name}')">删除</button>
                                     </div>
                                 </td>
                             </tr>
@@ -1666,15 +1670,15 @@
                                     <td>-</td>
                                     <td>-</td>
                                     <td>
-                                        <div style="display:flex; gap:8px;" onclick="event.stopPropagation();">
+                                        <div style="display:flex; gap:8px; flex-wrap:wrap;" onclick="event.stopPropagation();">
                                             <form action="/runs/manual_trigger_group" method="POST" style="margin:0;">
                                                 <input type="hidden" name="group_id" value="${group.group_id}">
-                                                <button type="submit" class="btn btn-info btn-sm">执行组</button>
+                                                <button type="submit" class="btn btn-info btn-sm" style="white-space:nowrap;">执行组</button>
                                             </form>
-                                            <button type="button" class="btn btn-warning btn-sm" onclick="editGroup('${group.group_id}', '${group.target_time}', '${group.route_type}', ${group.random_delay_minutes}, '${userIds}')">编辑组</button>
+                                            <button type="button" class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="editGroup('${group.group_id}', '${group.target_time}', '${group.route_type}', ${group.random_delay_minutes}, '${userIds}')">编辑组</button>
                                             <form action="/schedules/delete_group" method="POST" style="margin:0;" onsubmit="return confirm('确定移除整组任务吗？')">
                                                 <input type="hidden" name="group_id" value="${group.group_id}">
-                                                <button type="submit" class="btn btn-danger btn-sm">全组删除</button>
+                                                <button type="submit" class="btn btn-danger btn-sm" style="white-space:nowrap;">全组删除</button>
                                             </form>
                                         </div>
                                     </td>
