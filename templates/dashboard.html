@@ -1545,9 +1545,21 @@
                     
                     if (result.success && result.data && result.data.data) {
                         const runDetail = result.data.data;
+                        console.log("Run Detail for " + run.id + ":", runDetail); // Debug
+                        
                         run.duration = runDetail.duration || 0;
                         run.recodePace = runDetail.recodePace || 0;
-                        run.qualified = (runDetail.qualified === 1 || runDetail.isQualified === 1) ? 1 : 0;
+                        
+                        // Robust check for qualification (handle 1, "1", true, etc.)
+                        const q = runDetail.qualified;
+                        const iq = runDetail.isQualified;
+                        const qs = runDetail.qualifiedStatus;
+                        
+                        const isOk = (q == 1 || q == "1" || q === true || 
+                                     iq == 1 || iq == "1" || iq === true ||
+                                     qs == 1 || qs == "1" || qs === "合格");
+                        
+                        run.qualified = isOk ? 1 : 0;
                         
                         let durDisplay = Math.floor(run.duration / 60) + "分" + (run.duration % 60) + "秒";
                         let paceDisplay = "-";
@@ -1564,7 +1576,7 @@
                         if (durTd) durTd.innerText = durDisplay;
                         if (paceTd) paceTd.innerText = paceDisplay;
                         if (statusSpan) {
-                            if (run.qualified === 1) {
+                            if (isOk) {
                                 statusSpan.className = 'badge badge-success';
                                 statusSpan.innerText = '合格';
                             } else {
