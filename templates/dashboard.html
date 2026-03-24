@@ -1053,7 +1053,7 @@
                     if (!result.data || result.data.length === 0) {
                         termHtml += `<div class="empty-state" style="padding:20px;">该学期尚无相关打卡记录</div>`;
                     } else {
-                        termHtml += '<div class="table-responsive" style="margin-bottom:12px;"><table><thead><tr><th>运动时间</th><th>耗时</th><th>配速</th><th>运动里程 (km)</th><th style="width: 80px;">操作</th></tr></thead><tbody>';
+                        termHtml += '<div class="table-responsive" style="margin-bottom:12px;"><table><thead><tr><th>运动时间</th><th>状态</th><th>耗时</th><th>配速</th><th>运动里程 (km)</th><th style="width: 80px;">操作</th></tr></thead><tbody>';
                         result.data.forEach(run => {
                             let rtime = run.recordEndTime || run.endTime || run.recordDate || "-";
                             // The Yun server provides recordEndTime formatted as "2025-02-25 12:04:56"
@@ -1071,8 +1071,18 @@
                                 paceDisplay = m + "'" + s + '"';
                             }
                             
+                            let statusDisplay = '<span class="badge badge-neutral" id="status_' + run.id + '">待同步</span>';
+                            // If the list API already provides it (sometimes it does as 'qualified')
+                            if (run.qualified === 1 || run.isQualified === 1) {
+                                statusDisplay = '<span class="badge badge-success" id="status_' + run.id + '">合格</span>';
+                            } else if (run.qualified === 0 || run.isQualified === 0) {
+                                // Only show 'unqualified' if it's explicitly 0, otherwise stay in '待同步'
+                                statusDisplay = '<span class="badge badge-error" id="status_' + run.id + '">未合格</span>';
+                            }
+
                             termHtml += `<tr>
                                 <td style="color:var(--text-main);">${displayTime}</td>
+                                <td>${statusDisplay}</td>
                                 <td id="dur_${run.id}">${durDisplay}</td>
                                 <td id="pace_${run.id}">${paceDisplay}</td>
                                 <td style="color:var(--success); font-weight:500;">${run.recordMileage || '0'} km</td>
@@ -1537,6 +1547,7 @@
                         const runDetail = result.data.data;
                         run.duration = runDetail.duration || 0;
                         run.recodePace = runDetail.recodePace || 0;
+                        run.qualified = (runDetail.qualified === 1 || runDetail.isQualified === 1) ? 1 : 0;
                         
                         let durDisplay = Math.floor(run.duration / 60) + "分" + (run.duration % 60) + "秒";
                         let paceDisplay = "-";
@@ -1548,8 +1559,19 @@
                         
                         const durTd = document.getElementById(`dur_${run.id}`);
                         const paceTd = document.getElementById(`pace_${run.id}`);
+                        const statusSpan = document.getElementById(`status_${run.id}`);
+                        
                         if (durTd) durTd.innerText = durDisplay;
                         if (paceTd) paceTd.innerText = paceDisplay;
+                        if (statusSpan) {
+                            if (run.qualified === 1) {
+                                statusSpan.className = 'badge badge-success';
+                                statusSpan.innerText = '合格';
+                            } else {
+                                statusSpan.className = 'badge badge-error';
+                                statusSpan.innerText = '未合格';
+                            }
+                        }
                     }
                 } catch(e) {
                     console.error("加载详情失败: ", e);
