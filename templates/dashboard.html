@@ -561,7 +561,7 @@
                             <th style="color:#fbbf24;">随机延迟</th>
                             <th>执行路线集</th>
                             <th>上次运行状态</th>
-                            <th>上次执行时间</th>
+                            <th>上次执行结束时间</th>
                             <th>操作</th>
                         </tr>
                     </thead>
@@ -1073,7 +1073,7 @@
                     if (!result.data || result.data.length === 0) {
                         termHtml += `<div class="empty-state" style="padding:20px;">该学期尚无相关打卡记录</div>`;
                     } else {
-                        termHtml += '<div class="table-responsive" style="margin-bottom:12px;"><table><thead><tr><th style="white-space:nowrap;">运动时间</th><th style="white-space:nowrap;">状态</th><th style="white-space:nowrap;">耗时</th><th style="white-space:nowrap;">配速</th><th style="white-space:nowrap;">运动里程 (km)</th><th style="width: 80px; white-space:nowrap;">操作</th></tr></thead><tbody>';
+                        termHtml += '<div class="table-responsive" style="margin-bottom:12px;"><table><thead><tr><th style="white-space:nowrap;">运动结束时间</th><th style="white-space:nowrap;">状态</th><th style="white-space:nowrap;">耗时</th><th style="white-space:nowrap;">配速</th><th style="white-space:nowrap;">运动里程 (km)</th><th style="width: 80px; white-space:nowrap;">操作</th></tr></thead><tbody>';
                         result.data.forEach(run => {
                             let rtime = run.recordEndTime || run.endTime || run.recordDate || "-";
                             let displayTime = rtime;
