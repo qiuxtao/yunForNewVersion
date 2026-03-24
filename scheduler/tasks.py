@@ -229,12 +229,34 @@ def scan_and_run_schedules():
     Cron Job scheduled every minute. Scans Schedules for matches to current HH:MM.
     """
     now = datetime.datetime.now()
+    
+    import os, configparser
+    config = configparser.ConfigParser()
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.ini')
+    if os.path.exists(config_path):
+        config.read(config_path, encoding='utf-8')
+        if config.has_section("Scheduler"):
+            exclude_weekdays = config.get("Scheduler", "exclude_weekdays", fallback="").strip()
+            if exclude_weekdays:
+                weekdays = [int(x.strip()) for x in exclude_weekdays.split(",") if x.strip().isdigit()]
+                if now.weekday() in weekdays:
+                    # 匹配到休息日，直接跳过本分钟的自动扫描
+                    return
+            
+            exclude_dates = config.get("Scheduler", "exclude_dates", fallback="").strip()
+            if exclude_dates:
+                dates = [x.strip() for x in exclude_dates.split(",") if x.strip()]
+                if now.strftime("%m%d") in dates:
+                    # 匹配到节假日，直接跳过本分钟的自动扫描
+                    return
+
     current_time_str = now.strftime("%H:%M")
     
     db: Session = SessionLocal()
-    # Find active users with due schedules
+    # Find active users with due and active schedules
     due_schedules = db.query(Schedule).join(User).filter(
         User.is_active == True,
+        Schedule.is_active == True,
         Schedule.target_time == current_time_str
     ).all()
     

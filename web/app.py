@@ -290,22 +290,27 @@ async def add_schedule(
 ):
     form_data = await request.form()
     user_ids = form_data.getlist("user_ids")
+    import uuid
+    new_group_id = uuid.uuid4().hex
+    
     for uid in user_ids:
         new_sched = models.Schedule(
             user_id=int(uid),
+            group_id=new_group_id,
             target_time=target_time,
             route_type=route_type,
             random_delay_minutes=random_delay_minutes,
-            last_run_status="Pending"
+            last_run_status="Pending",
+            is_active=True
         )
         db.add(new_sched)
     db.commit()
     return RedirectResponse(url="/", status_code=303)
 
 @app.post("/schedules/edit")
-async def edit_schedule(
+async def edit_schedule_group(
     request: Request,
-    schedule_id: int = Form(...),
+    group_id: str = Form(...),
     target_time: str = Form(...),
     route_type: str = Form(...),
     random_delay_minutes: int = Form(0),
@@ -313,30 +318,49 @@ async def edit_schedule(
     _: bool = Depends(check_admin)
 ):
     form_data = await request.form()
-    user_ids = form_data.getlist("user_ids")
+    new_user_ids = set([int(uid) for uid in form_data.getlist("user_ids")])
     
-    sched = db.query(models.Schedule).filter(models.Schedule.id == schedule_id).first()
-    if sched:
-        sched.target_time = target_time
-        sched.route_type = route_type
-        sched.random_delay_minutes = random_delay_minutes
-        if user_ids:
-            sched.user_id = int(user_ids[0])
+    existing_scheds = db.query(models.Schedule).filter(models.Schedule.group_id == group_id).all()
+    existing_user_ids = set([s.user_id for s in existing_scheds])
+    
+    for s in existing_scheds:
+        if s.user_id not in new_user_ids:
+            db.delete(s)
+        else:
+            s.target_time = target_time
+            s.route_type = route_type
+            s.random_delay_minutes = random_delay_minutes
+            
+    for uid in new_user_ids - existing_user_ids:
+        new_sched = models.Schedule(
+            user_id=uid,
+            group_id=group_id,
+            target_time=target_time,
+            route_type=route_type,
+            random_delay_minutes=random_delay_minutes,
+            last_run_status="Pending",
+            is_active=True
+        )
+        db.add(new_sched)
+        
     db.commit()
     return RedirectResponse(url="/", status_code=303)
 
-@app.post("/runs/manual_trigger")
-async def manual_trigger(
-    user_id: int = Form(...),
-    schedule_id: int = Form(...),
+@app.post("/runs/manual_trigger_group")
+async def manual_trigger_group(
+    group_id: str = Form(...),
+    db: Session = Depends(get_db),
     _: bool = Depends(check_admin)
 ):
     from scheduler.tasks import scheduler
-    scheduler.add_job(
-        run_job_for_user,
-        args=[user_id, schedule_id],
-        misfire_grace_time=300
-    )
+    scheds = db.query(models.Schedule).filter(models.Schedule.group_id == group_id).all()
+    for s in scheds:
+        if s.is_active:
+            scheduler.add_job(
+                run_job_for_user,
+                args=[s.user_id, s.id],
+                misfire_grace_time=300
+            )
     return RedirectResponse(url="/", status_code=303)
 
 @app.post("/users/delete")
@@ -347,13 +371,23 @@ async def delete_user(user_id: int = Form(...), db: Session = Depends(get_db), _
         db.commit()
     return RedirectResponse(url="/", status_code=303)
 
-@app.post("/schedules/delete")
-async def delete_schedule(schedule_id: int = Form(...), db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+@app.post("/schedules/delete_group")
+async def delete_schedule_group(group_id: str = Form(...), db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    scheds = db.query(models.Schedule).filter(models.Schedule.group_id == group_id).all()
+    for s in scheds:
+        db.delete(s)
+    db.commit()
+    return RedirectResponse(url="/", status_code=303)
+
+@app.post("/api/schedules/{schedule_id}/toggle_active")
+async def toggle_schedule_active(schedule_id: int, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    from fastapi.responses import JSONResponse
     sched = db.query(models.Schedule).filter(models.Schedule.id == schedule_id).first()
     if sched:
-        db.delete(sched)
+        sched.is_active = not sched.is_active
         db.commit()
-    return RedirectResponse(url="/", status_code=303)
+        return JSONResponse({"success": True, "new_state": sched.is_active})
+    return JSONResponse({"success": False, "message": "Task not found"})
 
 @app.get("/api/schedules")
 async def get_schedules_json(db: Session = Depends(get_db), _: bool = Depends(check_admin)):
@@ -370,7 +404,9 @@ async def get_schedules_json(db: Session = Depends(get_db), _: bool = Depends(ch
             "route_type": s.route_type,
             "random_delay_minutes": s.random_delay_minutes,
             "last_run_status": s.last_run_status,
-            "last_run_time": s.last_run_time.strftime('%Y-%m-%d %H:%M:%S') if s.last_run_time else '-'
+            "last_run_time": s.last_run_time.strftime('%Y-%m-%d %H:%M:%S') if s.last_run_time else '-',
+            "group_id": s.group_id,
+            "is_active": s.is_active
         })
     return JSONResponse({"success": True, "data": results})
 

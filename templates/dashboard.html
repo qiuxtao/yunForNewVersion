@@ -471,6 +471,28 @@
             }
         }
     </style>
+    <style>
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 32px;
+            height: 18px;
+            margin: 0;
+            vertical-align: middle;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--glass-border); transition: .3s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px;
+            background-color: white; transition: .3s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--primary); }
+        input:focus + .slider { box-shadow: 0 0 1px var(--primary); }
+        input:checked + .slider:before { transform: translateX(14px); }
+    </style>
 </head>
 
 <body>
@@ -813,9 +835,22 @@
 
     <div class="modal-overlay" id="editScheduleModal">
         <div class="modal-box">
-            <h2 class="panel-title" style="margin-bottom: 24px;">编辑自动化任务</h2>
+            <h2 class="panel-title" style="margin-bottom: 24px;">编辑任务组</h2>
             <form action="/schedules/edit" method="POST">
-                <input type="hidden" name="schedule_id" id="edit_sched_id">
+                <input type="hidden" name="group_id" id="edit_group_id">
+                
+                <div class="form-group">
+                    <label class="form-label">授权目标实例（可多选）</label>
+                    <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; max-height: 150px; overflow-y: auto;">
+                        {% for u in users %}
+                        <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="user_ids" value="{{ u.id }}" id="edit_usr_{{ u.id }}" class="edit-group-user-cb" style="cursor: pointer;">
+                            <label for="edit_usr_{{ u.id }}" style="cursor: pointer; font-size: 14px; user-select: none;">{{ u.username }} ({{ u.yun_username }})</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
                 <div class="form-group">
                     <label class="form-label">Cron 定时 (每日执行, 24小时制 HH:MM)</label>
                     <input type="time" class="form-control" name="target_time" id="edit_sched_time" required>
@@ -1542,6 +1577,48 @@
             }
         }
 
+        async function toggleTaskActive(scheduleId, checkbox) {
+            const originalState = !checkbox.checked;
+            try {
+                const res = await fetch(`/api/schedules/${scheduleId}/toggle_active`, { method: 'POST' });
+                const data = await res.json();
+                if (!data.success) {
+                    alert("状态更新失败: " + data.message);
+                    checkbox.checked = originalState;
+                }
+            } catch (e) {
+                alert("网络错误");
+                checkbox.checked = originalState;
+            }
+        }
+        
+        function toggleGroupRows(groupId) {
+            const rows = document.querySelectorAll('.child-' + groupId);
+            const icon = document.getElementById('icon-' + groupId);
+            rows.forEach(r => {
+                if (r.style.display === 'none') {
+                    r.style.display = 'table-row';
+                    if(icon) icon.className = 'fas fa-chevron-down';
+                } else {
+                    r.style.display = 'none';
+                    if(icon) icon.className = 'fas fa-chevron-right';
+                }
+            });
+        }
+        
+        function editGroup(groupId, time, route, delay, userIdsStr) {
+            document.getElementById('edit_group_id').value = groupId;
+            document.getElementById('edit_sched_time').value = time;
+            document.getElementById('edit_sched_route').value = route;
+            document.getElementById('edit_sched_delay').value = delay;
+            
+            const userIds = JSON.parse(decodeURIComponent(userIdsStr));
+            document.querySelectorAll('.edit-group-user-cb').forEach(cb => {
+                cb.checked = userIds.includes(parseInt(cb.value));
+            });
+            openModal('editScheduleModal');
+        }
+
         async function loadSchedules() {
             const tbody = document.getElementById('schedulesTableBody');
             if (!tbody) return;
@@ -1553,39 +1630,79 @@
                     if (result.data.length === 0) {
                         tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">尚未创建任何调度规则</div></td></tr>';
                     } else {
-                        tbody.innerHTML = result.data.map(s => {
-                            let statusBadge = `<span class="badge badge-neutral">${s.last_run_status}</span>`;
-                            if (s.last_run_status === 'Success') statusBadge = '<span class="badge badge-success">Completed</span>';
-                            else if (s.last_run_status === 'Failed') statusBadge = '<span class="badge badge-error">Failed</span>';
+                        const groups = {};
+                        result.data.forEach(s => {
+                            const key = s.group_id || `${s.target_time}-${s.route_type}-${s.random_delay_minutes}`;
+                            if (!groups[key]) {
+                                groups[key] = {
+                                    group_id: key,
+                                    target_time: s.target_time,
+                                    route_type: s.route_type,
+                                    random_delay_minutes: s.random_delay_minutes,
+                                    tasks: []
+                                };
+                            }
+                            groups[key].tasks.push(s);
+                        });
+                        
+                        let html = '';
+                        Object.values(groups).forEach(group => {
+                            const userIds = encodeURIComponent(JSON.stringify(group.tasks.map(t => t.user_id)));
+                            
+                            const isMissing = window.availableGroups && !window.availableGroups.includes(group.route_type);
+                            const routeDisplay = isMissing ? `<code style="color:var(--danger); text-decoration:line-through;">${group.route_type}</code> <span style="font-size:10px; color:var(--danger)">(库已删)</span>` : `<code>${group.route_type}</code>`;
 
-                            // Check if group still exists
-                            const isMissing = window.availableGroups && !window.availableGroups.includes(s.route_type);
-                            const routeDisplay = isMissing ? `<code style="color:var(--danger); text-decoration:line-through;">${s.route_type}</code> <span style="font-size:10px; color:var(--danger)">(库已删)</span>` : `<code>${s.route_type}</code>`;
-
-                            return `
-                            <tr>
-                                <td>${s.username}</td>
-                                <td style="font-weight:600; color:var(--primary);">${s.target_time}</td>
-                                <td style="color:#fbbf24;">+${s.random_delay_minutes} 分钟随机</td>
-                                <td>${routeDisplay}</td>
-                                <td>${statusBadge}</td>
-                                <td class="log-time">${s.last_run_time}</td>
-                                <td>
-                                    <div class="action-cell" style="display:flex; gap:8px;">
-                                        <form action="/runs/manual_trigger" method="POST" style="margin:0;">
-                                            <input type="hidden" name="user_id" value="${s.user_id}">
-                                            <input type="hidden" name="schedule_id" value="${s.id}">
-                                            <button type="submit" class="btn btn-info">立即执行</button>
-                                        </form>
-                                        <button type="button" class="btn btn-warning" onclick="editSchedule(${s.id}, '${s.target_time}', '${s.route_type}', ${s.random_delay_minutes})">编辑</button>
-                                        <form action="/schedules/delete" method="POST" style="margin:0;">
-                                            <input type="hidden" name="schedule_id" value="${s.id}">
-                                            <button type="submit" class="btn btn-danger">移除</button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>`;
-                        }).join('');
+                            html += `
+                                <tr class="group-row" style="cursor: pointer; background-color: rgba(255,255,255,0.05);" onclick="toggleGroupRows('${group.group_id}')">
+                                    <td colspan="7">
+                                        <div style="display:flex; justify-content: space-between; align-items: center;">
+                                            <div>
+                                                <i class="fas fa-chevron-right" id="icon-${group.group_id}" style="margin-right: 10px; width: 14px;"></i>
+                                                <span style="font-size: 16px; font-weight: 600; color:var(--primary);">🕰️ ${group.target_time}</span>
+                                                <span style="margin-left: 20px; color:#fbbf24;">⏳ 0~${group.random_delay_minutes}分钟延迟</span>
+                                                <span style="margin-left: 20px;">🗺️ ${routeDisplay}</span>
+                                                <span style="margin-left: 20px; color:var(--success);">👥 包含 ${group.tasks.length} 名账户</span>
+                                            </div>
+                                            <div style="display:flex; gap:8px;" onclick="event.stopPropagation();">
+                                                <form action="/runs/manual_trigger_group" method="POST" style="margin:0;">
+                                                    <input type="hidden" name="group_id" value="${group.group_id}">
+                                                    <button type="submit" class="btn btn-info btn-sm">执行组</button>
+                                                </form>
+                                                <button type="button" class="btn btn-warning btn-sm" onclick="editGroup('${group.group_id}', '${group.target_time}', '${group.route_type}', ${group.random_delay_minutes}, '${userIds}')">编辑组</button>
+                                                <form action="/schedules/delete_group" method="POST" style="margin:0;" onsubmit="return confirm('确定移除整组任务吗？')">
+                                                    <input type="hidden" name="group_id" value="${group.group_id}">
+                                                    <button type="submit" class="btn btn-danger btn-sm">全组删除</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                            
+                            group.tasks.forEach(s => {
+                                let statusBadge = `<span class="badge badge-neutral">${s.last_run_status}</span>`;
+                                if (s.last_run_status === 'Success') statusBadge = '<span class="badge badge-success">Completed</span>';
+                                else if (s.last_run_status === 'Failed') statusBadge = '<span class="badge badge-error">Failed</span>';
+                                
+                                html += `
+                                <tr class="child-row child-${group.group_id}" style="display: none; background-color: rgba(0,0,0,0.2);">
+                                    <td style="padding-left: 40px; display:flex; align-items:center;">
+                                        <label class="switch">
+                                            <input type="checkbox" ${s.is_active ? 'checked' : ''} onchange="toggleTaskActive(${s.id}, this)">
+                                            <span class="slider"></span>
+                                        </label>
+                                        <span style="margin-left: 10px;">👤 ${s.username}</span>
+                                    </td>
+                                    <td><span style="color:#aaa; font-size:12px;">↘ 继承父组</span></td>
+                                    <td><span style="color:#aaa; font-size:12px;">↘ 继承父组</span></td>
+                                    <td><span style="color:#aaa; font-size:12px;">↘ 继承父组</span></td>
+                                    <td>${statusBadge}</td>
+                                    <td class="log-time">${s.last_run_time}</td>
+                                    <td><span style="color:#aaa; font-size:12px;">通过组操作</span></td>
+                                </tr>`;
+                            });
+                        });
+                        tbody.innerHTML = html;
                     }
                 }
             } catch (e) {

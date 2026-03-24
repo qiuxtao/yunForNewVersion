@@ -48,6 +48,12 @@ class Schedule(Base):
     # 定时运行时间段 例如 "06:30", "18:00"
     target_time = Column(String)
     
+    # 任务组绑定标识（用纯UUID字符串或者空值兼容老的独立记录）
+    group_id = Column(String, index=True)
+    
+    # 用户独立开关
+    is_active = Column(Boolean, default=True)
+    
     # 使用哪条跑步路线 (tasks_fch / tasks_txl / tasks_xc 等)
     route_type = Column(String, default="tasks_youdian")
     
