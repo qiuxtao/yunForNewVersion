@@ -539,8 +539,40 @@ async def list_routes_in_group(group_name: str, _: bool = Depends(check_admin)):
         if f.endswith(".json"):
             path = os.path.join(group_path, f)
             size = os.path.getsize(path)
-            files.append({"filename": f, "size_kb": round(size / 1024, 2)})
+            
+            duration = 0
+            recode_pace = 0
+            try:
+                with open(path, 'r', encoding='utf-8') as jf:
+                    jdata = json.load(jf)
+                    res_data = jdata.get("data", {})
+                    duration = float(res_data.get("duration", 0)) / 60.0
+                    recode_pace = float(res_data.get("recodePace", 0))
+            except Exception:
+                pass
+                
+            files.append({
+                "filename": f, 
+                "size_kb": round(size / 1024, 2),
+                "duration": duration,
+                "recode_pace": recode_pace
+            })
     return JSONResponse({"success": True, "data": files})
+
+@app.get("/api/route_groups/{group_name}/{filename}")
+async def get_route_file_detail(group_name: str, filename: str, _: bool = Depends(check_admin)):
+    if ".." in group_name or ".." in filename:
+        return JSONResponse({"success": False, "message": "非法路径"})
+    group_path = os.path.join("data/tasks", group_name)
+    path = os.path.join(group_path, filename)
+    if not os.path.exists(path):
+        return JSONResponse({"success": False, "message": "线路不存在"})
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return JSONResponse({"success": True, "data": data})
+    except Exception as e:
+        return JSONResponse({"success": False, "message": str(e)})
 
 class RouteSaveReq(BaseModel):
     filename: str

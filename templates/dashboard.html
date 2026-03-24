@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>云运动控制台</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Leaflet JS for Route Map Preview -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <style>
         :root {
             --primary: #3b82f6;
@@ -246,6 +249,17 @@
         
         tr:hover td {
             background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Sticky Action Column inside Modals to prevent layout break */
+        .modal-box .table-responsive th:last-child,
+        .modal-box .table-responsive td:last-child {
+            position: sticky;
+            right: 0;
+            background: #1e293b;
+            z-index: 10;
+            box-shadow: -4px 0 12px rgba(0,0,0,0.2);
+            padding-left: 20px;
         }
 
         .badge {
@@ -1404,25 +1418,42 @@
                             <span>${groupName} / 包含线路概览</span>
                             <button class="btn btn-ghost" onclick="loadRouteGroups()" style="padding:4px 8px;">返回列表</button>
                         </h3>
+                        <div class="table-responsive">
                         <table>
-                            <thead><tr><th>线路文件名</th><th>体积大小</th><th>操作</th></tr></thead>
+                            <thead><tr><th style="white-space:nowrap;">线路文件名</th><th style="white-space:nowrap;">体积大小</th><th style="white-space:nowrap;">耗时</th><th style="white-space:nowrap;">配速</th><th style="width: 140px; white-space:nowrap;">操作</th></tr></thead>
                             <tbody>
                     `;
                     if (result.data.length === 0) {
-                        html += `<tr><td colspan="3"><div class="empty-state">该线路库内空空如也，快去云端记录存入吧</div></td></tr>`;
+                        html += `<tr><td colspan="5"><div class="empty-state">该线路库内空空如也，快去云端记录存入吧</div></td></tr>`;
                     } else {
-                        html += result.data.map(f => `
+                        html += result.data.map(f => {
+                            let durDisplay = "-";
+                            if (f.duration) {
+                                durDisplay = Math.floor(f.duration) + "分" + Math.round((f.duration % 1) * 60) + "秒";
+                            }
+                            let paceDisplay = "-";
+                            if (f.recode_pace) {
+                                let m = Math.floor(f.recode_pace);
+                                let s = Math.round((f.recode_pace % 1) * 60).toString().padStart(2, '0');
+                                paceDisplay = m + "'" + s + '"';
+                            }
+                            
+                            return `
                             <tr>
-                                <td>${f.filename}</td>
+                                <td style="color:#60a5fa;">${f.filename}</td>
                                 <td>${f.size_kb} KB</td>
-                                <td>
-                                    <button class="btn btn-warning" style="padding:4px 8px; font-size:12px;" onclick="renameRouteFile('${groupName}', '${f.filename}')">重命名</button>
+                                <td>${durDisplay}</td>
+                                <td>${paceDisplay}</td>
+                                <td style="white-space:nowrap;">
+                                    <button class="btn btn-info" style="padding:4px 8px; font-size:12px; margin-right:4px;" onclick="previewRoute('${groupName}', '${f.filename}')">预览</button>
+                                    <button class="btn btn-warning" style="padding:4px 8px; font-size:12px; margin-right:4px;" onclick="renameRouteFile('${groupName}', '${f.filename}')">更名</button>
                                     <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteRouteFile('${groupName}', '${f.filename}')">删除</button>
                                 </td>
                             </tr>
-                        `).join('');
+                        `;
+                        }).join('');
                     }
-                    html += `</tbody></table></div>`;
+                    html += `</tbody></table></div></div>`;
                     document.getElementById('routesTableContainer').innerHTML = html;
                 } else {
                     alert("加载文件失败:" + result.message);
@@ -1618,6 +1649,96 @@
                 btn.disabled = false;
             }, 3000);
         }
+        // --- Route Map Preview Logic ---
+        let mapInstance = null;
+        let polylineLayer = null;
+
+        async function previewRoute(groupName, filename) {
+            // Check if map container exists, if not, append to body
+            let modal = document.getElementById('mapPreviewModal');
+            if (!modal) {
+                const modalHtml = `
+                <div class="modal-overlay" id="mapPreviewModal" style="z-index: 200;">
+                    <div class="modal-box" style="max-width: 800px; height: 80vh; display:flex; flex-direction:column; padding: 20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+                            <h2 class="panel-title" id="mapPreviewTitle">路线预览</h2>
+                            <button class="btn btn-ghost" onclick="closeMapPreview()" style="font-size:24px; padding:0 10px;">&times;</button>
+                        </div>
+                        <div id="mapRenderArea" style="flex:1; width: 100%; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2);"></div>
+                    </div>
+                </div>`;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                modal = document.getElementById('mapPreviewModal');
+            }
+
+            document.getElementById('mapPreviewTitle').innerText = filename + " 轨迹预览中...";
+            modal.classList.add('active');
+
+            try {
+                const res = await fetch(`/api/route_groups/${encodeURIComponent(groupName)}/${encodeURIComponent(filename)}`);
+                const result = await res.json();
+                
+                document.getElementById('mapPreviewTitle').innerText = filename + " (路线概览)";
+                
+                if (result.success && result.data && result.data.data && result.data.data.pointsList) {
+                    const points = result.data.data.pointsList;
+                    if (points.length === 0) {
+                        alert("该文件中没有有效的坐标点 (pointsList = 0)");
+                        return;
+                    }
+                    
+                    // The coordinate system mapping in typical cloud running is either GCJ02 or WGS84
+                    // We extract Lat/Lng
+                    let latLngs = [];
+                    points.forEach(pt => {
+                        const coords = pt.point.split(','); // "lng,lat"
+                        if (coords.length === 2) {
+                            latLngs.push([parseFloat(coords[1]), parseFloat(coords[0])]);
+                        }
+                    });
+
+                    // Initialize Map if not yet
+                    if (!mapInstance) {
+                        // Delay slightly to ensure DOM is ready and sized right
+                        setTimeout(() => {
+                            mapInstance = L.map('mapRenderArea');
+                            
+                            // High contrast dark tile layer (OpenStreetMap derivative like CartoDB dark matter)
+                            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                                attribution: '&copy; OpenStreetMap contributors',
+                                maxZoom: 19
+                            }).addTo(mapInstance);
+                            
+                            drawLine(latLngs);
+                        }, 50);
+                    } else {
+                        // Map exists, just redraw
+                        setTimeout(() => {
+                            mapInstance.invalidateSize();
+                            drawLine(latLngs);
+                        }, 50);
+                    }
+                } else {
+                    alert("路线解析失败，内部数据格式无 pointsList。");
+                }
+            } catch(e) {
+                alert("拉取报错: " + e);
+            }
+        }
+
+        function drawLine(latLngs) {
+            if (polylineLayer) {
+                mapInstance.removeLayer(polylineLayer);
+            }
+            polylineLayer = L.polyline(latLngs, {color: '#ef4444', weight: 4, opacity: 0.8}).addTo(mapInstance);
+            mapInstance.fitBounds(polylineLayer.getBounds(), {padding: [30, 30]});
+        }
+
+        function closeMapPreview() {
+            const modal = document.getElementById('mapPreviewModal');
+            if (modal) modal.classList.remove('active');
+        }
+        
     </script>
 </body>
 </html>
