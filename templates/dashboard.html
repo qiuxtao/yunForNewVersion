@@ -512,7 +512,7 @@
             </div>
             <div style="display:flex; gap:12px;">
                 <a href="/logout" class="btn btn-ghost"
-                    style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--danger);">安全登出</a>
+                    style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--danger);">退出登录</a>
             </div>
         </header>
 
@@ -604,16 +604,16 @@
                     </button>
                 </div>
                 <div class="table-responsive">
-                    <table>
+                    <table style="table-layout: fixed; width: 100%;">
                         <thead>
                             <tr>
-                                <th>账户归属</th>
-                                <th>触发时间</th>
-                                <th style="color:#fbbf24;">随机延迟</th>
-                                <th>执行路线集</th>
-                                <th>上次运行状态</th>
-                                <th>上次执行结束时间</th>
-                                <th>操作</th>
+                                <th style="width: 15%">账户归属</th>
+                                <th style="width: 10%">触发时间</th>
+                                <th style="width: 15%; color:#fbbf24;">随机延迟</th>
+                                <th style="width: 18%">执行路线集</th>
+                                <th style="width: 12%">上次运行状态</th>
+                                <th style="width: 16%">上次执行结束时间</th>
+                                <th style="width: 14%">操作</th>
                             </tr>
                         </thead>
                         <tbody id="schedulesTableBody">
@@ -856,13 +856,13 @@
                     <input type="time" class="form-control" name="target_time" id="edit_sched_time" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">地理围栏路线图集加载方案</label>
+                    <label class="form-label">选择线路组</label>
                     <select class="form-select" name="route_type" id="edit_sched_route">
                         <option value="tasks_else">邮电操场 (tasks_else)</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">防风控随机等待时长 (选填, 最大几分钟)</label>
+                    <label class="form-label">防风控随机延迟 (最大延迟分钟数)</label>
                     <input type="number" class="form-control" name="random_delay_minutes" id="edit_sched_delay" min="0"
                         max="1440" value="0" placeholder="为 0 则准点执行">
                 </div>
@@ -897,13 +897,13 @@
                     <input type="time" class="form-control" name="target_time" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">地理围栏路线图集加载方案</label>
+                    <label class="form-label">选择线路组</label>
                     <select class="form-select" name="route_type">
                         <option value="tasks_else">邮电操场 (tasks_else)</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">防风控随机等待时长 (选填, 最大几分钟)</label>
+                    <label class="form-label">防风控随机延迟 (最大延迟分钟数)</label>
                     <input type="number" class="form-control" name="random_delay_minutes" min="0" max="1440" value="0"
                         placeholder="为 0 则准点执行">
                 </div>
@@ -1669,12 +1669,12 @@
                                         <div style="display:flex; gap:8px;" onclick="event.stopPropagation();">
                                             <form action="/runs/manual_trigger_group" method="POST" style="margin:0;">
                                                 <input type="hidden" name="group_id" value="${group.group_id}">
-                                                <button type="submit" class="btn btn-info" style="padding:4px 10px; font-size:13px;">执行大组</button>
+                                                <button type="submit" class="btn btn-info btn-sm">执行组</button>
                                             </form>
-                                            <button type="button" class="btn btn-warning" style="padding:4px 10px; font-size:13px;" onclick="editGroup('${group.group_id}', '${group.target_time}', '${group.route_type}', ${group.random_delay_minutes}, '${userIds}')">编辑组</button>
+                                            <button type="button" class="btn btn-warning btn-sm" onclick="editGroup('${group.group_id}', '${group.target_time}', '${group.route_type}', ${group.random_delay_minutes}, '${userIds}')">编辑组</button>
                                             <form action="/schedules/delete_group" method="POST" style="margin:0;" onsubmit="return confirm('确定移除整组任务吗？')">
                                                 <input type="hidden" name="group_id" value="${group.group_id}">
-                                                <button type="submit" class="btn btn-danger" style="padding:4px 10px; font-size:13px;">移除全组</button>
+                                                <button type="submit" class="btn btn-danger btn-sm">全组删除</button>
                                             </form>
                                         </div>
                                     </td>
