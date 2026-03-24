@@ -27,13 +27,11 @@
         }
 
         html, body {
-            height: 100%;
-            width: 100%;
+            position: fixed;
+            top: 0; right: 0; bottom: 0; left: 0;
             overflow: hidden !important;
             margin: 0;
             padding: 0;
-            position: fixed;
-            top: 0; left: 0;
             overscroll-behavior: none;
         }
 
@@ -69,10 +67,12 @@
 
         /* Layout */
         .container {
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
             max-width: 1200px;
-            height: 100%;
             margin: 0 auto;
             padding: 20px;
+            padding-bottom: 20px;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -110,7 +110,7 @@
             border: 1px solid var(--glass-border);
             border-radius: 20px;
             padding: 24px;
-            margin-bottom: 30px;
+            margin-bottom: 0px !important;
             animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
