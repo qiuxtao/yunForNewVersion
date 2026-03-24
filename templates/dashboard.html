@@ -1048,12 +1048,26 @@
                     window.currentHistoryData = result.data;
                     const tbody = document.getElementById('historyTableBody');
                     let termHtml = '<div style="margin-bottom: 24px;">';
-                    termHtml += `<h3 style="color:#60a5fa; margin-bottom:12px; font-size:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px;">${termName} <span class="badge badge-success" style="float:right;">本学期共跑 ${result.data ? result.data.length : 0} 次</span></h3>`;
+                    
+                    let totalRuns = result.data ? result.data.length : 0;
+                    let qualifiedRuns = 0;
+                    if (result.data) {
+                        qualifiedRuns = result.data.filter(run => {
+                           const q = run.qualified;
+                           const iq = run.isQualified;
+                           const qs = run.qualifiedStatus;
+                           return (q == 1 || q == "1" || q === true || 
+                                   iq == 1 || iq == "1" || iq === true ||
+                                   qs == 1 || qs == "1" || qs === "合格");
+                        }).length;
+                    }
+                    
+                    termHtml += `<h3 style="color:#60a5fa; margin-bottom:12px; font-size:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px;">${termName} <div style="float:right;"><span class="badge badge-success" style="margin-right:8px;">总计 ${totalRuns} 次</span><span class="badge badge-success" style="background:rgba(16,185,129,0.2); color:#10b981; border:1px solid rgba(16,185,129,0.3);">合格 <span id="termQualifiedCount">${qualifiedRuns}</span> 次</span></div></h3>`;
                     
                     if (!result.data || result.data.length === 0) {
                         termHtml += `<div class="empty-state" style="padding:20px;">该学期尚无相关打卡记录</div>`;
                     } else {
-                        termHtml += '<div class="table-responsive" style="margin-bottom:12px;"><table><thead><tr><th>运动时间</th><th>状态</th><th>耗时</th><th>配速</th><th>运动里程 (km)</th><th style="width: 80px;">操作</th></tr></thead><tbody>';
+                        termHtml += '<div class="table-responsive" style="margin-bottom:12px;"><table><thead><tr><th style="white-space:nowrap;">运动时间</th><th style="white-space:nowrap;">状态</th><th style="white-space:nowrap;">耗时</th><th style="white-space:nowrap;">配速</th><th style="white-space:nowrap;">运动里程 (km)</th><th style="width: 80px; white-space:nowrap;">操作</th></tr></thead><tbody>';
                         result.data.forEach(run => {
                             let rtime = run.recordEndTime || run.endTime || run.recordDate || "-";
                             // The Yun server provides recordEndTime formatted as "2025-02-25 12:04:56"
@@ -1081,12 +1095,12 @@
                             }
 
                             termHtml += `<tr>
-                                <td style="color:var(--text-main);">${displayTime}</td>
-                                <td>${statusDisplay}</td>
-                                <td id="dur_${run.id}">${durDisplay}</td>
-                                <td id="pace_${run.id}">${paceDisplay}</td>
-                                <td style="color:var(--success); font-weight:500;">${run.recordMileage || '0'} km</td>
-                                <td>
+                                <td style="color:var(--text-main); white-space:nowrap;">${displayTime}</td>
+                                <td style="white-space:nowrap;">${statusDisplay}</td>
+                                <td id="dur_${run.id}" style="white-space:nowrap;">${durDisplay}</td>
+                                <td id="pace_${run.id}" style="white-space:nowrap;">${paceDisplay}</td>
+                                <td style="color:var(--success); font-weight:500; white-space:nowrap;">${run.recordMileage || '0'} km</td>
+                                <td style="white-space:nowrap;">
                                     <button class="btn btn-secondary" style="white-space:nowrap; padding:4px 8px; font-size:12px;" onclick="promptSaveRoute('${run.id}', '${run.recordMileage || 0}')">保存路线</button>
                                 </td>
                             </tr>`;
@@ -1559,7 +1573,15 @@
                                      iq == 1 || iq == "1" || iq === true ||
                                      qs == 1 || qs == "1" || qs === "合格");
                         
+                        const wasOk = run.qualified === 1;
                         run.qualified = isOk ? 1 : 0;
+                        
+                        if (!wasOk && isOk) {
+                            const termCountSpan = document.getElementById('termQualifiedCount');
+                            if (termCountSpan) {
+                                termCountSpan.innerText = parseInt(termCountSpan.innerText || "0") + 1;
+                            }
+                        }
                         
                         let durDisplay = Math.floor(run.duration / 60) + "分" + (run.duration % 60) + "秒";
                         let paceDisplay = "-";
