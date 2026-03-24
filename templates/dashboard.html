@@ -611,13 +611,10 @@
                     <table style="table-layout: fixed; width: 100%;">
                         <thead>
                             <tr>
-                                <th style="width: 12%">账户归属</th>
-                                <th style="width: 10%">触发时间</th>
-                                <th style="width: 14%; color:#fbbf24;">随机延迟</th>
-                                <th style="width: 18%">执行路线集</th>
-                                <th style="width: 10%">上次运行状态</th>
-                                <th style="width: 14%">上次执行结束时间</th>
-                                <th style="width: 22%">操作</th>
+                                <th style="width: 35%">账户归属</th>
+                                <th style="width: 15%">上次运行状态</th>
+                                <th style="width: 20%">上次执行结束时间</th>
+                                <th style="width: 30%">操作</th>
                             </tr>
                         </thead>
                         <tbody id="schedulesTableBody">
@@ -665,7 +662,7 @@
         <!-- Tab: Logs -->
         <div id="tab-pane-logs" class="tab-pane">
             <div class="glass-panel"
-                style="height: calc(100vh - 220px); display: flex; flex-direction: column; margin-bottom: 0;">
+                style="height: calc(100vh - 250px); display: flex; flex-direction: column; margin-bottom: 0;">
                 <div class="panel-header" style="flex-shrink: 0;">
                     <h2 class="panel-title">系统日志仿真终端</h2>
                     <button class="btn btn-info" onclick="fetchLogs()" id="refreshLogBtn">
@@ -1661,12 +1658,18 @@
                             html += `
                                 <tr class="group-row" style="cursor: pointer; background-color: rgba(255,255,255,0.05);" onclick="toggleGroupRows('${group.group_id}')">
                                     <td>
-                                        <i class="fas fa-chevron-right" id="icon-${group.group_id}" style="margin-right: 10px; width: 14px;"></i>
-                                        <span style="color:var(--success); font-weight:bold;">组内共 ${group.tasks.length} 人</span>
+                                        <div style="display:flex; flex-direction:column; gap:6px;">
+                                            <div>
+                                                <i class="fas fa-chevron-right" id="icon-${group.group_id}" style="margin-right: 10px; width: 14px;"></i>
+                                                <span style="color:var(--success); font-weight:bold;">组内共 ${group.tasks.length} 人</span>
+                                            </div>
+                                            <div style="font-size: 12px; margin-left:24px; color:var(--text-muted);">
+                                                <span style="color:var(--primary); font-weight: 600;">[${group.target_time}]</span>
+                                                <span style="color:#fbbf24; margin-left:8px;">${group.random_delay_minutes}分钟区间缓冲</span>
+                                                <span style="margin-left:8px;">${routeDisplay}</span>
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td><span style="font-size: 16px; font-weight: 600; color:var(--primary);">${group.target_time}</span></td>
-                                    <td><span style="color:#fbbf24;">0~${group.random_delay_minutes}分钟</span></td>
-                                    <td>${routeDisplay}</td>
                                     <td>-</td>
                                     <td>-</td>
                                     <td>
@@ -1699,9 +1702,6 @@
                                         </label>
                                         <span style="margin-left: 10px;">${s.username}</span>
                                     </td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
                                     <td>${statusBadge}</td>
                                     <td class="log-time">${s.last_run_time}</td>
                                     <td></td>
