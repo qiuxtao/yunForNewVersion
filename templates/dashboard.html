@@ -1288,6 +1288,8 @@
             document.getElementById('tab-pane-' + tabId).classList.add('active');
             document.getElementById('tab-btn-' + tabId).classList.add('active');
 
+            localStorage.setItem('activeTab', tabId);
+
             // 仅针对系统运行日志页面锁定外部滚动
             if (tabId === 'logs') {
                 document.body.style.overflow = 'hidden';
@@ -1654,26 +1656,26 @@
 
                             html += `
                                 <tr class="group-row" style="cursor: pointer; background-color: rgba(255,255,255,0.05);" onclick="toggleGroupRows('${group.group_id}')">
-                                    <td colspan="7">
-                                        <div style="display:flex; justify-content: space-between; align-items: center;">
-                                            <div>
-                                                <i class="fas fa-chevron-right" id="icon-${group.group_id}" style="margin-right: 10px; width: 14px;"></i>
-                                                <span style="font-size: 16px; font-weight: 600; color:var(--primary);">${group.target_time}</span>
-                                                <span style="margin-left: 20px; color:#fbbf24;">0~${group.random_delay_minutes}分钟延迟</span>
-                                                <span style="margin-left: 20px;">${routeDisplay}</span>
-                                                <span style="margin-left: 20px; color:var(--success);">包含 ${group.tasks.length} 名账户</span>
-                                            </div>
-                                            <div style="display:flex; gap:8px;" onclick="event.stopPropagation();">
-                                                <form action="/runs/manual_trigger_group" method="POST" style="margin:0;">
-                                                    <input type="hidden" name="group_id" value="${group.group_id}">
-                                                    <button type="submit" class="btn btn-info btn-sm">执行组</button>
-                                                </form>
-                                                <button type="button" class="btn btn-warning btn-sm" onclick="editGroup('${group.group_id}', '${group.target_time}', '${group.route_type}', ${group.random_delay_minutes}, '${userIds}')">编辑组</button>
-                                                <form action="/schedules/delete_group" method="POST" style="margin:0;" onsubmit="return confirm('确定移除整组任务吗？')">
-                                                    <input type="hidden" name="group_id" value="${group.group_id}">
-                                                    <button type="submit" class="btn btn-danger btn-sm">全组删除</button>
-                                                </form>
-                                            </div>
+                                    <td>
+                                        <i class="fas fa-chevron-right" id="icon-${group.group_id}" style="margin-right: 10px; width: 14px;"></i>
+                                        <span style="color:var(--success); font-weight:bold;">组内共 ${group.tasks.length} 人</span>
+                                    </td>
+                                    <td><span style="font-size: 16px; font-weight: 600; color:var(--primary);">${group.target_time}</span></td>
+                                    <td><span style="color:#fbbf24;">0~${group.random_delay_minutes}分钟</span></td>
+                                    <td>${routeDisplay}</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                    <td>
+                                        <div style="display:flex; gap:8px;" onclick="event.stopPropagation();">
+                                            <form action="/runs/manual_trigger_group" method="POST" style="margin:0;">
+                                                <input type="hidden" name="group_id" value="${group.group_id}">
+                                                <button type="submit" class="btn btn-info" style="padding:4px 10px; font-size:13px;">执行大组</button>
+                                            </form>
+                                            <button type="button" class="btn btn-warning" style="padding:4px 10px; font-size:13px;" onclick="editGroup('${group.group_id}', '${group.target_time}', '${group.route_type}', ${group.random_delay_minutes}, '${userIds}')">编辑组</button>
+                                            <form action="/schedules/delete_group" method="POST" style="margin:0;" onsubmit="return confirm('确定移除整组任务吗？')">
+                                                <input type="hidden" name="group_id" value="${group.group_id}">
+                                                <button type="submit" class="btn btn-danger" style="padding:4px 10px; font-size:13px;">移除全组</button>
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>
@@ -1712,7 +1714,13 @@
 
         // Handle initial load
         document.addEventListener('DOMContentLoaded', () => {
-            loadRouteGroups(); // This will also trigger loadSchedules via the callback
+            const savedTab = localStorage.getItem('activeTab') || 'accounts';
+            switchTab(savedTab);
+            
+            // 自动化依赖了 availableGroups，即使当前不在路由库页面，仍需静默拉取一下大组字典
+            if (savedTab !== 'routes') {
+                loadRouteGroups();
+            }
         });
 
         async function deleteRouteFile(groupName, filename) {
