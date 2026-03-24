@@ -129,7 +129,7 @@ class AuthManager:
             except Exception as e:
                 raise Exception(f"Login Response Parsing Failed. Status {response.status_code}, Body: {result[:200]}")
                 
-        if "500" in str(DecryptedData):
+        if DecryptedData.get('code') == 500:
             raise Exception(f"Login failed internal error 500: {DecryptedData.get('msg', 'Error')}")
             
         if 'data' not in DecryptedData:
