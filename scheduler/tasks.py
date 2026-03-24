@@ -190,10 +190,29 @@ def run_job_for_user(user_id: int, schedule_id: int):
                 logger.info(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] 结算成功: {res}")
                 mileage = float(task_map['data']['recordMileage'])
                 duration = float(task_map['data']['duration']) / 60.0
+                # 获取该用户跑次统计数据
+                total_runs = 0
+                qualified_runs = 0
+                try:
+                    t_success, terms = core.get_terms()
+                    if t_success and terms:
+                        current_term = terms[0]['key']
+                        h_success, h_data = core.get_term_history(current_term)
+                        if h_success and isinstance(h_data, list):
+                            total_runs = len(h_data)
+                            qualified_runs = sum(1 for r in h_data if str(r.get('qualified', '')) == '1' or r.get('qualified') is True or str(r.get('isQualified', '')) == '1' or r.get('isQualified') is True or str(r.get('qualifiedStatus', '')) in ['1', '合格'])
+                except Exception as e:
+                    logger.warning(f"Failed to fetch history for notification: {e}")
+
                 full_log_msg = f"开始时间: {start_run_time_str}\n结束时间: {end_run_time_str}\n结算数据: {res}"
+                if total_runs > 0:
+                    stats_msg = f"🏁 总计次数: {total_runs}次\n🎯 合格次数: {qualified_runs}次\n📅 开始时间: {start_run_time_str}\n⏳ 结束时间: {end_run_time_str}"
+                else:
+                    stats_msg = f"📅 开始时间: {start_run_time_str}\n⏳ 结束时间: {end_run_time_str}"
+
                 add_log(db, user, "Success", full_log_msg, sched)
                 if user.qq_number:
-                    notify_run_success(user.qq_number, user.qq_notify_type, user.username, mileage, duration, full_log_msg)
+                    notify_run_success(user.qq_number, user.qq_notify_type, user.username, mileage, duration, stats_msg)
             else:
                 raise Exception(res)
         except Exception as e:
