@@ -254,12 +254,7 @@
         /* Sticky Action Column inside Modals to prevent layout break */
         .modal-box .table-responsive th:last-child,
         .modal-box .table-responsive td:last-child {
-            position: sticky;
-            right: 0;
-            background: #1e293b;
-            z-index: 10;
-            box-shadow: -4px 0 12px rgba(0,0,0,0.2);
-            padding-left: 20px;
+            /* Removed sticky logic per user request */
         }
 
         .badge {
@@ -665,7 +660,7 @@
 
     <!-- History Modal -->
     <div class="modal-overlay" id="historyModal">
-        <div class="modal-box" style="max-width: 650px;">
+        <div class="modal-box" style="max-width: 950px; width: 95%; max-height: 85vh; display:flex; flex-direction:column; padding: 20px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
                 <h2 class="panel-title" id="historyModalTitle">云端记录</h2>
                 <div style="display:flex; gap:8px;">
