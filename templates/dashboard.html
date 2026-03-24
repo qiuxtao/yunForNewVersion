@@ -1075,7 +1075,7 @@
                     } else {
                         termHtml += '<div class="table-responsive" style="margin-bottom:12px;"><table><thead><tr><th style="white-space:nowrap; text-align:center;">运动时间 (开始)</th><th style="white-space:nowrap;">状态</th><th style="white-space:nowrap;">耗时</th><th style="white-space:nowrap;">配速</th><th style="white-space:nowrap;">运动里程 (km)</th><th style="width: 80px; white-space:nowrap;">操作</th></tr></thead><tbody>';
                         result.data.forEach(run => {
-                            let rtime = run.recordStartTime || run.startTime || run.recordDate || "-";
+                            let rtime = run.recordStartTime || run.startTime || run.createTime || run.recordEndTime || run.endTime || run.recordDate || "-";
                             // Split "YYYY-MM-DD HH:MM:SS" into two lines
                             let displayTime = rtime.split(' ').join('<br>');
                             
@@ -1578,7 +1578,14 @@
                                      iq == 1 || iq == "1" || iq === true ||
                                      qs == 1 || qs == "1" || qs === "合格");
                         
-                        const wasOk = run.qualified === 1;
+                        // Check original list item state before update
+                        const wq = run.qualified;
+                        const wiq = run.isQualified;
+                        const wqs = run.qualifiedStatus;
+                        const wasOk = (wq == 1 || wq == "1" || wq === true || 
+                                       wiq == 1 || wiq == "1" || wiq === true ||
+                                       wqs == 1 || wqs == "1" || wqs === "合格");
+                        
                         run.qualified = isOk ? 1 : 0;
                         
                         if (!wasOk && isOk) {
