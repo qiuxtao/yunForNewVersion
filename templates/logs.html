@@ -27,15 +27,16 @@
         }
 
         html, body {
-            min-height: 100vh;
+            height: 100vh;
             margin: 0;
             padding: 0;
+            overflow: hidden;
+            box-sizing: border-box;
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
-            position: relative;
         }
 
         /* Ambient Background */
@@ -66,11 +67,14 @@
         /* Layout */
         .container {
             max-width: 1200px;
+            height: 100vh;
             margin: 0 auto;
             padding: 20px;
             padding-bottom: 20px;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+            box-sizing: border-box;
         }
 
         .header {

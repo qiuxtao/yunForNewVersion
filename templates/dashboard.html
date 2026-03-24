@@ -251,11 +251,7 @@
             background: rgba(255, 255, 255, 0.02);
         }
 
-        /* Sticky Action Column inside Modals to prevent layout break */
-        .modal-box .table-responsive th:last-child,
-        .modal-box .table-responsive td:last-child {
-            /* Removed sticky logic per user request */
-        }
+
 
         .badge {
             padding: 4px 10px;
@@ -660,7 +656,7 @@
 
     <!-- History Modal -->
     <div class="modal-overlay" id="historyModal">
-        <div class="modal-box" style="max-width: 950px; width: 95%; max-height: 85vh; display:flex; flex-direction:column; padding: 20px;">
+        <div class="modal-box" style="max-width: 700px; width: 95%; max-height: 85vh; display:flex; flex-direction:column; padding: 20px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
                 <h2 class="panel-title" id="historyModalTitle">云端记录</h2>
                 <div style="display:flex; gap:8px;">
@@ -1082,10 +1078,14 @@
                     if (!result.data || result.data.length === 0) {
                         termHtml += `<div class="empty-state" style="padding:20px;">该学期尚无相关打卡记录</div>`;
                     } else {
-                        termHtml += '<div class="table-responsive" style="margin-bottom:12px;"><table><thead><tr><th style="white-space:nowrap;">运动结束时间</th><th style="white-space:nowrap;">状态</th><th style="white-space:nowrap;">耗时</th><th style="white-space:nowrap;">配速</th><th style="white-space:nowrap;">运动里程 (km)</th><th style="width: 80px; white-space:nowrap;">操作</th></tr></thead><tbody>';
+                        termHtml += '<div class="table-responsive" style="margin-bottom:12px;"><table><thead><tr><th style="white-space:nowrap;">运动结束时间</th><th style="white-space:nowrap;">状态</th><th style="white-space:nowrap;">耗时</th><th style="white-space:nowrap;">配速</th><th style="white-space:nowrap;">运动里程</th><th style="width: 80px; white-space:nowrap;">操作</th></tr></thead><tbody>';
                         result.data.forEach(run => {
                             let rtime = run.recordEndTime || run.endTime || run.recordDate || "-";
                             let displayTime = rtime;
+                            if (rtime.includes(" ")) {
+                                let parts = rtime.split(" ");
+                                displayTime = `<div>${parts[0]}</div><div style="color:var(--text-secondary); font-size:12px; margin-top:2px;">${parts[1]}</div>`;
+                            }
                             
                             let rawDur = run.duration || 0;
                             let durDisplay = (rawDur === 0) ? '<span style="color:var(--text-secondary); font-size:12px;">待补全</span>' : (Math.floor(rawDur / 60) + "分" + (rawDur % 60) + "秒");
