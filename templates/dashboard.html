@@ -642,10 +642,10 @@
                     <table style="table-layout: fixed; width: 100%;">
                         <thead>
                             <tr>
-                                <th style="width: 50%">线路文件 / 编组</th>
-                                <th style="width: 15%">路线耗时</th>
-                                <th style="width: 15%">平均配速</th>
-                                <th style="width: 20%">操作</th>
+                                <th style="width: 45%">线路文件 / 编组</th>
+                                <th style="width: 10%">路线耗时</th>
+                                <th style="width: 12%">平均配速</th>
+                                <th style="width: 33%">操作</th>
                             </tr>
                         </thead>
                         <tbody id="routeGroupsTableBody">
@@ -1350,10 +1350,10 @@
                     <table style="table-layout: fixed; width: 100%;">
                         <thead>
                             <tr>
-                                <th style="width: 50%">线路文件 / 编组</th>
-                                <th style="width: 15%">路线耗时</th>
-                                <th style="width: 15%">平均配速</th>
-                                <th style="width: 20%">操作</th>
+                                <th style="width: 45%">线路文件 / 编组</th>
+                                <th style="width: 10%">路线耗时</th>
+                                <th style="width: 12%">平均配速</th>
+                                <th style="width: 33%">操作</th>
                             </tr>
                         </thead>
                         <tbody id="routeGroupsTableBody">
@@ -1383,7 +1383,7 @@
                                                 <span style="font-size: 16px; font-weight: 600; color:var(--text-main); letter-spacing: 0.5px;">${g.name}</span>
                                             </div>
                                             <div style="font-size: 12px; margin-left:24px; color:var(--text-muted); display:flex; gap:12px; margin-top:2px;">
-                                                <span style="background:rgba(16,185,129,0.15); color:var(--success); padding:2px 8px; border-radius:12px; font-weight:500;"><i class="fas fa-file-code" style="margin-right:2px;"></i>包含 ${g.count} 条子路线配置</span>
+                                                <span style="background:rgba(16,185,129,0.15); color:var(--success); padding:2px 8px; border-radius:12px; font-weight:500;"><i class="fas fa-file-code" style="margin-right:2px;"></i>包含 ${g.count} 条子路线</span>
                                             </div>
                                         </div>
                                     </td>
@@ -1412,10 +1412,10 @@
                                             <td>${durDisplay}</td>
                                             <td>${paceDisplay}</td>
                                             <td>
-                                                <div class="action-cell" style="display:flex; gap:6px; flex-wrap:nowrap; overflow:visible;" onclick="event.stopPropagation();">
-                                                    <button class="btn btn-info btn-sm" style="white-space:nowrap; padding:2px 6px;" onclick="previewRoute('${g.name}', '${f.filename}')">预览</button>
-                                                    <button class="btn btn-warning btn-sm" style="white-space:nowrap; padding:2px 6px;" onclick="renameRouteFile('${g.name}', '${f.filename}')">更名</button>
-                                                    <button class="btn btn-danger btn-sm" style="white-space:nowrap; padding:2px 6px;" onclick="deleteRouteFile('${g.name}', '${f.filename}')">删除</button>
+                                                <div class="action-cell" style="display:flex; gap:8px; flex-wrap:nowrap; overflow:visible;" onclick="event.stopPropagation();">
+                                                    <button class="btn btn-info btn-sm" style="white-space:nowrap;" onclick="previewRoute('${g.name}', '${f.filename}')">预览</button>
+                                                    <button class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="renameRouteFile('${g.name}', '${f.filename}')">更名</button>
+                                                    <button class="btn btn-danger btn-sm" style="white-space:nowrap;" onclick="deleteRouteFile('${g.name}', '${f.filename}')">删除</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -1582,7 +1582,7 @@
             const newName = prompt(`将线路组 ${oldName} 重命名为:`, oldName);
             if (!newName || newName === oldName) return;
             try {
-                const res = await fetch(`/api/route_groups/${oldName}/rename_group`, {
+                const res = await fetch(`/api/route_groups/${encodeURIComponent(oldName)}/rename_group`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ new_name: newName })

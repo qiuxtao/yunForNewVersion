@@ -679,7 +679,8 @@ class GroupRenameReq(BaseModel):
 
 @app.post("/api/route_groups/{group_name}/rename_group")
 async def rename_route_group(group_name: str, req: GroupRenameReq, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
-    old_path = os.path.join("data/tasks", group_name)
+    import urllib.parse
+    old_path = os.path.join("data/tasks", urllib.parse.unquote(group_name))
     new_name = req.new_name.strip()
     if ".." in group_name or ".." in new_name or "/" in new_name or "\\" in new_name:
         return JSONResponse({"success": False, "message": "非法名称"})
@@ -691,7 +692,6 @@ async def rename_route_group(group_name: str, req: GroupRenameReq, db: Session =
         return JSONResponse({"success": False, "message": "目标名称已存在"})
         
     try:
-        import os
         os.rename(old_path, new_path)
         db.query(models.Schedule).filter(models.Schedule.route_type == group_name).update({"route_type": new_name})
         db.commit()
