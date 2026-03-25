@@ -399,6 +399,13 @@
             margin-top: 32px;
         }
 
+        .btn-xs {
+            padding: 2px 8px;
+            font-size: 12px;
+            height: 26px;
+            line-height: 1.5;
+        }
+
         .btn-ghost {
             background: transparent;
             color: var(--text-muted);
@@ -716,7 +723,7 @@
     <!-- History Modal -->
     <div class="modal-overlay" id="historyModal">
         <div class="modal-box"
-            style="max-width: 700px; width: 95%; max-height: 85vh; display:flex; flex-direction:column; padding: 20px;">
+            style="max-width: 850px; width: 95%; max-height: 85vh; display:flex; flex-direction:column; padding: 20px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
                 <h2 class="panel-title" id="historyModalTitle">云端记录</h2>
                 <div style="display:flex; gap:8px;">
@@ -1210,8 +1217,9 @@
                                 <td id="dur_${run.id}" style="white-space:nowrap;">${durDisplay}</td>
                                 <td id="pace_${run.id}" style="white-space:nowrap;">${paceDisplay}</td>
                                 <td style="color:var(--success); font-weight:500; white-space:nowrap;">${run.recordMileage || '0'} km</td>
-                                <td style="white-space:nowrap;">
-                                    <button class="btn btn-secondary" style="white-space:nowrap; padding:4px 8px; font-size:12px;" onclick="promptSaveRoute('${run.id}', '${run.recordMileage || 0}')">保存路线</button>
+                                <td style="white-space:nowrap; display:flex; gap:6px;">
+                                    <button class="btn btn-info btn-xs" style="white-space:nowrap;" onclick="previewCloudRoute('${run.id}')">预览</button>
+                                    <button class="btn btn-secondary btn-xs" style="white-space:nowrap;" onclick="promptSaveRoute('${run.id}', '${run.recordMileage || 0}')">入库</button>
                                 </td>
                             </tr>`;
                         });
@@ -1413,9 +1421,9 @@
                                             <td>${paceDisplay}</td>
                                             <td>
                                                 <div class="action-cell" style="display:flex; gap:8px; flex-wrap:nowrap; overflow:visible;" onclick="event.stopPropagation();">
-                                                    <button class="btn btn-info btn-sm" style="white-space:nowrap;" onclick="previewRoute('${g.name}', '${f.filename}')">预览</button>
-                                                    <button class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="renameRouteFile('${g.name}', '${f.filename}')">更名</button>
-                                                    <button class="btn btn-danger btn-sm" style="white-space:nowrap;" onclick="deleteRouteFile('${g.name}', '${f.filename}')">删除</button>
+                                                    <button class="btn btn-info btn-xs" style="white-space:nowrap;" onclick="previewRoute('${g.name}', '${f.filename}')">预览</button>
+                                                    <button class="btn btn-warning btn-xs" style="white-space:nowrap;" onclick="renameRouteFile('${g.name}', '${f.filename}')">更名</button>
+                                                    <button class="btn btn-danger btn-xs" style="white-space:nowrap;" onclick="deleteRouteFile('${g.name}', '${f.filename}')">删除</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -1483,6 +1491,52 @@
                 }
             } catch (e) {
                 alert('网络异常: ' + e);
+            }
+        }
+
+        async function previewCloudRoute(runId) {
+            const userId = document.getElementById('current_history_user').value;
+            const termVal = document.getElementById('historyTermSelect').value;
+            const token = document.getElementById('current_history_token').value;
+            try {
+                const detailUrl = `/api/users/${userId}/history_detail?term_value=${encodeURIComponent(termVal)}&run_id=${encodeURIComponent(runId)}&token=${encodeURIComponent(token)}`;
+                const res = await fetch(detailUrl);
+                const result = await res.json();
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    openModal('previewModal');
+                    const mapContainer = document.getElementById('previewMap');
+                    mapContainer.innerHTML = '<div style="color:var(--text-muted); padding:20px; text-align:center;">正在拉取并解析云端位置节点...</div>';
+
+                    setTimeout(() => {
+                        mapContainer.innerHTML = '';
+                        if (!window.routeMap) {
+                            window.routeMap = L.map('previewMap');
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                attribution: '© OpenStreetMap contributors'
+                            }).addTo(window.routeMap);
+                        }
+
+                        let latlngs = [];
+                        result.data.forEach(pt => {
+                            if (pt.latitude && pt.longitude) {
+                                latlngs.push([pt.latitude, pt.longitude]);
+                            }
+                        });
+
+                        if (window.routePolyline) window.routeMap.removeLayer(window.routePolyline);
+                        window.routePolyline = L.polyline(latlngs, { color: '#60a5fa', weight: 4 }).addTo(window.routeMap);
+                        
+                        if (latlngs.length > 0) {
+                            window.routeMap.fitBounds(window.routePolyline.getBounds(), { padding: [20, 20] });
+                        }
+                        window.routeMap.invalidateSize();
+                    }, 100);
+                } else {
+                    alert('无法读取该记录的路线详情或其为空');
+                }
+            } catch(e) {
+                alert('网络异常：' + e);
             }
         }
 
@@ -1751,7 +1805,7 @@
                                         <div style="display:flex; gap:8px;" onclick="event.stopPropagation();">
                                             <form action="/runs/manual_trigger" method="POST" style="margin:0;">
                                                 <input type="hidden" name="schedule_id" value="${s.id}">
-                                                <button type="submit" class="btn btn-info btn-sm" style="padding: 2px 8px; font-size:12px;" title="将此用户立刻加入运行队列">手动单跑</button>
+                                                <button type="submit" class="btn btn-info btn-xs" title="立即无缓冲排队执行此人单跑">单跑</button>
                                             </form>
                                         </div>
                                     </td>
