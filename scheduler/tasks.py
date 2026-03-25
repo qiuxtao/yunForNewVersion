@@ -196,7 +196,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
                 try:
                     t_success, terms = core.get_terms()
                     if t_success and terms:
-                        current_term = terms[0]['key']
+                        current_term = terms[0]['value']
                         h_success, h_data = core.get_term_history(current_term)
                         if h_success and isinstance(h_data, list):
                             total_runs = len(h_data)
