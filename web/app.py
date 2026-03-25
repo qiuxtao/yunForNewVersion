@@ -351,21 +351,20 @@ async def edit_schedule_group(
     db.commit()
     return RedirectResponse(url="/", status_code=303)
 
-@app.post("/runs/manual_trigger_group")
-async def manual_trigger_group(
-    group_id: str = Form(...),
+@app.post("/runs/manual_trigger")
+async def manual_trigger_single(
+    schedule_id: int = Form(...),
     db: Session = Depends(get_db),
     _: bool = Depends(check_admin)
 ):
-    from scheduler.tasks import scheduler
-    scheds = db.query(models.Schedule).filter(models.Schedule.group_id == group_id).all()
-    for s in scheds:
-        if s.is_active:
-            scheduler.add_job(
-                run_job_for_user,
-                args=[s.user_id, s.id],
-                misfire_grace_time=300
-            )
+    from scheduler.tasks import scheduler, run_job_for_user
+    s = db.query(models.Schedule).filter(models.Schedule.id == schedule_id).first()
+    if s:
+        scheduler.add_job(
+            run_job_for_user,
+            args=[s.user_id, s.id],
+            misfire_grace_time=300
+        )
     return RedirectResponse(url="/", status_code=303)
 
 @app.post("/users/delete")

@@ -1721,10 +1721,6 @@
                                     <td>-</td>
                                     <td>
                                         <div style="display:flex; gap:8px; flex-wrap:wrap;" onclick="event.stopPropagation();">
-                                            <form action="/runs/manual_trigger_group" method="POST" style="margin:0;">
-                                                <input type="hidden" name="group_id" value="${group.group_id}">
-                                                <button type="submit" class="btn btn-info btn-sm" style="white-space:nowrap;">执行组</button>
-                                            </form>
                                             <button type="button" class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="editGroup('${group.group_id}', '${group.group_name}', '${group.target_time}', '${group.route_type}', ${group.random_delay_minutes}, '${userIds}')">编辑组</button>
                                             <form action="/schedules/delete_group" method="POST" style="margin:0;" onsubmit="return confirm('确定移除整组任务吗？')">
                                                 <input type="hidden" name="group_id" value="${group.group_id}">
@@ -1751,7 +1747,14 @@
                                     </td>
                                     <td>${statusBadge}</td>
                                     <td class="log-time">${s.last_run_time}</td>
-                                    <td></td>
+                                    <td>
+                                        <div style="display:flex; gap:8px;" onclick="event.stopPropagation();">
+                                            <form action="/runs/manual_trigger" method="POST" style="margin:0;">
+                                                <input type="hidden" name="schedule_id" value="${s.id}">
+                                                <button type="submit" class="btn btn-info btn-sm" style="padding: 2px 8px; font-size:12px;" title="将此用户立刻加入运行队列">手动单跑</button>
+                                            </form>
+                                        </div>
+                                    </td>
                                 </tr>`;
                             });
                         });
