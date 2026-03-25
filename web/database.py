@@ -45,6 +45,13 @@ def init_db():
     try:
         with engine.begin() as conn:
             from sqlalchemy import text
+            conn.execute(text("ALTER TABLE schedules ADD COLUMN group_name VARCHAR(50) DEFAULT '未命名任务组'"))
+    except Exception:
+        pass
+        
+    try:
+        with engine.begin() as conn:
+            from sqlalchemy import text
             # 对于历史纯个体独立任务，打上一个独一无二的随机标识将它们转换为单人团模式
             conn.execute(text("UPDATE schedules SET group_id = lower(hex(randomblob(16))) WHERE group_id IS NULL OR group_id = ''"))
     except Exception:

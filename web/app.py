@@ -291,19 +291,20 @@ async def add_schedule(
     form_data = await request.form()
     user_ids = form_data.getlist("user_ids")
     import uuid
-    new_group_id = uuid.uuid4().hex
+    group_id = str(uuid.uuid4())[:8]
     
-    for uid in user_ids:
-        new_sched = models.Schedule(
-            user_id=int(uid),
-            group_id=new_group_id,
+    for uid_str in user_ids:
+        sched = models.Schedule(
+            user_id=int(uid_str),
+            group_id=group_id,
+            group_name=group_name,
             target_time=target_time,
             route_type=route_type,
             random_delay_minutes=random_delay_minutes,
             last_run_status="Pending",
             is_active=True
         )
-        db.add(new_sched)
+        db.add(sched)
     db.commit()
     return RedirectResponse(url="/", status_code=303)
 
@@ -311,6 +312,7 @@ async def add_schedule(
 async def edit_schedule_group(
     request: Request,
     group_id: str = Form(...),
+    group_name: str = Form("未命名任务组"),
     target_time: str = Form(...),
     route_type: str = Form(...),
     random_delay_minutes: int = Form(0),
@@ -327,6 +329,7 @@ async def edit_schedule_group(
         if s.user_id not in new_user_ids:
             db.delete(s)
         else:
+            s.group_name = group_name
             s.target_time = target_time
             s.route_type = route_type
             s.random_delay_minutes = random_delay_minutes
@@ -335,6 +338,7 @@ async def edit_schedule_group(
         new_sched = models.Schedule(
             user_id=uid,
             group_id=group_id,
+            group_name=group_name,
             target_time=target_time,
             route_type=route_type,
             random_delay_minutes=random_delay_minutes,
@@ -406,6 +410,7 @@ async def get_schedules_json(db: Session = Depends(get_db), _: bool = Depends(ch
             "last_run_status": s.last_run_status,
             "last_run_time": s.last_run_time.strftime('%Y-%m-%d %H:%M:%S') if s.last_run_time else '-',
             "group_id": s.group_id,
+            "group_name": getattr(s, 'group_name', '未命名任务组'),
             "is_active": s.is_active
         })
     return JSONResponse({"success": True, "data": results})
@@ -553,7 +558,7 @@ async def list_route_groups(_: bool = Depends(check_admin)):
     os.makedirs(base_dir, exist_ok=True)
     for item in os.listdir(base_dir):
         item_path = os.path.join(base_dir, item)
-        if os.path.isdir(item_path) and item.startswith("tasks_"):
+        if os.path.isdir(item_path):
             files_info = []
             for f in os.listdir(item_path):
                 if f.endswith('.json'):
@@ -588,8 +593,6 @@ class RouteGroupCreate(BaseModel):
 @app.post("/api/route_groups")
 async def create_route_group(req: RouteGroupCreate, _: bool = Depends(check_admin)):
     name = req.name.strip()
-    if not name.startswith("tasks_"):
-        name = "tasks_" + name
     if ".." in name or "/" in name or "\\" in name:
         return JSONResponse({"success": False, "message": "非法名称"})
     
@@ -601,7 +604,7 @@ async def create_route_group(req: RouteGroupCreate, _: bool = Depends(check_admi
 
 @app.get("/api/route_groups/{group_name}")
 async def list_routes_in_group(group_name: str, _: bool = Depends(check_admin)):
-    if not group_name.startswith("tasks_") or ".." in group_name:
+    if ".." in group_name:
         return JSONResponse({"success": False, "message": "非法的线路组名"})
     group_path = os.path.join("data/tasks", group_name)
     if not os.path.exists(group_path):

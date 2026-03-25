@@ -51,6 +51,9 @@ class Schedule(Base):
     # 任务组绑定标识（用纯UUID字符串或者空值兼容老的独立记录）
     group_id = Column(String, index=True)
     
+    # 任务组别名
+    group_name = Column(String(50), default="未命名任务组")
+    
     # 用户独立开关
     is_active = Column(Boolean, default=True)
     

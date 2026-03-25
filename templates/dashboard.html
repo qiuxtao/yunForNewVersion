@@ -642,10 +642,10 @@
                     <table style="table-layout: fixed; width: 100%;">
                         <thead>
                             <tr>
-                                <th style="width: 40%">线路组/文件名称</th>
-                                <th style="width: 15%">包含线路/耗时</th>
+                                <th style="width: 50%">线路文件 / 编组</th>
+                                <th style="width: 15%">路线耗时</th>
                                 <th style="width: 15%">平均配速</th>
-                                <th style="width: 30%">操作</th>
+                                <th style="width: 20%">操作</th>
                             </tr>
                         </thead>
                         <tbody id="routeGroupsTableBody">
@@ -854,6 +854,11 @@
                 </div>
                 
                 <div class="form-group">
+                    <label class="form-label">任务组自定义名称 (选填)</label>
+                    <input type="text" class="form-control" name="group_name" id="edit_group_name" placeholder="未命名任务组">
+                </div>
+                
+                <div class="form-group">
                     <label class="form-label">Cron 定时 (每日执行, 24小时制 HH:MM)</label>
                     <input type="time" class="form-control" name="target_time" id="edit_sched_time" required>
                 </div>
@@ -893,6 +898,10 @@
                         </div>
                         {% endfor %}
                     </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">任务组自定义名称 (选填)</label>
+                    <input type="text" class="form-control" name="group_name" placeholder="未命名任务组">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Cron 定时 (每日执行, 24小时制 HH:MM)</label>
@@ -1341,10 +1350,10 @@
                     <table style="table-layout: fixed; width: 100%;">
                         <thead>
                             <tr>
-                                <th style="width: 40%">线路组/文件名称</th>
-                                <th style="width: 15%">包含线路/耗时</th>
+                                <th style="width: 50%">线路文件 / 编组</th>
+                                <th style="width: 15%">路线耗时</th>
                                 <th style="width: 15%">平均配速</th>
-                                <th style="width: 30%">操作</th>
+                                <th style="width: 20%">操作</th>
                             </tr>
                         </thead>
                         <tbody id="routeGroupsTableBody">
@@ -1368,10 +1377,17 @@
                             html += `
                                 <tr class="group-row" style="cursor: pointer; background-color: rgba(255,255,255,0.05);" onclick="toggleRouteGroupRows('${g.name}')">
                                     <td>
-                                        <i class="fas fa-chevron-right" id="route-icon-${g.name}" style="margin-right: 10px; width: 14px;"></i>
-                                        <strong style="color:var(--primary);">${g.name}</strong>
+                                        <div style="display:flex; flex-direction:column; gap:6px;">
+                                            <div>
+                                                <i class="fas fa-chevron-right" id="route-icon-${g.name}" style="margin-right: 10px; width: 14px;"></i>
+                                                <strong style="color:var(--primary); font-size: 15px;">${g.name}</strong>
+                                            </div>
+                                            <div style="font-size: 12px; margin-left:24px; color:var(--text-muted);">
+                                                <span style="color:var(--success); font-weight:bold;">包含 ${g.count} 条 JSON 线路文件</span>
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td><span class="badge badge-neutral">${g.count} 条线路</span></td>
+                                    <td>-</td>
                                     <td>-</td>
                                     <td>
                                         <div class="action-cell" style="display:flex; gap:8px; flex-wrap:wrap;" onclick="event.stopPropagation();">
@@ -1449,7 +1465,7 @@
         }
 
         async function promptCreateRouteGroup() {
-            const name = prompt("请输入新线路组的基础名称 (例如: fch_campus):\n系统会自动加上 'tasks_' 前缀");
+            const name = prompt("请输入自定义线路组名称:");
             if (!name) return;
             try {
                 const res = await fetch('/api/route_groups', {
@@ -1614,8 +1630,9 @@
             });
         }
         
-        function editGroup(groupId, time, route, delay, userIdsStr) {
+        function editGroup(groupId, groupName, time, route, delay, userIdsStr) {
             document.getElementById('edit_group_id').value = groupId;
+            document.getElementById('edit_group_name').value = groupName !== 'null' && groupName !== 'undefined' ? groupName : '';
             document.getElementById('edit_sched_time').value = time;
             document.getElementById('edit_sched_route').value = route;
             document.getElementById('edit_sched_delay').value = delay;
@@ -1666,7 +1683,8 @@
                                         <div style="display:flex; flex-direction:column; gap:6px;">
                                             <div>
                                                 <i class="fas fa-chevron-right" id="icon-${group.group_id}" style="margin-right: 10px; width: 14px;"></i>
-                                                <span style="color:var(--success); font-weight:bold;">组内共 ${group.tasks.length} 人</span>
+                                                <span style="font-size: 15px; font-weight: bold; color:var(--text-main); margin-right: 12px;">${group.group_name || '未命名任务组'}</span>
+                                                <span style="color:var(--success); font-weight:bold; font-size:12px;">组内共 ${group.tasks.length} 人</span>
                                             </div>
                                             <div style="font-size: 12px; margin-left:24px; color:var(--text-muted);">
                                                 <span style="color:var(--primary); font-weight: 600;">[${group.target_time}]</span>
@@ -1683,7 +1701,7 @@
                                                 <input type="hidden" name="group_id" value="${group.group_id}">
                                                 <button type="submit" class="btn btn-info btn-sm" style="white-space:nowrap;">执行组</button>
                                             </form>
-                                            <button type="button" class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="editGroup('${group.group_id}', '${group.target_time}', '${group.route_type}', ${group.random_delay_minutes}, '${userIds}')">编辑组</button>
+                                            <button type="button" class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="editGroup('${group.group_id}', '${group.group_name}', '${group.target_time}', '${group.route_type}', ${group.random_delay_minutes}, '${userIds}')">编辑组</button>
                                             <form action="/schedules/delete_group" method="POST" style="margin:0;" onsubmit="return confirm('确定移除整组任务吗？')">
                                                 <input type="hidden" name="group_id" value="${group.group_id}">
                                                 <button type="submit" class="btn btn-danger btn-sm" style="white-space:nowrap;">全组删除</button>
