@@ -554,8 +554,32 @@ async def list_route_groups(_: bool = Depends(check_admin)):
     for item in os.listdir(base_dir):
         item_path = os.path.join(base_dir, item)
         if os.path.isdir(item_path) and item.startswith("tasks_"):
-            jsons = [f for f in os.listdir(item_path) if f.endswith('.json')]
-            groups.append({"name": item, "count": len(jsons)})
+            files_info = []
+            for f in os.listdir(item_path):
+                if f.endswith('.json'):
+                    path = os.path.join(item_path, f)
+                    size = os.path.getsize(path)
+                    duration = 0
+                    recode_pace = 0
+                    try:
+                        with open(path, 'r', encoding='utf-8') as jf:
+                            jdata = json.load(jf)
+                            res_data = jdata.get("data", {})
+                            duration = float(res_data.get("duration", 0)) / 60.0
+                            recode_pace = float(res_data.get("recodePace", 0))
+                    except Exception:
+                        pass
+                    files_info.append({
+                        "filename": f,
+                        "size_kb": round(size / 1024, 2),
+                        "duration": duration,
+                        "recode_pace": recode_pace
+                    })
+            groups.append({
+                "name": item, 
+                "count": len(files_info),
+                "routes": files_info
+            })
     return JSONResponse({"success": True, "data": groups})
 
 class RouteGroupCreate(BaseModel):

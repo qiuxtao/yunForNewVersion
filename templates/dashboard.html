@@ -639,17 +639,18 @@
                     </button>
                 </div>
                 <div class="table-responsive" id="routesTableContainer">
-                    <table style="table-layout: fixed;">
+                    <table style="table-layout: fixed; width: 100%;">
                         <thead>
                             <tr>
-                                <th style="width: 40%">线路组目录名</th>
-                                <th style="width: 30%">包含线路数</th>
+                                <th style="width: 40%">线路组/文件名称</th>
+                                <th style="width: 15%">包含线路/耗时</th>
+                                <th style="width: 15%">平均配速</th>
                                 <th style="width: 30%">操作</th>
                             </tr>
                         </thead>
                         <tbody id="routeGroupsTableBody">
                             <tr>
-                                <td colspan="3">
+                                <td colspan="4">
                                     <div class="empty-state">正在加载线路库数据...</div>
                                 </td>
                             </tr>
@@ -1337,42 +1338,81 @@
             const container = document.getElementById('routesTableContainer');
             if (!document.getElementById('routeGroupsTableBody')) {
                 container.innerHTML = `
-                    <table style="table-layout: fixed;">
+                    <table style="table-layout: fixed; width: 100%;">
                         <thead>
                             <tr>
-                                <th style="width: 40%">线路组目录名</th>
-                                <th style="width: 30%">包含线路数</th>
+                                <th style="width: 40%">线路组/文件名称</th>
+                                <th style="width: 15%">包含线路/耗时</th>
+                                <th style="width: 15%">平均配速</th>
                                 <th style="width: 30%">操作</th>
                             </tr>
                         </thead>
                         <tbody id="routeGroupsTableBody">
-                            <tr><td colspan="3"><div class="empty-state">正在加载线路库数据...</div></td></tr>
+                            <tr><td colspan="4"><div class="empty-state">正在加载线路库数据...</div></td></tr>
                         </tbody>
                     </table>
                 `;
             }
             const tbody = document.getElementById('routeGroupsTableBody');
-            tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state">正在加载线路库数据...</div></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">正在加载线路库数据...</div></td></tr>';
             try {
                 const res = await fetch('/api/route_groups');
                 const result = await res.json();
                 if (result.success) {
                     window.availableGroups = result.data.map(g => g.name);
                     if (result.data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state">尚未创建任何线路组文件夹</div></td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">尚未创建任何线路组文件夹</div></td></tr>';
                     } else {
-                        tbody.innerHTML = result.data.map(g => `
-                            <tr>
-                                <td><strong>${g.name}</strong></td>
-                                <td><span class="badge badge-neutral">${g.count} 条线路</span></td>
-                                <td>
-                                    <div class="action-cell" style="display:flex; gap:8px; flex-wrap:wrap;">
-                                        <button class="btn btn-info" style="white-space:nowrap;" onclick="viewGroupRoutes('${g.name}')">管理线路</button>
-                                        <button class="btn btn-danger" style="white-space:nowrap;" onclick="deleteRouteGroup('${g.name}')">删除</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        `).join('');
+                        let html = '';
+                        result.data.forEach(g => {
+                            html += `
+                                <tr class="group-row" style="cursor: pointer; background-color: rgba(255,255,255,0.05);" onclick="toggleRouteGroupRows('${g.name}')">
+                                    <td>
+                                        <i class="fas fa-chevron-right" id="route-icon-${g.name}" style="margin-right: 10px; width: 14px;"></i>
+                                        <strong style="color:var(--primary);">${g.name}</strong>
+                                    </td>
+                                    <td><span class="badge badge-neutral">${g.count} 条线路</span></td>
+                                    <td>-</td>
+                                    <td>
+                                        <div class="action-cell" style="display:flex; gap:8px; flex-wrap:wrap;" onclick="event.stopPropagation();">
+                                            <button class="btn btn-danger btn-sm" style="white-space:nowrap;" onclick="deleteRouteGroup('${g.name}')">移除整个组</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                            if (g.routes && g.routes.length > 0) {
+                                g.routes.forEach(f => {
+                                    let durDisplay = "-";
+                                    if (f.duration) durDisplay = Math.floor(f.duration) + "分" + Math.round((f.duration % 1) * 60) + "秒";
+                                    let paceDisplay = "-";
+                                    if (f.recode_pace) paceDisplay = Math.floor(f.recode_pace) + "'" + Math.round((f.recode_pace % 1) * 60).toString().padStart(2, '0') + '"';
+                                    html += `
+                                        <tr class="child-row route-child-${g.name}" style="display: none; background-color: rgba(0,0,0,0.2);">
+                                            <td style="padding-left: 40px;">
+                                                <i class="fas fa-file-code" style="color:var(--text-muted); margin-right:8px;"></i>
+                                                ${f.filename} <span style="font-size:12px; color:var(--text-muted);">(${f.size_kb} KB)</span>
+                                            </td>
+                                            <td>${durDisplay}</td>
+                                            <td>${paceDisplay}</td>
+                                            <td>
+                                                <div class="action-cell" style="display:flex; gap:8px; flex-wrap:wrap;" onclick="event.stopPropagation();">
+                                                    <button class="btn btn-info btn-sm" style="white-space:nowrap;" onclick="previewRoute('${g.name}', '${f.filename}')">预览</button>
+                                                    <button class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="renameRouteFile('${g.name}', '${f.filename}')">更名</button>
+                                                    <button class="btn btn-danger btn-sm" style="white-space:nowrap;" onclick="deleteRouteFile('${g.name}', '${f.filename}')">删除</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `;
+                                });
+                            } else {
+                                html += `
+                                    <tr class="child-row route-child-${g.name}" style="display: none; background-color: rgba(0,0,0,0.2);">
+                                        <td colspan="4" style="text-align:center; padding-left: 40px; color:var(--text-muted);">此组内暂无路线 JSON 文件</td>
+                                    </tr>
+                                `;
+                            }
+                        });
+                        tbody.innerHTML = html;
                     }
 
                     // Automatically update the options in schedule panels
@@ -1500,64 +1540,29 @@
             }
         }
 
-        // Inner Route Editor viewer (Since the user wants an editor for inside a group without leaving)
-        async function viewGroupRoutes(groupName) {
-            try {
-                const res = await fetch(`/api/route_groups/${groupName}`);
-                const result = await res.json();
-                if (result.success) {
-                    let html = `<div style="padding:16px;">
-                        <h3 style="margin-bottom:16px; color:#fff; display:flex; justify-content:space-between;">
-                            <span>包含线路概览</span>
-                            <button class="btn btn-ghost" onclick="loadRouteGroups()" style="padding:4px 8px;">返回列表</button>
-                        </h3>
-                        <div class="table-responsive">
-                        <table>
-                            <thead><tr><th style="white-space:nowrap;">线路文件名</th><th style="white-space:nowrap;">体积大小</th><th style="white-space:nowrap;">耗时</th><th style="white-space:nowrap;">配速</th><th style="width: 140px; white-space:nowrap;">操作</th></tr></thead>
-                            <tbody>
-                    `;
-                    if (result.data.length === 0) {
-                        html += `<tr><td colspan="5"><div class="empty-state">该线路库内空空如也，快去云端记录存入吧</div></td></tr>`;
-                    } else {
-                        html += result.data.map(f => {
-                            let durDisplay = "-";
-                            if (f.duration) {
-                                durDisplay = Math.floor(f.duration) + "分" + Math.round((f.duration % 1) * 60) + "秒";
-                            }
-                            let paceDisplay = "-";
-                            if (f.recode_pace) {
-                                let m = Math.floor(f.recode_pace);
-                                let s = Math.round((f.recode_pace % 1) * 60).toString().padStart(2, '0');
-                                paceDisplay = m + "'" + s + '"';
-                            }
-
-                            return `
-                            <tr>
-                                <td style="color:#60a5fa;">${f.filename}</td>
-                                <td>${f.size_kb} KB</td>
-                                <td>${durDisplay}</td>
-                                <td>${paceDisplay}</td>
-                                <td style="white-space:nowrap;">
-                                    <button class="btn btn-info" style="padding:4px 8px; font-size:12px; margin-right:4px;" onclick="previewRoute('${groupName}', '${f.filename}')">预览</button>
-                                    <button class="btn btn-warning" style="padding:4px 8px; font-size:12px; margin-right:4px;" onclick="renameRouteFile('${groupName}', '${f.filename}')">更名</button>
-                                    <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteRouteFile('${groupName}', '${f.filename}')">删除</button>
-                                </td>
-                            </tr>
-                        `;
-                        }).join('');
-                    }
-                    html += `</tbody></table></div></div>`;
-                    document.getElementById('routesTableContainer').innerHTML = html;
+        function toggleRouteGroupRows(groupName) {
+            const rows = document.querySelectorAll('.route-child-' + groupName);
+            const icon = document.getElementById('route-icon-' + groupName);
+            let isExpanded = false;
+            rows.forEach(row => {
+                if (row.style.display === 'none') {
+                    row.style.display = 'table-row';
+                    isExpanded = true;
                 } else {
-                    alert("加载文件失败:" + result.message);
+                    row.style.display = 'none';
                 }
-            } catch (e) {
-                alert("网络异常: " + e);
+            });
+            if (isExpanded) {
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-right');
             }
         }
 
         async function reloadGroupViewAfterOperation(groupName) {
-            viewGroupRoutes(groupName);
+            loadRouteGroups();
         }
 
         async function renameRouteFile(groupName, filename) {
