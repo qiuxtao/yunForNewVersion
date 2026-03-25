@@ -56,3 +56,10 @@ def init_db():
             conn.execute(text("UPDATE schedules SET group_id = lower(hex(randomblob(16))) WHERE group_id IS NULL OR group_id = ''"))
     except Exception:
         pass
+
+    try:
+        with engine.begin() as conn:
+            from sqlalchemy import text
+            conn.execute(text("ALTER TABLE schedules ADD COLUMN run_days VARCHAR(50) DEFAULT '1,2,3,4,5,6,7'"))
+    except Exception:
+        pass
