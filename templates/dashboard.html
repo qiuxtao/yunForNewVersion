@@ -530,7 +530,7 @@
         <div class="nav-tabs">
             <button class="nav-tab active" onclick="switchTab('accounts')" id="tab-btn-accounts">账户授权中心</button>
             <button class="nav-tab" onclick="switchTab('schedules')" id="tab-btn-schedules">定时任务调度</button>
-            <button class="nav-tab" onclick="switchTab('routes')" id="tab-btn-routes">跑步线路管理</button>
+            <button class="nav-tab" onclick="switchTab('routes')" id="tab-btn-routes">跑步路线管理</button>
             <button class="nav-tab" onclick="switchTab('logs')" id="tab-btn-logs">系统运行日志</button>
         </div>
 
@@ -585,9 +585,9 @@
                                             onclick="viewLocalHistory({{ u.id }}, '{{ u.username }}')">运行日志</button>
                                         <button class="btn btn-warning" onclick="editUser({{ u.id }})">编辑</button>
                                         <form action="/users/delete" method="POST" style="margin:0;"
-                                            onsubmit="return confirm('确定要移除此账户吗？将会删除所有关联的调度任务。')">
+                                            onsubmit="return confirm('确定要删除此账户吗？将会删除所有关联的调度任务。')">
                                             <input type="hidden" name="user_id" value="{{ u.id }}">
-                                            <button type="submit" class="btn btn-danger">移除</button>
+                                            <button type="submit" class="btn btn-danger">删除</button>
                                         </form>
                                     </div>
                                 </td>
@@ -640,25 +640,25 @@
         <div id="tab-pane-routes" class="tab-pane">
             <div class="glass-panel">
                 <div class="panel-header">
-                    <h2 class="panel-title">线路组管理</h2>
+                    <h2 class="panel-title">路线组管理</h2>
                     <button class="btn btn-primary" onclick="promptCreateRouteGroup()">
-                        建立新线路组
+                        添加路线组
                     </button>
                 </div>
                 <div class="table-responsive" id="routesTableContainer">
                     <table style="table-layout: fixed; width: 100%;">
                         <thead>
                             <tr>
-                                <th style="width: 45%">线路文件 / 编组</th>
-                                <th style="width: 10%">路线耗时</th>
-                                <th style="width: 12%">平均配速</th>
+                                <th style="width: 45%">路线文件 / 编组</th>
+                                <th style="width: 10%">耗时</th>
+                                <th style="width: 12%">配速</th>
                                 <th style="width: 33%">操作</th>
                             </tr>
                         </thead>
                         <tbody id="routeGroupsTableBody">
                             <tr>
                                 <td colspan="4">
-                                    <div class="empty-state">正在加载线路库数据...</div>
+                                    <div class="empty-state">正在加载路线库数据...</div>
                                 </td>
                             </tr>
                         </tbody>
@@ -898,7 +898,7 @@
                     <input type="time" class="form-control" name="target_time" id="edit_sched_time" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">选择线路组</label>
+                    <label class="form-label">选择路线组</label>
                     <select class="form-select" name="route_type" id="edit_sched_route">
                         <option value="tasks_else">邮电操场 (tasks_else)</option>
                     </select>
@@ -957,7 +957,7 @@
                     <input type="time" class="form-control" name="target_time" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">选择线路组</label>
+                    <label class="form-label">选择路线组</label>
                     <select class="form-select" name="route_type">
                         <option value="tasks_else">邮电操场 (tasks_else)</option>
                     </select>
@@ -980,7 +980,7 @@
         <div class="modal-box">
             <h2 class="panel-title" style="margin-bottom: 24px;">抽取云端路线至图库</h2>
             <div class="form-group">
-                <label class="form-label">请选择目标存放线路组 (作为图集库)</label>
+                <label class="form-label">请选择目标存放路线组 (作为图集库)</label>
                 <select id="save_route_group_select" class="form-select"></select>
             </div>
             <input type="hidden" id="save_route_run_id">
@@ -1455,27 +1455,27 @@
                     <table style="table-layout: fixed; width: 100%;">
                         <thead>
                             <tr>
-                                <th style="width: 45%">线路文件 / 编组</th>
-                                <th style="width: 10%">路线耗时</th>
-                                <th style="width: 12%">平均配速</th>
+                                <th style="width: 45%">路线文件 / 编组</th>
+                                <th style="width: 10%">耗时</th>
+                                <th style="width: 12%">配速</th>
                                 <th style="width: 33%">操作</th>
                             </tr>
                         </thead>
                         <tbody id="routeGroupsTableBody">
-                            <tr><td colspan="4"><div class="empty-state">正在加载线路库数据...</div></td></tr>
+                            <tr><td colspan="4"><div class="empty-state">正在加载路线库数据...</div></td></tr>
                         </tbody>
                     </table>
                 `;
             }
             const tbody = document.getElementById('routeGroupsTableBody');
-            tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">正在加载线路库数据...</div></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">正在加载路线库数据...</div></td></tr>';
             try {
                 const res = await fetch('/api/route_groups');
                 const result = await res.json();
                 if (result.success) {
                     window.availableGroups = result.data.map(g => g.name);
                     if (result.data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">尚未创建任何线路组文件夹</div></td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">尚未创建任何路线组文件夹</div></td></tr>';
                     } else {
                         let html = '';
                         result.data.forEach(g => {
@@ -1496,8 +1496,8 @@
                                     <td>-</td>
                                     <td>
                                         <div class="action-cell" style="display:flex; gap:8px; flex-wrap:nowrap; overflow:visible;" onclick="event.stopPropagation();">
-                                            <button class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="renameRouteGroup('${g.name}')">重命名称</button>
-                                            <button class="btn btn-danger btn-sm" style="white-space:nowrap;" onclick="deleteRouteGroup('${g.name}')">移除整个组</button>
+                                            <button class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="renameRouteGroup('${g.name}')">重命名</button>
+                                            <button class="btn btn-danger btn-sm" style="white-space:nowrap;" onclick="deleteRouteGroup('${g.name}')">全组删除</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -1554,7 +1554,7 @@
                 document.getElementById('edit_sched_route'),
                 document.querySelector('#scheduleModal select[name="route_type"]')
             ];
-            const placeholder = '<option value="" disabled selected>-- 请选择线路组 --</option>';
+            const placeholder = '<option value="" disabled selected>-- 请选择路线组 --</option>';
             const options = groupNames.map(g => `<option value="${g}">${g}</option>`).join('');
 
             selects.forEach(sel => {
@@ -1571,7 +1571,7 @@
         }
 
         async function promptCreateRouteGroup() {
-            const name = prompt("请输入自定义线路组名称:");
+            const name = prompt("请输入自定义路线组名称:");
             if (!name) return;
             try {
                 const res = await fetch('/api/route_groups', {
@@ -1581,7 +1581,7 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert('线路组创建成功！');
+                    alert('路线组创建成功！');
                     loadRouteGroups();
                 } else {
                     alert('创建失败: ' + result.message);
@@ -1709,14 +1709,14 @@
                     const sel = document.getElementById('save_route_group_select');
                     sel.innerHTML = result.data.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
                     if (result.data.length === 0) {
-                        alert("现在还没有任何线路组！请先在【线路库管理】中创建一个组。");
+                        alert("现在还没有任何路线组！请先在【路线库管理】中创建一个组。");
                         return;
                     }
                     document.getElementById('save_route_run_id').value = runId;
                     document.getElementById('save_route_mileage').value = mileage;
                     openModal('saveRouteModal');
                 } else {
-                    alert("获取线路组失败: " + result.message);
+                    alert("获取路线组失败: " + result.message);
                 }
             } catch (e) {
                 alert("网络异常: " + e);
@@ -1743,7 +1743,7 @@
                 const detailResult = await detailRes.json();
 
                 if (!detailResult.success) {
-                    alert("官方原始线路拉取/解密失败: " + detailResult.message);
+                    alert("官方原始路线拉取/解密失败: " + detailResult.message);
                     return;
                 }
 
@@ -1759,7 +1759,7 @@
                 });
                 const saveResult = await saveRes.json();
                 if (saveResult.success) {
-                    alert("线路落盘保存成功！已入库。");
+                    alert("路线落盘保存成功！已入库。");
                     closeModal('saveRouteModal');
                 } else {
                     alert("服务器落盘写入失败: " + saveResult.message);
@@ -1794,7 +1794,7 @@
         }
 
         async function renameRouteGroup(oldName) {
-            const newName = prompt(`将线路组 ${oldName} 重命名为:`, oldName);
+            const newName = prompt(`将路线组 ${oldName} 重命名为:`, oldName);
             if (!newName || newName === oldName) return;
             try {
                 const res = await fetch(`/api/route_groups/${encodeURIComponent(oldName)}/rename_group`, {
@@ -1933,7 +1933,7 @@
                                             <div>
                                                 <i class="fas fa-chevron-right" id="icon-${group.group_id}" style="margin-right: 10px; width: 14px;"></i>
                                                 <span style="font-size: 15px; font-weight: bold; color:var(--text-main); margin-right: 12px;">${group.group_name || '未命名任务组'}</span>
-                                                <span style="color:var(--success); font-weight:bold; font-size:12px;">组内共 ${group.tasks.length} 人</span>
+                                                <span style="color:var(--success); font-weight:bold; font-size:12px;">包含 ${group.tasks.length} 个账户</span>
                                             </div>
                                             <div style="font-size: 12px; margin-left:24px; color:var(--text-muted);">
                                                 <span style="color:var(--primary); font-weight: 600;">[${group.target_time}]</span>
@@ -1947,7 +1947,7 @@
                                     <td style="vertical-align: middle;">
                                         <div style="display:flex; gap:8px; flex-wrap:wrap; align-items: center;" onclick="event.stopPropagation();">
                                             <button type="button" class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="editGroup('${group.group_id}', '${group.group_name}', '${group.target_time}', '${group.route_type}', ${group.random_delay_minutes}, '${userIds}', '${group.run_days}')">编辑组</button>
-                                            <form action="/schedules/delete_group" method="POST" style="margin:0;" onsubmit="return confirm('确定移除整组任务吗？')">
+                                            <form action="/schedules/delete_group" method="POST" style="margin:0;" onsubmit="return confirm('确定删除整组任务吗？')">
                                                 <input type="hidden" name="group_id" value="${group.group_id}">
                                                 <button type="submit" class="btn btn-danger btn-sm" style="white-space:nowrap;">全组删除</button>
                                             </form>
@@ -1978,7 +1978,7 @@
                                         <div style="display:flex; gap:8px; align-items: center;" onclick="event.stopPropagation();">
                                             <form action="/runs/manual_trigger" method="POST" style="margin:0;">
                                                 <input type="hidden" name="schedule_id" value="${s.id}">
-                                                <button type="submit" class="btn btn-info btn-xs" title="立即无缓冲排队执行此人单跑">单跑</button>
+                                                <button type="submit" class="btn btn-info btn-xs" title="立即无缓冲排队执行此人">立即执行</button>
                                             </form>
                                         </div>
                                     </td>
@@ -2110,7 +2110,7 @@
                 await new Promise(r => setTimeout(r, 650));
             }
 
-            btn.innerHTML = "配速同步完成";
+            btn.innerHTML = "补全信息完成";
             setTimeout(() => {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
