@@ -732,10 +732,16 @@
     <!-- History Modal -->
     <div class="modal-overlay" id="historyModal">
         <div class="modal-box"
-            style="max-width: 780px; width: 95%; max-height: 85vh; display:flex; flex-direction:column; padding: 20px;">
+            style="max-width: 780px; width: 95%; height: 95vh; display:flex; flex-direction:column; padding: 20px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
-                <h2 class="panel-title" id="historyModalTitle">云端记录</h2>
-                <div style="display:flex; gap:8px;">
+                <div style="display:flex; align-items:center;">
+                    <h2 class="panel-title" id="historyModalTitle">云端记录</h2>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div id="termStats" style="display:none; font-size:13px; font-weight:normal; margin-right:8px; align-items:center;">
+                        <span class="badge badge-info" style="margin-right:8px;">总计 <span id="termTotalRuns">0</span> 次</span>
+                        <span class="badge badge-success">合格 <span id="termQualifiedCount" style="font-weight:bold;">0</span> 次</span>
+                    </div>
                     <button class="btn btn-info" id="loadDetailsBtn"
                         style="display:none; padding:6px 16px; font-size:13px;"
                         onclick="loadAllRunDetails()">补全信息</button>
@@ -754,7 +760,7 @@
             </div>
             <div id="historyError" style="display:none; color: var(--danger); text-align: center; padding: 20px;"></div>
             <div id="historyTableContainer"
-                style="display:none; max-height: 450px; overflow-y: auto; padding-right: 8px;">
+                style="display:none; flex: 1; min-height: 0; overflow-y: auto; padding-right: 8px;">
                 <div id="historyTableBody"></div>
             </div>
             <div class="modal-footer">
@@ -1259,17 +1265,14 @@
                         }).length;
                     }
 
-                    termHtml += `<h3 style="color:#60a5fa; margin-bottom:12px; font-size:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; display:flex; justify-content:flex-end; align-items:center;">
-                        <div style="font-size:13px; font-weight:normal;">
-                            <span class="badge badge-info" style="margin-right:8px;">总计 ${totalRuns} 次</span>
-                            <span class="badge badge-success">合格 <span id="termQualifiedCount" style="font-weight:bold;">${qualifiedRuns}</span> 次</span>
-                        </div>
-                    </h3>`;
+                    document.getElementById('termStats').style.display = 'flex';
+                    document.getElementById('termTotalRuns').innerText = totalRuns;
+                    document.getElementById('termQualifiedCount').innerText = qualifiedRuns;
 
                     if (!result.data || result.data.length === 0) {
                         termHtml += `<div class="empty-state" style="padding:20px;">该学期尚无相关打卡记录</div>`;
                     } else {
-                        termHtml += '<div class="table-responsive" style="margin-bottom:12px;"><table><thead><tr><th style="white-space:nowrap;">运动结束时间</th><th style="white-space:nowrap;">状态</th><th style="white-space:nowrap;">耗时</th><th style="white-space:nowrap;">配速</th><th style="white-space:nowrap;">运动里程</th><th style="width: 80px; white-space:nowrap;">操作</th></tr></thead><tbody>';
+                        termHtml += '<style>#historyTableBody th, #historyTableBody td { padding: 6px 8px !important; font-size: 13px; line-height:1.2; } #historyTableBody td button { transform: scale(0.9); transform-origin: left center; }</style><div class="table-responsive" style="margin-bottom:0;"><table><thead><tr><th style="white-space:nowrap;">运动结束时间</th><th style="white-space:nowrap;">状态</th><th style="white-space:nowrap;">耗时</th><th style="white-space:nowrap;">配速</th><th style="white-space:nowrap;">运动里程</th><th style="width: 80px; white-space:nowrap;">操作</th></tr></thead><tbody>';
                         result.data.forEach(run => {
                             let rtime = run.recordEndTime || run.endTime || run.recordDate || "-";
                             let displayTime = rtime;
@@ -2028,9 +2031,14 @@
             for (let i = 0; i < totalCount; i++) {
                 const currentModalUserId = document.getElementById('current_history_user').value;
                 if (currentModalUserId !== userId || !document.getElementById('historyModal').classList.contains('active')) {
-                    btn.innerHTML = '已中止';
-                    btn.disabled = false;
-                    break;
+                    if (document.getElementById('current_history_user').value === userId && document.getElementById('historyModal').classList.contains('active')) {
+                        btn.innerHTML = '已中止';
+                        btn.disabled = false;
+                        setTimeout(() => {
+                            btn.innerHTML = originalText;
+                        }, 3000);
+                    }
+                    return;
                 }
 
                 let run = window.currentHistoryData[i];
