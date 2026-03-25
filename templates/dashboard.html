@@ -1003,6 +1003,53 @@
             // Reset validation messages
             if (id === 'addUserModal') document.getElementById('add_validation_msg').innerHTML = '';
             if (id === 'editUserModal') document.getElementById('edit_validation_msg').innerHTML = '';
+            
+            if (id === 'historyModal') {
+                if (window._cloudPreviewModalMap) {
+                    window._cloudPreviewModalMap.remove();
+                    window._cloudPreviewModalMap = null;
+                }
+            } else if (id === 'localHistoryModal') {
+                const btn = document.getElementById('exportLocalHistoryBtn');
+                if (btn) btn.style.display = 'none';
+                const clearBtn = document.getElementById('clearLocalHistoryBtn');
+                if (clearBtn) clearBtn.style.display = 'none';
+                window.currentLocalLogs = null;
+                window.currentViewingUserId = null;
+            }
+        }
+
+        async function clearSystemLogs() {
+            if(!confirm("确定要清空所有系统运行日志吗？(不可恢复)")) return;
+            try {
+                const res = await fetch('/api/logs/clear', {method: 'POST'});
+                const result = await res.json();
+                if(result.success) {
+                    showToast('系统日志已清理完毕', 'success');
+                    fetchLogs();
+                } else {
+                    showToast('清理失败: ' + result.message, 'error');
+                }
+            } catch (err) {
+                showToast('网络错误: ' + err.message, 'error');
+            }
+        }
+        
+        async function clearLocalHistory() {
+            if(!window.currentViewingUserId) return;
+            if(!confirm("确定要清空该账号的本地运行日志吗？(不可恢复)")) return;
+            try {
+                const res = await fetch(`/api/users/${window.currentViewingUserId}/logs/clear`, {method: 'POST'});
+                const result = await res.json();
+                if(result.success) {
+                    showToast('用户运行日志已清理完毕', 'success');
+                    viewLocalHistory(window.currentViewingUserId, document.getElementById('localHistoryModalTitle').innerText.replace('运行日志 - ', '').trim());
+                } else {
+                    showToast('清理失败: ' + result.message, 'error');
+                }
+            } catch (err) {
+                showToast('网络错误: ' + err.message, 'error');
+            }
         }
 
         // Close modal on click outside
@@ -1151,8 +1198,8 @@
                             if (log.status === 'Success') badgeHtml = '<span class="badge badge-success">Success</span>';
                             else if (log.status === 'Running') badgeHtml = '<span class="badge badge-info">Running</span>';
                             else if (log.status === 'Pending') badgeHtml = '<span class="badge badge-warning">Pending</span>';
+                            else if (log.status === 'Failed') badgeHtml = '<span class="badge badge-error">Failed</span>';
                             else badgeHtml = `<span class="badge badge-danger">${log.status}</span>`;
-                            else badgeHtml = '<span class="badge badge-error">Failed</span>';
 
                             html += `<tr>
                                 <td style="color:var(--text-muted); font-size:13px;">${log.run_time}</td>
@@ -1857,6 +1904,7 @@
                                     target_time: s.target_time,
                                     route_type: s.route_type,
                                     random_delay_minutes: s.random_delay_minutes,
+                                    run_days: s.run_days || '1,2,3,4,5,6,7',
                                     tasks: []
                                 };
                             }
