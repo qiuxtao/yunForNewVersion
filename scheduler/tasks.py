@@ -167,6 +167,11 @@ def run_job_for_user(user_id: int, schedule_id: int):
                     time.sleep(sleep_time)
                 count = 0
                 points = []
+                
+                # Checkpoint Progress Logger Without Terminal Clutter
+                if (idx + 1) % max(1, total_points // 10) == 0 or (idx + 1) == total_points:
+                    pct = int((idx + 1) / total_points * 100)
+                    logger.info(f"[{user.yun_username}] 运行进度: {pct}% ({idx+1}/{total_points})")
 
         logger.info(f"[{user.yun_username}] 发送结束信号...")
         res = core.finish_by_points_map(task_map)
@@ -217,27 +222,8 @@ def scan_and_run_schedules():
     """
     now = datetime.datetime.now()
     
-    import os, configparser
-    config = configparser.ConfigParser()
-    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.ini')
-    if os.path.exists(config_path):
-        config.read(config_path, encoding='utf-8')
-        if config.has_section("Scheduler"):
-            exclude_weekdays = config.get("Scheduler", "exclude_weekdays", fallback="").strip()
-            if exclude_weekdays:
-                weekdays = [int(x.strip()) for x in exclude_weekdays.split(",") if x.strip().isdigit()]
-                if now.weekday() in weekdays:
-                    # 匹配到休息日，直接跳过本分钟的自动扫描
-                    return
-            
-            exclude_dates = config.get("Scheduler", "exclude_dates", fallback="").strip()
-            if exclude_dates:
-                dates = [x.strip() for x in exclude_dates.split(",") if x.strip()]
-                if now.strftime("%m%d") in dates:
-                    # 匹配到节假日，直接跳过本分钟的自动扫描
-                    return
-
     current_time_str = now.strftime("%H:%M")
+    current_weekday = str(now.isoweekday())
     
     db: Session = SessionLocal()
     # Find active users with due and active schedules
@@ -248,6 +234,12 @@ def scan_and_run_schedules():
     ).all()
     
     for sched in due_schedules:
+        # DB level Weekday filter validation
+        if getattr(sched, 'run_days', None):
+            allowed_days = [d.strip() for d in sched.run_days.split(',') if d.strip()]
+            if allowed_days and current_weekday not in allowed_days:
+                continue
+
         # Prevent running twice in the same minute
         if sched.last_run_time and sched.last_run_time.strftime("%Y-%m-%d %H:%M") == now.strftime("%Y-%m-%d %H:%M"):
             continue

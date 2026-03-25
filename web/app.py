@@ -291,6 +291,8 @@ async def add_schedule(
 ):
     form_data = await request.form()
     user_ids = form_data.getlist("user_ids")
+    run_days_list = form_data.getlist("run_days")
+    run_days_str = ",".join(run_days_list) if run_days_list else "1,2,3,4,5,6,7"
     import uuid
     group_id = str(uuid.uuid4())[:8]
     
@@ -301,6 +303,7 @@ async def add_schedule(
             group_name=group_name,
             target_time=target_time,
             route_type=route_type,
+            run_days=run_days_str,
             random_delay_minutes=random_delay_minutes,
             last_run_status="Pending",
             is_active=True
@@ -322,6 +325,8 @@ async def edit_schedule_group(
 ):
     form_data = await request.form()
     new_user_ids = set([int(uid) for uid in form_data.getlist("user_ids")])
+    run_days_list = form_data.getlist("run_days")
+    run_days_str = ",".join(run_days_list) if run_days_list else "1,2,3,4,5,6,7"
     
     existing_scheds = db.query(models.Schedule).filter(models.Schedule.group_id == group_id).all()
     existing_user_ids = set([s.user_id for s in existing_scheds])
@@ -333,6 +338,7 @@ async def edit_schedule_group(
             s.group_name = group_name
             s.target_time = target_time
             s.route_type = route_type
+            s.run_days = run_days_str
             s.random_delay_minutes = random_delay_minutes
             
     for uid in new_user_ids - existing_user_ids:
@@ -342,6 +348,7 @@ async def edit_schedule_group(
             group_name=group_name,
             target_time=target_time,
             route_type=route_type,
+            run_days=run_days_str,
             random_delay_minutes=random_delay_minutes,
             last_run_status="Pending",
             is_active=True
@@ -411,6 +418,7 @@ async def get_schedules_json(db: Session = Depends(get_db), _: bool = Depends(ch
             "last_run_time": s.last_run_time.strftime('%Y-%m-%d %H:%M:%S') if s.last_run_time else '-',
             "group_id": s.group_id,
             "group_name": getattr(s, 'group_name', '未命名任务组'),
+            "run_days": getattr(s, 'run_days', '1,2,3,4,5,6,7'),
             "is_active": s.is_active
         })
     return JSONResponse({"success": True, "data": results})

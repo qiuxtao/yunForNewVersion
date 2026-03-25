@@ -57,6 +57,9 @@ class Schedule(Base):
     # 用户独立开关
     is_active = Column(Boolean, default=True)
     
+    # 允许运行的周几列表，以逗号分隔，默认全量 (1=一, 7=日)
+    run_days = Column(String(50), default="1,2,3,4,5,6,7")
+    
     # 使用哪条跑步路线 (tasks_fch / tasks_txl / tasks_xc 等)
     route_type = Column(String, default="tasks_youdian")
     

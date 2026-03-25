@@ -864,6 +864,19 @@
                     <label class="form-label">任务组自定义名称 (选填)</label>
                     <input type="text" class="form-control" name="group_name" id="edit_group_name" placeholder="未命名任务组">
                 </div>
+
+                <div class="form-group">
+                    <label class="form-label">运行周期</label>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:4px;">
+                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="1" class="edit-group-rundays-cb" style="margin-right:2px;"> 周一</label>
+                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="2" class="edit-group-rundays-cb" style="margin-right:2px;"> 周二</label>
+                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="3" class="edit-group-rundays-cb" style="margin-right:2px;"> 周三</label>
+                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="4" class="edit-group-rundays-cb" style="margin-right:2px;"> 周四</label>
+                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="5" class="edit-group-rundays-cb" style="margin-right:2px;"> 周五</label>
+                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="6" class="edit-group-rundays-cb" style="margin-right:2px; accent-color:var(--danger)"> 周六</label>
+                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="7" class="edit-group-rundays-cb" style="margin-right:2px; accent-color:var(--danger)"> 周日</label>
+                    </div>
+                </div>
                 
                 <div class="form-group">
                     <label class="form-label">Cron 定时 (每日执行, 24小时制 HH:MM)</label>
@@ -910,6 +923,20 @@
                     <label class="form-label">任务组自定义名称 (选填)</label>
                     <input type="text" class="form-control" name="group_name" placeholder="未命名任务组">
                 </div>
+
+                <div class="form-group">
+                    <label class="form-label">运行周期</label>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:4px;">
+                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="1" checked style="margin-right:2px;"> 周一</label>
+                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="2" checked style="margin-right:2px;"> 周二</label>
+                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="3" checked style="margin-right:2px;"> 周三</label>
+                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="4" checked style="margin-right:2px;"> 周四</label>
+                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="5" checked style="margin-right:2px;"> 周五</label>
+                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="6" checked style="margin-right:2px; accent-color:var(--danger)"> 周六</label>
+                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="7" checked style="margin-right:2px; accent-color:var(--danger)"> 周日</label>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label class="form-label">Cron 定时 (每日执行, 24小时制 HH:MM)</label>
                     <input type="time" class="form-control" name="target_time" required>
@@ -1773,7 +1800,7 @@
             });
         }
         
-        function editGroup(groupId, groupName, time, route, delay, userIdsStr) {
+        function editGroup(groupId, groupName, time, route, delay, userIdsStr, runDaysStr) {
             document.getElementById('edit_group_id').value = groupId;
             document.getElementById('edit_group_name').value = groupName !== 'null' && groupName !== 'undefined' ? groupName : '';
             document.getElementById('edit_sched_time').value = time;
@@ -1784,6 +1811,15 @@
             document.querySelectorAll('.edit-group-user-cb').forEach(cb => {
                 cb.checked = userIds.includes(parseInt(cb.value));
             });
+
+            if (runDaysStr === 'undefined' || runDaysStr === null || runDaysStr === '') {
+                runDaysStr = '1,2,3,4,5,6,7';
+            }
+            const runDays = runDaysStr.split(',');
+            document.querySelectorAll('.edit-group-rundays-cb').forEach(cb => {
+                cb.checked = runDays.includes(cb.value);
+            });
+
             openModal('editScheduleModal');
         }
 
@@ -1841,7 +1877,7 @@
                                     <td>-</td>
                                     <td>
                                         <div style="display:flex; gap:8px; flex-wrap:wrap;" onclick="event.stopPropagation();">
-                                            <button type="button" class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="editGroup('${group.group_id}', '${group.group_name}', '${group.target_time}', '${group.route_type}', ${group.random_delay_minutes}, '${userIds}')">编辑组</button>
+                                            <button type="button" class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="editGroup('${group.group_id}', '${group.group_name}', '${group.target_time}', '${group.route_type}', ${group.random_delay_minutes}, '${userIds}', '${group.run_days}')">编辑组</button>
                                             <form action="/schedules/delete_group" method="POST" style="margin:0;" onsubmit="return confirm('确定移除整组任务吗？')">
                                                 <input type="hidden" name="group_id" value="${group.group_id}">
                                                 <button type="submit" class="btn btn-danger btn-sm" style="white-space:nowrap;">全组删除</button>
