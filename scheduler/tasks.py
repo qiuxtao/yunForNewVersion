@@ -144,7 +144,6 @@ def run_job_for_user(user_id: int, schedule_id: int):
         sleep_time = task_map['data']['duration'] / total_points * split_count
 
         logger.info(f"[{user.yun_username}] 开始提交轨迹点... 共计 {total_points} 个点")
-        print(f"[{user.yun_username}]   0%|{' '*80}| 0/{total_points} [00:00<?, ?it/s]")
         
         start_t = time.time()
         for idx, point in enumerate(task_map['data']['pointsList']):
@@ -168,19 +167,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
                     time.sleep(sleep_time)
                 count = 0
                 points = []
-                
-                # Text based standard tqdm equivalent for the tail -f console stream
-                pct = int((idx + 1) / total_points * 100)
-                bar_len = 80
-                filled = int(bar_len * (idx+1)/total_points)
-                bar = '█' * filled + ' ' * (bar_len - filled)
-                elapsed = int(time.time() - start_t)
-                mins, secs = divmod(elapsed, 60)
-                # Use carriage return \r to print dynamic lines in system terminal without spamming thousands of disjoint rows
-                sys.stdout.write(f"\r[{user.yun_username}] {pct:>3}%|{bar}| {idx+1}/{total_points} [{mins:02d}:{secs:02d}]")
-                sys.stdout.flush()
 
-        print() # Jump to next line after \r finished
         logger.info(f"[{user.yun_username}] 发送结束信号...")
         res = core.finish_by_points_map(task_map)
         try:
