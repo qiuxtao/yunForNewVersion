@@ -282,6 +282,7 @@ async def test_qq_notify(
 @app.post("/schedules/add")
 async def add_schedule(
     request: Request,
+    group_name: str = Form("未命名任务组"),
     target_time: str = Form(...),
     route_type: str = Form(...),
     random_delay_minutes: int = Form(0),
@@ -656,7 +657,7 @@ class RouteSaveReq(BaseModel):
 
 @app.post("/api/route_groups/{group_name}/save")
 async def save_route_to_group(group_name: str, req: RouteSaveReq, _: bool = Depends(check_admin)):
-    if not group_name.startswith("tasks_") or ".." in group_name or ".." in req.filename:
+    if ".." in group_name or ".." in req.filename:
         return JSONResponse({"success": False, "message": "非法路径"})
     group_path = os.path.join("data/tasks", group_name)
     if not os.path.exists(group_path):
@@ -672,6 +673,31 @@ async def save_route_to_group(group_name: str, req: RouteSaveReq, _: bool = Depe
 
 class RouteRenameReq(BaseModel):
     new_name: str
+
+class GroupRenameReq(BaseModel):
+    new_name: str
+
+@app.post("/api/route_groups/{group_name}/rename_group")
+async def rename_route_group(group_name: str, req: GroupRenameReq, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    old_path = os.path.join("data/tasks", group_name)
+    new_name = req.new_name.strip()
+    if ".." in group_name or ".." in new_name or "/" in new_name or "\\" in new_name:
+        return JSONResponse({"success": False, "message": "非法名称"})
+    
+    new_path = os.path.join("data/tasks", new_name)
+    if not os.path.exists(old_path):
+        return JSONResponse({"success": False, "message": "原线路组不存在"})
+    if os.path.exists(new_path):
+        return JSONResponse({"success": False, "message": "目标名称已存在"})
+        
+    try:
+        import os
+        os.rename(old_path, new_path)
+        db.query(models.Schedule).filter(models.Schedule.route_type == group_name).update({"route_type": new_name})
+        db.commit()
+        return JSONResponse({"success": True})
+    except Exception as e:
+        return JSONResponse({"success": False, "message": str(e)})
 
 @app.post("/api/route_groups/{group_name}/{filename}/rename")
 async def rename_route_in_group(group_name: str, filename: str, req: RouteRenameReq, _: bool = Depends(check_admin)):

@@ -1378,19 +1378,20 @@
                                 <tr class="group-row" style="cursor: pointer; background-color: rgba(255,255,255,0.05);" onclick="toggleRouteGroupRows('${g.name}')">
                                     <td>
                                         <div style="display:flex; flex-direction:column; gap:6px;">
-                                            <div>
-                                                <i class="fas fa-chevron-right" id="route-icon-${g.name}" style="margin-right: 10px; width: 14px;"></i>
-                                                <strong style="color:var(--primary); font-size: 15px;">${g.name}</strong>
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <i class="fas fa-folder" id="route-icon-${g.name}" style="color:#fbbf24; font-size:16px;"></i>
+                                                <span style="font-size: 16px; font-weight: 600; color:var(--text-main); letter-spacing: 0.5px;">${g.name}</span>
                                             </div>
-                                            <div style="font-size: 12px; margin-left:24px; color:var(--text-muted);">
-                                                <span style="color:var(--success); font-weight:bold;">包含 ${g.count} 条 JSON 线路文件</span>
+                                            <div style="font-size: 12px; margin-left:24px; color:var(--text-muted); display:flex; gap:12px; margin-top:2px;">
+                                                <span style="background:rgba(16,185,129,0.15); color:var(--success); padding:2px 8px; border-radius:12px; font-weight:500;"><i class="fas fa-file-code" style="margin-right:2px;"></i>包含 ${g.count} 条子路线配置</span>
                                             </div>
                                         </div>
                                     </td>
                                     <td>-</td>
                                     <td>-</td>
                                     <td>
-                                        <div class="action-cell" style="display:flex; gap:8px; flex-wrap:wrap;" onclick="event.stopPropagation();">
+                                        <div class="action-cell" style="display:flex; gap:8px; flex-wrap:nowrap; overflow:visible;" onclick="event.stopPropagation();">
+                                            <button class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="renameRouteGroup('${g.name}')">重命名称</button>
                                             <button class="btn btn-danger btn-sm" style="white-space:nowrap;" onclick="deleteRouteGroup('${g.name}')">移除整个组</button>
                                         </div>
                                     </td>
@@ -1404,17 +1405,17 @@
                                     if (f.recode_pace) paceDisplay = Math.floor(f.recode_pace) + "'" + Math.round((f.recode_pace % 1) * 60).toString().padStart(2, '0') + '"';
                                     html += `
                                         <tr class="child-row route-child-${g.name}" style="display: none; background-color: rgba(0,0,0,0.2);">
-                                            <td style="padding-left: 40px;">
-                                                <i class="fas fa-file-code" style="color:var(--text-muted); margin-right:8px;"></i>
-                                                ${f.filename} <span style="font-size:12px; color:var(--text-muted);">(${f.size_kb} KB)</span>
+                                            <td style="padding-left: 40px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                                <i class="fas fa-map-marked-alt" style="color:var(--text-muted); margin-right:8px;"></i>
+                                                ${f.filename} <span style="font-size:11px; color:var(--text-muted);">(${f.size_kb} KB)</span>
                                             </td>
                                             <td>${durDisplay}</td>
                                             <td>${paceDisplay}</td>
                                             <td>
-                                                <div class="action-cell" style="display:flex; gap:8px; flex-wrap:wrap;" onclick="event.stopPropagation();">
-                                                    <button class="btn btn-info btn-sm" style="white-space:nowrap;" onclick="previewRoute('${g.name}', '${f.filename}')">预览</button>
-                                                    <button class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="renameRouteFile('${g.name}', '${f.filename}')">更名</button>
-                                                    <button class="btn btn-danger btn-sm" style="white-space:nowrap;" onclick="deleteRouteFile('${g.name}', '${f.filename}')">删除</button>
+                                                <div class="action-cell" style="display:flex; gap:6px; flex-wrap:nowrap; overflow:visible;" onclick="event.stopPropagation();">
+                                                    <button class="btn btn-info btn-sm" style="white-space:nowrap; padding:2px 6px;" onclick="previewRoute('${g.name}', '${f.filename}')">预览</button>
+                                                    <button class="btn btn-warning btn-sm" style="white-space:nowrap; padding:2px 6px;" onclick="renameRouteFile('${g.name}', '${f.filename}')">更名</button>
+                                                    <button class="btn btn-danger btn-sm" style="white-space:nowrap; padding:2px 6px;" onclick="deleteRouteFile('${g.name}', '${f.filename}')">删除</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -1569,11 +1570,33 @@
                 }
             });
             if (isExpanded) {
-                icon.classList.remove('fa-chevron-right');
-                icon.classList.add('fa-chevron-down');
+                icon.classList.remove('fa-folder');
+                icon.classList.add('fa-folder-open');
             } else {
-                icon.classList.remove('fa-chevron-down');
-                icon.classList.add('fa-chevron-right');
+                icon.classList.remove('fa-folder-open');
+                icon.classList.add('fa-folder');
+            }
+        }
+
+        async function renameRouteGroup(oldName) {
+            const newName = prompt(`将线路组 ${oldName} 重命名为:`, oldName);
+            if (!newName || newName === oldName) return;
+            try {
+                const res = await fetch(`/api/route_groups/${oldName}/rename_group`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ new_name: newName })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    loadRouteGroups();
+                    // Hard refresh to reload mapping inside Schedule table
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    alert("重命名失败: " + result.message);
+                }
+            } catch (e) {
+                alert("网络异常: " + e);
             }
         }
 
@@ -1660,7 +1683,8 @@
                             const key = s.group_id || `${s.target_time}-${s.route_type}-${s.random_delay_minutes}`;
                             if (!groups[key]) {
                                 groups[key] = {
-                                    group_id: key,
+                                    group_id: s.group_id,
+                                    group_name: s.group_name,
                                     target_time: s.target_time,
                                     route_type: s.route_type,
                                     random_delay_minutes: s.random_delay_minutes,
@@ -1675,7 +1699,7 @@
                             const userIds = encodeURIComponent(JSON.stringify(group.tasks.map(t => t.user_id)));
                             
                             const isMissing = window.availableGroups && !window.availableGroups.includes(group.route_type);
-                            const routeDisplay = isMissing ? `<code style="color:var(--danger); text-decoration:line-through;">${group.route_type}</code> <span style="font-size:10px; color:var(--danger)">(库已删)</span>` : `<code>${group.route_type}</code>`;
+                            const routeDisplay = isMissing ? `<span style="text-decoration:line-through;">${group.route_type}</span>(丢失)` : `${group.route_type}`;
 
                             html += `
                                 <tr class="group-row" style="cursor: pointer; background-color: rgba(255,255,255,0.05);" onclick="toggleGroupRows('${group.group_id}')">
