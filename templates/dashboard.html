@@ -580,7 +580,7 @@
                                 </td>
                                 <td>
                                     <div class="action-cell" style="display:flex; gap:8px;">
-                                        <button class="btn btn-info" onclick="viewHistory({{ u.id }})">云端记录</button>
+                                        <button class="btn btn-info" onclick="viewHistory({{ u.id }}, '{{ u.username }}')">云端记录</button>
                                         <button class="btn btn-secondary"
                                             onclick="viewLocalHistory({{ u.id }}, '{{ u.username }}')">运行日志</button>
                                         <button class="btn btn-warning" onclick="editUser({{ u.id }})">编辑</button>
@@ -1084,7 +1084,8 @@
             }
         }
 
-        async function viewHistory(userId) {
+        async function viewHistory(userId, username) {
+            document.getElementById('historyModalTitle').innerText = '云端记录 - ' + username;
             openModal('historyModal');
             document.getElementById('historyLoading').style.display = 'block';
             document.getElementById('historyError').style.display = 'none';
@@ -1258,8 +1259,7 @@
                         }).length;
                     }
 
-                    termHtml += `<h3 style="color:#60a5fa; margin-bottom:12px; font-size:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-                        <span>${termName}</span>
+                    termHtml += `<h3 style="color:#60a5fa; margin-bottom:12px; font-size:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; display:flex; justify-content:flex-end; align-items:center;">
                         <div style="font-size:13px; font-weight:normal;">
                             <span class="badge badge-info" style="margin-right:8px;">总计 ${totalRuns} 次</span>
                             <span class="badge badge-success">合格 <span id="termQualifiedCount" style="font-weight:bold;">${qualifiedRuns}</span> 次</span>
@@ -1665,24 +1665,24 @@
 
                     document.getElementById('mapPreviewTitle').innerText = "云端记录 [" + runId + "] 轨迹概览";
 
-                    if (!window.mapInstance) {
+                    if (!mapInstance) {
                         setTimeout(() => {
-                            window.mapInstance = L.map('mapRenderArea');
+                            mapInstance = L.map('mapRenderArea');
                             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                                 attribution: 'Tiles &copy; Esri',
                                 maxZoom: 19
-                            }).addTo(window.mapInstance);
+                            }).addTo(mapInstance);
 
-                            if (window.polylineLayer) window.mapInstance.removeLayer(window.polylineLayer);
-                            window.polylineLayer = L.polyline(latLngs, { color: '#60a5fa', weight: 4, opacity: 0.8 }).addTo(window.mapInstance);
-                            if (latLngs.length > 0) window.mapInstance.fitBounds(window.polylineLayer.getBounds(), { padding: [30, 30] });
+                            if (polylineLayer) mapInstance.removeLayer(polylineLayer);
+                            polylineLayer = L.polyline(latLngs, { color: '#60a5fa', weight: 4, opacity: 0.8 }).addTo(mapInstance);
+                            if (latLngs.length > 0) mapInstance.fitBounds(polylineLayer.getBounds(), { padding: [30, 30] });
                         }, 50);
                     } else {
                         setTimeout(() => {
-                            window.mapInstance.invalidateSize();
-                            if (window.polylineLayer) window.mapInstance.removeLayer(window.polylineLayer);
-                            window.polylineLayer = L.polyline(latLngs, { color: '#60a5fa', weight: 4, opacity: 0.8 }).addTo(window.mapInstance);
-                            if (latLngs.length > 0) window.mapInstance.fitBounds(window.polylineLayer.getBounds(), { padding: [30, 30] });
+                            mapInstance.invalidateSize();
+                            if (polylineLayer) mapInstance.removeLayer(polylineLayer);
+                            polylineLayer = L.polyline(latLngs, { color: '#60a5fa', weight: 4, opacity: 0.8 }).addTo(mapInstance);
+                            if (latLngs.length > 0) mapInstance.fitBounds(polylineLayer.getBounds(), { padding: [30, 30] });
                         }, 50);
                     }
                 } else {
@@ -2026,6 +2026,13 @@
             const totalCount = window.currentHistoryData.length;
 
             for (let i = 0; i < totalCount; i++) {
+                const currentModalUserId = document.getElementById('current_history_user').value;
+                if (currentModalUserId !== userId || !document.getElementById('historyModal').classList.contains('active')) {
+                    btn.innerHTML = '已中止';
+                    btn.disabled = false;
+                    break;
+                }
+
                 let run = window.currentHistoryData[i];
 
                 // If it already seems correctly hydrated (not zeroes), skip to save time.
