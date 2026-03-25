@@ -1482,13 +1482,13 @@
                             html += `
                                 <tr class="group-row" style="cursor: pointer; background-color: rgba(255,255,255,0.05);" onclick="toggleRouteGroupRows('${g.name}')">
                                     <td>
-                                        <div style="display:flex; flex-direction:column; gap:6px;">
-                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div style="display:flex; flex-direction:column; gap:4px;">
+                                            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
                                                 <i class="fas fa-folder" id="route-icon-${g.name}" style="color:#fbbf24; font-size:16px;"></i>
-                                                <span style="font-size: 16px; font-weight: 600; color:var(--text-main); letter-spacing: 0.5px;">${g.name}</span>
-                                            </div>
-                                            <div style="font-size: 12px; margin-left:24px; color:var(--text-muted); display:flex; gap:12px; margin-top:2px;">
-                                                <span style="background:rgba(16,185,129,0.15); color:var(--success); padding:2px 8px; border-radius:12px; font-weight:500;"><i class="fas fa-file-code" style="margin-right:2px;"></i>包含 ${g.count} 条子路线</span>
+                                                <span style="font-size: 15px; font-weight: bold; color:var(--text-main); letter-spacing: 0.3px;">${g.name}</span>
+                                                <span style="background:rgba(16,185,129,0.1); color:var(--success); padding:1px 10px; border-radius:12px; font-weight:500; font-size:11px; border:1px solid rgba(16,185,129,0.2);">
+                                                    包含 ${g.count} 条路线
+                                                </span>
                                             </div>
                                         </div>
                                     </td>
@@ -1929,16 +1929,18 @@
                             html += `
                                 <tr class="group-row" style="cursor: pointer; background-color: rgba(255,255,255,0.05);" onclick="toggleGroupRows('${group.group_id}')">
                                     <td style="vertical-align: middle;">
-                                        <div style="display:flex; flex-direction:column; gap:6px;">
-                                            <div>
-                                                <i class="fas fa-chevron-right" id="icon-${group.group_id}" style="margin-right: 10px; width: 14px;"></i>
-                                                <span style="font-size: 15px; font-weight: bold; color:var(--text-main); margin-right: 12px;">${group.group_name || '未命名任务组'}</span>
-                                                <span style="color:var(--success); font-weight:bold; font-size:12px;">包含 ${group.tasks.length} 个账户</span>
+                                        <div style="display:flex; flex-direction:column; gap:4px;">
+                                            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                                                <i class="fas fa-chevron-right" id="icon-${group.group_id}" style="margin-right: 2px; width: 14px;"></i>
+                                                <span style="font-size: 15px; font-weight: bold; color:var(--text-main);">${group.group_name || '未命名任务组'}</span>
+                                                <span style="background:rgba(59,130,246,0.1); color:var(--primary); padding:1px 10px; border-radius:12px; font-weight:500; font-size:11px; border:1px solid rgba(59,130,246,0.2);">
+                                                    包含 ${group.tasks.length} 个账户
+                                                </span>
                                             </div>
-                                            <div style="font-size: 12px; margin-left:24px; color:var(--text-muted);">
-                                                <span style="color:var(--primary); font-weight: 600;">[${group.target_time}]</span>
-                                                <span style="color:#fbbf24; margin-left:8px;">${group.random_delay_minutes}分钟区间缓冲</span>
-                                                <span style="margin-left:8px;">${routeDisplay}</span>
+                                            <div style="font-size: 12px; margin-left:24px; color:var(--text-muted); display:flex; align-items:center; gap:12px; margin-top:2px;">
+                                                <span style="color:var(--primary); font-weight: 600; background:rgba(59,130,246,0.05); padding:0 4px; border-radius:4px;">${group.target_time}</span>
+                                                <span><i class="far fa-clock" style="margin-right:4px; opacity:0.7;"></i>${group.random_delay_minutes}分钟缓冲</span>
+                                                <span style="opacity:0.8;"><i class="fas fa-road" style="margin-right:4px; opacity:0.7;"></i>${routeDisplay}</span>
                                             </div>
                                         </div>
                                     </td>
