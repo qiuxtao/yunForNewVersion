@@ -723,7 +723,7 @@
     <!-- History Modal -->
     <div class="modal-overlay" id="historyModal">
         <div class="modal-box"
-            style="max-width: 850px; width: 95%; max-height: 85vh; display:flex; flex-direction:column; padding: 20px;">
+            style="max-width: 780px; width: 95%; max-height: 85vh; display:flex; flex-direction:column; padding: 20px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
                 <h2 class="panel-title" id="historyModalTitle">云端记录</h2>
                 <div style="display:flex; gap:8px;">
@@ -1217,9 +1217,11 @@
                                 <td id="dur_${run.id}" style="white-space:nowrap;">${durDisplay}</td>
                                 <td id="pace_${run.id}" style="white-space:nowrap;">${paceDisplay}</td>
                                 <td style="color:var(--success); font-weight:500; white-space:nowrap;">${run.recordMileage || '0'} km</td>
-                                <td style="white-space:nowrap; display:flex; gap:6px;">
-                                    <button class="btn btn-info btn-xs" style="white-space:nowrap;" onclick="previewCloudRoute('${run.id}')">预览</button>
-                                    <button class="btn btn-secondary btn-xs" style="white-space:nowrap;" onclick="promptSaveRoute('${run.id}', '${run.recordMileage || 0}')">入库</button>
+                                <td style="white-space:nowrap; vertical-align:middle;">
+                                    <div style="display:flex; gap:6px; align-items:center;">
+                                        <button class="btn btn-info btn-xs" style="white-space:nowrap;" onclick="previewCloudRoute('${run.id}')">预览</button>
+                                        <button class="btn btn-secondary btn-xs" style="white-space:nowrap;" onclick="promptSaveRoute('${run.id}', '${run.recordMileage || 0}')">入库</button>
+                                    </div>
                                 </td>
                             </tr>`;
                         });
@@ -1503,37 +1505,55 @@
                 const res = await fetch(detailUrl);
                 const result = await res.json();
                 
-                if (result.success && result.data && result.data.length > 0) {
-                    openModal('previewModal');
-                    const mapContainer = document.getElementById('previewMap');
-                    mapContainer.innerHTML = '<div style="color:var(--text-muted); padding:20px; text-align:center;">正在拉取并解析云端位置节点...</div>';
+                if (result.success && result.data) {
+                    let trackData = result.data;
+                    if (typeof trackData === 'string') {
+                        try { trackData = JSON.parse(trackData); } catch(ex) {}
+                    }
+                    
+                    let points = [];
+                    if (Array.isArray(trackData)) {
+                        points = trackData;
+                    } else if (trackData && Array.isArray(trackData.track)) {
+                        points = trackData.track;
+                    } else if (trackData && Array.isArray(trackData.points)) {
+                        points = trackData.points;
+                    }
 
-                    setTimeout(() => {
-                        mapContainer.innerHTML = '';
-                        if (!window.routeMap) {
-                            window.routeMap = L.map('previewMap');
-                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                                attribution: '© OpenStreetMap contributors'
-                            }).addTo(window.routeMap);
-                        }
+                    if (points.length > 0) {
+                        openModal('previewModal');
+                        const mapContainer = document.getElementById('previewMap');
+                        mapContainer.innerHTML = '<div style="color:var(--text-muted); padding:20px; text-align:center;">正在拉取并解析云端位置节点...</div>';
 
-                        let latlngs = [];
-                        result.data.forEach(pt => {
-                            if (pt.latitude && pt.longitude) {
-                                latlngs.push([pt.latitude, pt.longitude]);
+                        setTimeout(() => {
+                            mapContainer.innerHTML = '';
+                            if (!window.routeMap) {
+                                window.routeMap = L.map('previewMap');
+                                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                    attribution: '© OpenStreetMap contributors'
+                                }).addTo(window.routeMap);
                             }
-                        });
 
-                        if (window.routePolyline) window.routeMap.removeLayer(window.routePolyline);
-                        window.routePolyline = L.polyline(latlngs, { color: '#60a5fa', weight: 4 }).addTo(window.routeMap);
-                        
-                        if (latlngs.length > 0) {
-                            window.routeMap.fitBounds(window.routePolyline.getBounds(), { padding: [20, 20] });
-                        }
-                        window.routeMap.invalidateSize();
-                    }, 100);
+                            let latlngs = [];
+                            points.forEach(pt => {
+                                if (pt.latitude && pt.longitude) {
+                                    latlngs.push([pt.latitude, pt.longitude]);
+                                }
+                            });
+
+                            if (window.routePolyline) window.routeMap.removeLayer(window.routePolyline);
+                            window.routePolyline = L.polyline(latlngs, { color: '#60a5fa', weight: 4 }).addTo(window.routeMap);
+                            
+                            if (latlngs.length > 0) {
+                                window.routeMap.fitBounds(window.routePolyline.getBounds(), { padding: [20, 20] });
+                            }
+                            window.routeMap.invalidateSize();
+                        }, 100);
+                    } else {
+                        alert('无法读取该记录的路线详情或其为空');
+                    }
                 } else {
-                    alert('无法读取该记录的路线详情或其为空');
+                    alert('网络节点返回失败或空数据');
                 }
             } catch(e) {
                 alert('网络异常：' + e);
