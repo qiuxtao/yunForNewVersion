@@ -77,9 +77,10 @@ def check_admin(request: Request):
 @app.on_event("startup")
 def on_startup():
     init_db()
-    print("Database initialized.")
+    l = logging.getLogger("uvicorn")
+    l.info("Database initialized.")
     init_scheduler()
-    print("APScheduler started.")
+    l.info("APScheduler started.")
     try:
         manager.set_loop(asyncio.get_running_loop())
     except RuntimeError:
@@ -437,6 +438,32 @@ async def get_user_json(user_id: int, db: Session = Depends(get_db), _: bool = D
         "qq_number": user.qq_number or "",
         "qq_notify_type": user.qq_notify_type or "private",
     })
+
+@app.post("/api/logs/clear")
+async def clear_system_logs(_: bool = Depends(check_admin)):
+    import os
+    from fastapi.responses import JSONResponse
+    try:
+        log_path = "logs/system.log"
+        if os.path.exists(log_path):
+            with open(log_path, "w", encoding="utf-8") as f:
+                f.write("")
+        return JSONResponse({"success": True})
+    except Exception as e:
+        return JSONResponse({"success": False, "message": str(e)})
+
+@app.post("/api/users/{user_id}/logs/clear")
+async def clear_local_user_logs(user_id: int, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    from fastapi.responses import JSONResponse
+    try:
+        user = db.query(models.User).filter(models.User.id == user_id).first()
+        if user:
+            for log in user.run_logs:
+                db.delete(log)
+            db.commit()
+        return JSONResponse({"success": True})
+    except Exception as e:
+        return JSONResponse({"success": False, "message": str(e)})
 
 @app.get("/api/users/{user_id}/terms")
 async def get_user_terms_json(user_id: int, db: Session = Depends(get_db), _: bool = Depends(check_admin)):

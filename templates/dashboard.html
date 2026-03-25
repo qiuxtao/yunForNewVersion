@@ -673,9 +673,14 @@
                 style="height: calc(100vh - 250px); display: flex; flex-direction: column; margin-bottom: 0;">
                 <div class="panel-header" style="flex-shrink: 0;">
                     <h2 class="panel-title">系统日志仿真终端</h2>
-                    <button class="btn btn-info" onclick="fetchLogs()" id="refreshLogBtn">
-                        手动刷新
-                    </button>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-warning" onclick="clearSystemLogs()" id="clearLogBtn">
+                            清除日志
+                        </button>
+                        <button class="btn btn-info" onclick="fetchLogs()" id="refreshLogBtn">
+                            手动刷新
+                        </button>
+                    </div>
                 </div>
                 <div
                     style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px; flex: 1; display: flex; flex-direction: column; min-height: 0;">
@@ -692,8 +697,12 @@
         <div class="modal-box" style="max-width: 750px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
                 <h2 class="panel-title" id="localHistoryModalTitle">运行日志</h2>
-                <button class="btn btn-secondary" id="exportLocalHistoryBtn"
-                    style="display:none; padding:6px 16px; font-size:13px;" onclick="exportLocalHistory()">导出日志</button>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn btn-danger" id="clearLocalHistoryBtn"
+                        style="display:none; padding:6px 16px; font-size:13px;" onclick="clearLocalHistory()">清除日志</button>
+                    <button class="btn btn-secondary" id="exportLocalHistoryBtn"
+                        style="display:none; padding:6px 16px; font-size:13px;" onclick="exportLocalHistory()">导出日志</button>
+                </div>
             </div>
             <div id="localHistoryLoading"
                 style="display:none; text-align:center; padding: 20px; color: var(--text-secondary);">
@@ -867,14 +876,14 @@
 
                 <div class="form-group">
                     <label class="form-label">运行周期</label>
-                    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:4px;">
-                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="1" class="edit-group-rundays-cb" style="margin-right:2px;"> 周一</label>
-                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="2" class="edit-group-rundays-cb" style="margin-right:2px;"> 周二</label>
-                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="3" class="edit-group-rundays-cb" style="margin-right:2px;"> 周三</label>
-                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="4" class="edit-group-rundays-cb" style="margin-right:2px;"> 周四</label>
-                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="5" class="edit-group-rundays-cb" style="margin-right:2px;"> 周五</label>
-                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="6" class="edit-group-rundays-cb" style="margin-right:2px; accent-color:var(--danger)"> 周六</label>
-                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="7" class="edit-group-rundays-cb" style="margin-right:2px; accent-color:var(--danger)"> 周日</label>
+                    <div style="display:flex; gap:8px; margin-top:4px;">
+                        <label style="cursor:pointer; white-space:nowrap;"><input type="checkbox" name="run_days" value="1" class="edit-group-rundays-cb" style="margin-right:2px;"> 周一</label>
+                        <label style="cursor:pointer; white-space:nowrap;"><input type="checkbox" name="run_days" value="2" class="edit-group-rundays-cb" style="margin-right:2px;"> 周二</label>
+                        <label style="cursor:pointer; white-space:nowrap;"><input type="checkbox" name="run_days" value="3" class="edit-group-rundays-cb" style="margin-right:2px;"> 周三</label>
+                        <label style="cursor:pointer; white-space:nowrap;"><input type="checkbox" name="run_days" value="4" class="edit-group-rundays-cb" style="margin-right:2px;"> 周四</label>
+                        <label style="cursor:pointer; white-space:nowrap;"><input type="checkbox" name="run_days" value="5" class="edit-group-rundays-cb" style="margin-right:2px;"> 周五</label>
+                        <label style="cursor:pointer; white-space:nowrap;"><input type="checkbox" name="run_days" value="6" class="edit-group-rundays-cb" style="margin-right:2px;"> 周六</label>
+                        <label style="cursor:pointer; white-space:nowrap;"><input type="checkbox" name="run_days" value="7" class="edit-group-rundays-cb" style="margin-right:2px;"> 周日</label>
                     </div>
                 </div>
                 
@@ -926,14 +935,14 @@
 
                 <div class="form-group">
                     <label class="form-label">运行周期</label>
-                    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:4px;">
-                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="1" checked style="margin-right:2px;"> 周一</label>
-                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="2" checked style="margin-right:2px;"> 周二</label>
-                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="3" checked style="margin-right:2px;"> 周三</label>
-                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="4" checked style="margin-right:2px;"> 周四</label>
-                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="5" checked style="margin-right:2px;"> 周五</label>
-                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="6" checked style="margin-right:2px; accent-color:var(--danger)"> 周六</label>
-                        <label style="cursor:pointer;"><input type="checkbox" name="run_days" value="7" checked style="margin-right:2px; accent-color:var(--danger)"> 周日</label>
+                    <div style="display:flex; gap:8px; margin-top:4px;">
+                        <label style="cursor:pointer; white-space:nowrap;"><input type="checkbox" name="run_days" value="1" checked style="margin-right:2px;"> 周一</label>
+                        <label style="cursor:pointer; white-space:nowrap;"><input type="checkbox" name="run_days" value="2" checked style="margin-right:2px;"> 周二</label>
+                        <label style="cursor:pointer; white-space:nowrap;"><input type="checkbox" name="run_days" value="3" checked style="margin-right:2px;"> 周三</label>
+                        <label style="cursor:pointer; white-space:nowrap;"><input type="checkbox" name="run_days" value="4" checked style="margin-right:2px;"> 周四</label>
+                        <label style="cursor:pointer; white-space:nowrap;"><input type="checkbox" name="run_days" value="5" checked style="margin-right:2px;"> 周五</label>
+                        <label style="cursor:pointer; white-space:nowrap;"><input type="checkbox" name="run_days" value="6" checked style="margin-right:2px;"> 周六</label>
+                        <label style="cursor:pointer; white-space:nowrap;"><input type="checkbox" name="run_days" value="7" checked style="margin-right:2px;"> 周日</label>
                     </div>
                 </div>
 
@@ -1115,6 +1124,7 @@
         }
 
         async function viewLocalHistory(userId, username) {
+            window.currentViewingUserId = userId;
             document.getElementById('localHistoryModalTitle').innerText = `运行日志 - ${username}`;
             document.getElementById('localHistoryLoading').style.display = 'block';
             document.getElementById('localHistoryTableContainer').style.display = 'none';
@@ -1129,6 +1139,7 @@
                 if (result.success) {
                     window.currentLocalLogs = result.data;
                     document.getElementById('exportLocalHistoryBtn').style.display = 'block';
+                    document.getElementById('clearLocalHistoryBtn').style.display = 'block';
 
                     const tbody = document.getElementById('localHistoryTableBody');
                     if (!result.data || result.data.length === 0) {
@@ -1139,6 +1150,8 @@
                             let badgeHtml = '';
                             if (log.status === 'Success') badgeHtml = '<span class="badge badge-success">Success</span>';
                             else if (log.status === 'Running') badgeHtml = '<span class="badge badge-info">Running</span>';
+                            else if (log.status === 'Pending') badgeHtml = '<span class="badge badge-warning">Pending</span>';
+                            else badgeHtml = `<span class="badge badge-danger">${log.status}</span>`;
                             else badgeHtml = '<span class="badge badge-error">Failed</span>';
 
                             html += `<tr>
