@@ -33,8 +33,12 @@ for name in ("uvicorn", "uvicorn.access", "uvicorn.error"):
     l.propagate = True
 
 # 设置日志目录并重定向标准输出/错误，以抓取所有 print/logger/tqdm 输出用于网页仿真终端
-if not os.path.exists('logs'):
-    os.makedirs('logs')
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LOG_DIR = os.path.join(BASE_DIR, "logs")
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
+
+SYSTEM_LOG_PATH = os.path.join(LOG_DIR, "system.log")
 
 class Tee(object):
     def __init__(self, name, mode, stream):
@@ -49,8 +53,8 @@ class Tee(object):
         self.file.flush()
         self.stream.flush()
 
-sys.stdout = Tee('logs/system.log', 'a', sys.stdout)
-sys.stderr = Tee('logs/system.log', 'a', sys.stderr)
+sys.stdout = Tee(SYSTEM_LOG_PATH, 'a', sys.stdout)
+sys.stderr = Tee(SYSTEM_LOG_PATH, 'a', sys.stderr)
 
 # Ensure templates and static dirs exist
 os.makedirs("templates", exist_ok=True)
@@ -444,7 +448,7 @@ async def clear_system_logs(_: bool = Depends(check_admin)):
     import os
     from fastapi.responses import JSONResponse
     try:
-        log_path = "logs/system.log"
+        log_path = SYSTEM_LOG_PATH
         if os.path.exists(log_path):
             with open(log_path, "w", encoding="utf-8") as f:
                 f.write("")
@@ -790,7 +794,7 @@ async def view_logs(request: Request, db: Session = Depends(get_db), _: bool = D
 
 @app.get("/api/logs/stream")
 async def stream_logs_json(_: bool = Depends(check_admin)):
-    log_path = 'logs/system.log'
+    log_path = SYSTEM_LOG_PATH
     if not os.path.exists(log_path):
         return {"success": True, "data": "暂无系统日志..."}
         
