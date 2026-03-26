@@ -640,7 +640,7 @@
             <div class="glass-panel">
                 <div class="panel-header">
                     <h2 class="panel-title">路线组管理</h2>
-                    <button class="btn btn-primary" onclick="promptCreateRouteGroup()">
+                    <button class="btn btn-primary" onclick="createRouteGroup()">
                         添加路线组
                     </button>
                 </div>
@@ -1571,7 +1571,10 @@
                 }
             } else if (tabId === 'schedules') {
                 if (window.logInterval) clearInterval(window.logInterval);
-                loadSchedules();
+                loadRouteGroups();
+            } else if (tabId === 'routes') {
+                if (window.logInterval) clearInterval(window.logInterval);
+                loadRouteGroups();
             } else {
                 if (window.logInterval) clearInterval(window.logInterval);
             }
@@ -2186,8 +2189,8 @@
             const savedTab = localStorage.getItem('activeTab') || 'accounts';
             switchTab(savedTab);
             
-            // 自动化依赖了 availableGroups，即使当前不在路由库页面，仍需静默拉取一下大组字典
-            if (savedTab !== 'routes') {
+            // 无论当前在哪个标签，都需要拉取路线组字典（任务组管理依赖 availableGroups）
+            if (savedTab !== 'routes' && savedTab !== 'schedules') {
                 loadRouteGroups();
             }
         });
