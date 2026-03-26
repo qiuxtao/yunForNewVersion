@@ -18,21 +18,11 @@ from scheduler.tasks import init_scheduler, run_job_for_user
 from fastapi import WebSocket, WebSocketDisconnect
 from notifications.qq_bot import manager
 import sys
+import os
 import logging
+from logging.handlers import RotatingFileHandler
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] [%(threadName)s/%(levelname)s]: %(message)s',
-    datefmt='%H:%M:%S',
-    force=True
-)
-
-for name in ("uvicorn", "uvicorn.access", "uvicorn.error"):
-    l = logging.getLogger(name)
-    l.handlers = []
-    l.propagate = True
-
-# 设置日志目录并重定向标准输出/错误，以抓取所有 print/logger/tqdm 输出用于网页仿真终端
+# ================= 极简日志初始化：核心必须最先运行 =================
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOG_DIR = os.path.join(BASE_DIR, "logs")
 if not os.path.exists(LOG_DIR):
@@ -53,8 +43,31 @@ class Tee(object):
         self.file.flush()
         self.stream.flush()
 
+# 先重定向标准流，保证在 logging 初始化之前生效
 sys.stdout = Tee(SYSTEM_LOG_PATH, 'a', sys.stdout)
 sys.stderr = Tee(SYSTEM_LOG_PATH, 'a', sys.stderr)
+
+# 全局日志格式
+LOG_FORMAT = '[%(asctime)s] [%(threadName)s/%(levelname)s]: %(message)s'
+DATE_FORMAT = '%H:%M:%S'
+
+# 显式创建 Root Logger 的 FileHandler 确保直接落盘，StreamHandler 指向已重定向的 stdout
+file_handler = RotatingFileHandler(SYSTEM_LOG_PATH, maxBytes=10*1024*1024, backupCount=5, encoding='utf-8')
+file_handler.setFormatter(logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT))
+
+logging.basicConfig(
+    level=logging.INFO,
+    format=LOG_FORMAT,
+    datefmt=DATE_FORMAT,
+    handlers=[file_handler, logging.StreamHandler(sys.stdout)],
+    force=True
+)
+
+for name in ("uvicorn", "uvicorn.access", "uvicorn.error"):
+    l = logging.getLogger(name)
+    l.handlers = []
+    l.propagate = True
+# =============================================================
 
 # Ensure templates and static dirs exist
 os.makedirs("templates", exist_ok=True)
