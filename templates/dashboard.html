@@ -1018,6 +1018,21 @@
         </div>
     </div>
 
+    <!-- Modal: Input -->
+    <div class="modal-overlay" id="inputModal" style="z-index: 1100;">
+        <div class="modal-box" style="max-width: 400px; text-align: center;">
+            <h3 id="inputModalTitle" style="margin-bottom: 20px; font-size: 18px;">输入</h3>
+            <div class="form-group" style="text-align: left;">
+                <label id="inputModalLabel" class="form-label"></label>
+                <input type="text" id="inputModalField" class="form-control" placeholder="请输入内容...">
+            </div>
+            <div class="modal-footer" style="padding: 0; margin-top: 24px; display: flex; gap: 12px;">
+                <button class="btn btn-secondary" style="flex: 1;" onclick="closeModal('inputModal')">取消</button>
+                <button id="inputModalConfirmBtn" class="btn btn-primary" style="flex: 1;">确定</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Container for Toasts -->
     <div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
 
@@ -1074,18 +1089,51 @@
         }
 
         function showConfirmModal(title, message, onConfirm) {
-            document.getElementById('confirmTitle').innerText = title;
-            document.getElementById('confirmMessage').innerText = message;
+            const tEl = document.getElementById('confirmTitle');
+            const mEl = document.getElementById('confirmMessage');
+            if (tEl) tEl.innerText = title;
+            if (mEl) mEl.innerText = message;
 
             const confirmBtn = document.getElementById('confirmBtn');
-            const newConfirmBtn = confirmBtn.cloneNode(true);
-            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            if (confirmBtn) {
+                const newConfirmBtn = confirmBtn.cloneNode(true);
+                confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
-            newConfirmBtn.onclick = () => {
-                onConfirm();
-                closeModal('confirmModal');
-            };
+                newConfirmBtn.onclick = () => {
+                    onConfirm();
+                    closeModal('confirmModal');
+                };
+            }
             openModal('confirmModal');
+        }
+
+        function showInputModal(title, label, defaultValue, onConfirm) {
+            const tEl = document.getElementById('inputModalTitle');
+            const lEl = document.getElementById('inputModalLabel');
+            if (tEl) tEl.innerText = title;
+            if (lEl) lEl.innerText = label;
+            
+            const field = document.getElementById('inputModalField');
+            if (field) {
+                field.value = defaultValue || '';
+            }
+
+            const confirmBtn = document.getElementById('inputModalConfirmBtn');
+            if (confirmBtn) {
+                const newConfirmBtn = confirmBtn.cloneNode(true);
+                confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+                newConfirmBtn.onclick = () => {
+                    const value = field.value.trim();
+                    if (value) {
+                        onConfirm(value);
+                        closeModal('inputModal');
+                    } else {
+                        showToast('输入不能为空', 'error');
+                    }
+                };
+            }
+            openModal('inputModal');
+            setTimeout(() => field && field.focus(), 100);
         }
 
         function editSchedule(scheduleId, targetTime, routeType, randomDelay) {
@@ -1123,6 +1171,8 @@
                     const result = await res.json();
                     if(result.success) {
                         showToast('系统日志已清理完毕', 'success');
+                        const contentEl = document.getElementById("logContent");
+                        if (contentEl) contentEl.textContent = "系统运行日志已清空";
                         fetchLogs();
                     } else {
                         showToast('清理失败: ' + result.message, 'error');
@@ -1132,7 +1182,7 @@
                 }
             });
         }
-        
+
         async function clearLocalHistory() {
             if(!window.currentViewingUserId) return;
             showConfirmModal('确认清空日志', '确定要清空该账户的本地运行日志吗？此操作不可恢复。', async () => {
@@ -1141,7 +1191,8 @@
                     const result = await res.json();
                     if(result.success) {
                         showToast('用户运行日志已清理完毕', 'success');
-                        viewLocalHistory(window.currentViewingUserId, document.getElementById('localHistoryModalTitle').innerText.replace('运行日志 - ', '').trim());
+                        const tbody = document.getElementById('localHistoryTableBody');
+                        if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">本地运行历史已清空</td></tr>';
                     } else {
                         showToast('清理失败: ' + result.message, 'error');
                     }
@@ -1507,12 +1558,16 @@
                 document.body.style.overflow = '';
             }
 
-            if (tabId === 'routes') {
-                loadRouteGroups();
-            } else if (tabId === 'logs') {
+            if (tabId === 'logs') {
                 fetchLogs();
+                // Ensure only one interval exists
+                if (window.logInterval) clearInterval(window.logInterval);
+                window.logInterval = setInterval(fetchLogs, 5000);
             } else if (tabId === 'schedules') {
+                if (window.logInterval) clearInterval(window.logInterval);
                 loadSchedules();
+            } else {
+                if (window.logInterval) clearInterval(window.logInterval);
             }
         }
 
@@ -1663,25 +1718,25 @@
             });
         }
 
-        async function promptCreateRouteGroup() {
-            const name = prompt("请输入自定义路线组名称:");
-            if (!name) return;
-            try {
-                const res = await fetch('/api/route_groups', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: name })
-                });
-                const result = await res.json();
-                if (result.success) {
-                    showToast('路线组创建成功！', 'success');
-                    loadRouteGroups();
-                } else {
-                    showAlert('创建失败: ' + result.message);
+        function createRouteGroup() {
+            showInputModal('建立新路线组', '路线组目录名:', '', async (name) => {
+                try {
+                    const res = await fetch('/api/route_groups', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name })
+                    });
+                    const result = await res.json();
+                    if (result.success) {
+                        showToast('路线组创建成功！', 'success');
+                        loadRouteGroups();
+                    } else {
+                        showAlert('创建失败: ' + result.message);
+                    }
+                } catch (e) {
+                    showAlert('网络异常: ' + e);
                 }
-            } catch (e) {
-                showAlert('网络异常: ' + e);
-            }
+            });
         }
 
         async function previewCloudRoute(runId) {
@@ -1886,50 +1941,54 @@
             }
         }
 
-        async function renameRouteGroup(oldName) {
-            const newName = prompt(`将路线组 ${oldName} 重命名为:`, oldName);
-            if (!newName || newName === oldName) return;
-            try {
-                const res = await fetch(`/api/route_groups/${encodeURIComponent(oldName)}/rename_group`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ new_name: newName })
-                });
-                const result = await res.json();
-                if (result.success) {
-                    loadRouteGroups();
-                    // Hard refresh to reload mapping inside Schedule table
-                    setTimeout(() => window.location.reload(), 800);
-                } else {
-                    showAlert("重命名失败: " + result.message);
+        function renameRouteGroup(oldName) {
+            showInputModal('路线组重命名', `将路线组 ${oldName} 重命名为:`, oldName, async (newName) => {
+                if (newName === oldName) return;
+                try {
+                    const res = await fetch(`/api/route_groups/${encodeURIComponent(oldName)}/rename_group`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ new_name: newName })
+                    });
+                    const result = await res.json();
+                    if (result.success) {
+                        showToast('路线组重命名成功', 'success');
+                        loadRouteGroups();
+                        // Hard refresh to reload mapping inside Schedule table
+                        setTimeout(() => window.location.reload(), 800);
+                    } else {
+                        showAlert("重命名失败: " + result.message);
+                    }
+                } catch (e) {
+                    showAlert("网络异常: " + e);
                 }
-            } catch (e) {
-                showAlert("网络异常: " + e);
-            }
+            });
         }
 
         async function reloadGroupViewAfterOperation(groupName) {
             loadRouteGroups();
         }
 
-        async function renameRouteFile(groupName, filename) {
-            const newName = prompt(`将 ${filename} 重命名为:`, filename);
-            if (!newName || newName === filename) return;
-            try {
-                const res = await fetch(`/api/route_groups/${groupName}/${filename}/rename`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ new_name: newName })
-                });
-                const result = await res.json();
-                if (result.success) {
-                    reloadGroupViewAfterOperation(groupName);
-                } else {
-                    showAlert("重命名失败: " + result.message);
+        function renameRouteFile(groupName, filename) {
+            showInputModal('路线重命名', `将 ${filename} 重命名为:`, filename, async (newName) => {
+                if (newName === filename) return;
+                try {
+                    const res = await fetch(`/api/route_groups/${groupName}/${filename}/rename`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ new_name: newName })
+                    });
+                    const result = await res.json();
+                    if (result.success) {
+                        showToast('路线重命名成功', 'success');
+                        reloadGroupViewAfterOperation(groupName);
+                    } else {
+                        showAlert("重命名失败: " + result.message);
+                    }
+                } catch (e) {
+                    showAlert("网络异常: " + e);
                 }
-            } catch (e) {
-                showAlert("网络异常: " + e);
-            }
+            });
         }
 
         async function toggleTaskActive(scheduleId, checkbox) {
