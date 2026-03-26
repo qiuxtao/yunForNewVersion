@@ -584,10 +584,9 @@
                                         <button class="btn btn-secondary"
                                             onclick="viewLocalHistory({{ u.id }}, '{{ u.username }}')">运行日志</button>
                                         <button class="btn btn-warning" onclick="editUser({{ u.id }})">编辑</button>
-                                        <form action="/users/delete" method="POST" style="margin:0;"
-                                            onsubmit="return confirm('确定要删除此账户吗？将会删除所有关联的调度任务。')">
+                                        <form id="delete-user-{{ u.id }}" action="/users/delete" method="POST" style="margin:0;">
                                             <input type="hidden" name="user_id" value="{{ u.id }}">
-                                            <button type="submit" class="btn btn-danger">删除</button>
+                                            <button type="button" class="btn btn-danger" onclick="showConfirmModal('确认删除', '确定要彻底删除此账户吗？此操作不可恢复。', () => document.getElementById('delete-user-{{ u.id }}').submit())">删除</button>
                                         </form>
                                     </div>
                                 </td>
@@ -992,9 +991,101 @@
         </div>
     </div>
 
+    <!-- Modal: Alert -->
+    <div class="modal-overlay" id="alertModal" style="z-index: 1100;">
+        <div class="modal-box" style="max-width: 400px; text-align: center;">
+            <div style="margin-bottom: 20px;">
+                <i class="fas fa-info-circle" style="font-size: 48px; color: var(--primary); opacity: 0.8;"></i>
+            </div>
+            <h3 id="alertTitle" style="margin-bottom: 12px; font-size: 18px;">提示</h3>
+            <p id="alertMessage" style="color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-bottom: 24px;"></p>
+            <button class="btn btn-primary" style="width: 100%;" onclick="closeModal('alertModal')">知道了</button>
+        </div>
+    </div>
+
+    <!-- Modal: Confirm -->
+    <div class="modal-overlay" id="confirmModal" style="z-index: 1100;">
+        <div class="modal-box" style="max-width: 400px; text-align: center;">
+            <div style="margin-bottom: 20px;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: var(--danger); opacity: 0.8;"></i>
+            </div>
+            <h3 id="confirmTitle" style="margin-bottom: 12px; font-size: 18px;">确认操作</h3>
+            <p id="confirmMessage" style="color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-bottom: 24px;"></p>
+            <div class="modal-footer" style="padding: 0; margin-top: 0; display: flex; gap: 12px;">
+                <button class="btn btn-secondary" style="flex: 1;" onclick="closeModal('confirmModal')">取消</button>
+                <button id="confirmBtn" class="btn btn-danger" style="flex: 1;">确定执行</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container for Toasts -->
+    <div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
+
     <script>
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                padding: 12px 20px;
+                border-radius: 10px;
+                background: rgba(30, 41, 59, 0.9);
+                backdrop-filter: blur(8px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                color: white;
+                font-size: 14px;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                transform: translateX(110%);
+                transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            `;
+            
+            let icon = '<i class="fas fa-info-circle" style="color: var(--primary);"></i>';
+            if (type === 'success') {
+                icon = '<i class="fas fa-check-circle" style="color: var(--success);"></i>';
+                toast.style.borderLeft = '4px solid var(--success)';
+            } else if (type === 'error') {
+                icon = '<i class="fas fa-exclamation-circle" style="color: var(--danger);"></i>';
+                toast.style.borderLeft = '4px solid var(--danger)';
+            }
+
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => toast.style.transform = 'translateX(0)', 10);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(110%)';
+                setTimeout(() => toast.remove(), 400);
+            }, 3500);
+        }
+
         function openModal(id) {
             document.getElementById(id).classList.add('active');
+        }
+
+        function showAlert(message, title = '提示') {
+            document.getElementById('alertTitle').innerText = title;
+            document.getElementById('alertMessage').innerText = message;
+            openModal('alertModal');
+        }
+
+        function showConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirmTitle').innerText = title;
+            document.getElementById('confirmMessage').innerText = message;
+
+            const confirmBtn = document.getElementById('confirmBtn');
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+            newConfirmBtn.onclick = () => {
+                onConfirm();
+                closeModal('confirmModal');
+            };
+            openModal('confirmModal');
         }
 
         function editSchedule(scheduleId, targetTime, routeType, randomDelay) {
@@ -1026,36 +1117,38 @@
         }
 
         async function clearSystemLogs() {
-            if(!confirm("确定要清空所有系统运行日志吗？(不可恢复)")) return;
-            try {
-                const res = await fetch('/api/logs/clear', {method: 'POST'});
-                const result = await res.json();
-                if(result.success) {
-                    showToast('系统日志已清理完毕', 'success');
-                    fetchLogs();
-                } else {
-                    showToast('清理失败: ' + result.message, 'error');
+            showConfirmModal('确认清空日志', '确定要清空所有系统运行日志吗？此操作不可恢复。', async () => {
+                try {
+                    const res = await fetch('/api/logs/clear', {method: 'POST'});
+                    const result = await res.json();
+                    if(result.success) {
+                        showToast('系统日志已清理完毕', 'success');
+                        fetchLogs();
+                    } else {
+                        showToast('清理失败: ' + result.message, 'error');
+                    }
+                } catch (err) {
+                    showToast('网络错误: ' + err.message, 'error');
                 }
-            } catch (err) {
-                showToast('网络错误: ' + err.message, 'error');
-            }
+            });
         }
         
         async function clearLocalHistory() {
             if(!window.currentViewingUserId) return;
-            if(!confirm("确定要清空该账号的本地运行日志吗？(不可恢复)")) return;
-            try {
-                const res = await fetch(`/api/users/${window.currentViewingUserId}/logs/clear`, {method: 'POST'});
-                const result = await res.json();
-                if(result.success) {
-                    showToast('用户运行日志已清理完毕', 'success');
-                    viewLocalHistory(window.currentViewingUserId, document.getElementById('localHistoryModalTitle').innerText.replace('运行日志 - ', '').trim());
-                } else {
-                    showToast('清理失败: ' + result.message, 'error');
+            showConfirmModal('确认清空日志', '确定要清空该账户的本地运行日志吗？此操作不可恢复。', async () => {
+                try {
+                    const res = await fetch(`/api/users/${window.currentViewingUserId}/logs/clear`, {method: 'POST'});
+                    const result = await res.json();
+                    if(result.success) {
+                        showToast('用户运行日志已清理完毕', 'success');
+                        viewLocalHistory(window.currentViewingUserId, document.getElementById('localHistoryModalTitle').innerText.replace('运行日志 - ', '').trim());
+                    } else {
+                        showToast('清理失败: ' + result.message, 'error');
+                    }
+                } catch (err) {
+                    showToast('网络错误: ' + err.message, 'error');
                 }
-            } catch (err) {
-                showToast('网络错误: ' + err.message, 'error');
-            }
+            });
         }
 
         // Close modal on click outside
@@ -1070,7 +1163,7 @@
             const notifyType = document.getElementById(`${type}_qq_notify_type`).value;
 
             if (!qqNumber) {
-                alert('请填写 QQ 号/群号');
+                showAlert('请填写 QQ 号/群号');
                 return;
             }
 
@@ -1084,9 +1177,9 @@
                     body: formData
                 });
                 const result = await response.json();
-                alert(result.message);
+                showAlert(result.message);
             } catch (error) {
-                alert('网络连通异常: ' + error);
+                showAlert('网络连通异常: ' + error);
             }
         }
 
@@ -1150,7 +1243,7 @@
 
         function exportLocalHistory() {
             if (!window.currentLocalLogs || window.currentLocalLogs.length === 0) {
-                alert("没有日志记录可导出");
+                showAlert("没有日志记录可导出");
                 return;
             }
             let csv = "记录时间,执行状态,结果输出\n";
@@ -1175,10 +1268,10 @@
                     const dataStr = JSON.stringify(result.data, null, 2);
                     downloadFile(`tasklist_${mileage}km_${runId}.json`, dataStr, 'application/json');
                 } else {
-                    alert("获取路线配置失败: " + result.message);
+                    showAlert("获取路线配置失败: " + result.message);
                 }
             } catch (err) {
-                alert("网络或导出异常: " + err);
+                showAlert("网络或导出异常: " + err);
             }
         }
 
@@ -1354,7 +1447,7 @@
 
                 openModal('editUserModal');
             } catch (error) {
-                alert('获取用户信息失败: ' + error);
+                showAlert('获取用户信息失败: ' + error);
             }
         }
 
@@ -1581,13 +1674,13 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert('路线组创建成功！');
+                    showToast('路线组创建成功！', 'success');
                     loadRouteGroups();
                 } else {
-                    alert('创建失败: ' + result.message);
+                    showAlert('创建失败: ' + result.message);
                 }
             } catch (e) {
-                alert('网络异常: ' + e);
+                showAlert('网络异常: ' + e);
             }
         }
 
@@ -1603,7 +1696,7 @@
                 if (result.success && result.data && result.data.data && result.data.data.pointsList) {
                     const points = result.data.data.pointsList;
                     if (points.length === 0) {
-                        alert("该云端记录没有有效的坐标点 (pointsList = 0)");
+                        showAlert("该云端记录没有有效的坐标点 (pointsList = 0)");
                         return;
                     }
 
@@ -1694,10 +1787,10 @@
                         }, 50);
                     }
                 } else {
-                    alert('无法读取该记录的路线详情或其为空（官方数据格式无 pointsList）');
+                    showAlert('无法读取该记录的路线详情或其为空（官方数据格式无 pointsList）');
                 }
             } catch(e) {
-                alert('网络异常：' + e);
+                showAlert('网络异常：' + e);
             }
         }
 
@@ -1709,17 +1802,17 @@
                     const sel = document.getElementById('save_route_group_select');
                     sel.innerHTML = result.data.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
                     if (result.data.length === 0) {
-                        alert("现在还没有任何路线组！请先在【路线库管理】中创建一个组。");
+                        showAlert("现在还没有任何路线组！请先在【路线库管理】中创建一个组。");
                         return;
                     }
                     document.getElementById('save_route_run_id').value = runId;
                     document.getElementById('save_route_mileage').value = mileage;
                     openModal('saveRouteModal');
                 } else {
-                    alert("获取路线组失败: " + result.message);
+                    showAlert("获取路线组失败: " + result.message);
                 }
             } catch (e) {
-                alert("网络异常: " + e);
+                showAlert("网络异常: " + e);
             }
         }
 
@@ -1743,7 +1836,7 @@
                 const detailResult = await detailRes.json();
 
                 if (!detailResult.success) {
-                    alert("官方原始路线拉取/解密失败: " + detailResult.message);
+                    showAlert("官方原始路线拉取/解密失败: " + detailResult.message);
                     return;
                 }
 
@@ -1759,13 +1852,13 @@
                 });
                 const saveResult = await saveRes.json();
                 if (saveResult.success) {
-                    alert("路线落盘保存成功！已入库。");
+                    showToast("路线落盘保存成功！已入库。", 'success');
                     closeModal('saveRouteModal');
                 } else {
-                    alert("服务器落盘写入失败: " + saveResult.message);
+                    showAlert("服务器落盘写入失败: " + saveResult.message);
                 }
             } catch (e) {
-                alert("流程异常: " + e);
+                showAlert("流程异常: " + e);
             } finally {
                 btn.innerHTML = '确定保存';
                 btn.disabled = false;
@@ -1808,10 +1901,10 @@
                     // Hard refresh to reload mapping inside Schedule table
                     setTimeout(() => window.location.reload(), 800);
                 } else {
-                    alert("重命名失败: " + result.message);
+                    showAlert("重命名失败: " + result.message);
                 }
             } catch (e) {
-                alert("网络异常: " + e);
+                showAlert("网络异常: " + e);
             }
         }
 
@@ -1832,10 +1925,10 @@
                 if (result.success) {
                     reloadGroupViewAfterOperation(groupName);
                 } else {
-                    alert("重命名失败: " + result.message);
+                    showAlert("重命名失败: " + result.message);
                 }
             } catch (e) {
-                alert("网络异常: " + e);
+                showAlert("网络异常: " + e);
             }
         }
 
@@ -1845,11 +1938,11 @@
                 const res = await fetch(`/api/schedules/${scheduleId}/toggle_active`, { method: 'POST' });
                 const data = await res.json();
                 if (!data.success) {
-                    alert("状态更新失败: " + data.message);
+                    showAlert("状态更新失败: " + data.message);
                     checkbox.checked = originalState;
                 }
             } catch (e) {
-                alert("网络错误");
+                showAlert("网络错误");
                 checkbox.checked = originalState;
             }
         }
@@ -1949,9 +2042,9 @@
                                     <td style="vertical-align: middle;">
                                         <div style="display:flex; gap:8px; flex-wrap:wrap; align-items: center;" onclick="event.stopPropagation();">
                                             <button type="button" class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="editGroup('${group.group_id}', '${group.group_name}', '${group.target_time}', '${group.route_type}', ${group.random_delay_minutes}, '${userIds}', '${group.run_days}')">编辑组</button>
-                                            <form action="/schedules/delete_group" method="POST" style="margin:0;" onsubmit="return confirm('确定删除整组任务吗？')">
+                                            <form id="delete-group-${group.group_id}" action="/schedules/delete_group" method="POST" style="margin:0;">
                                                 <input type="hidden" name="group_id" value="${group.group_id}">
-                                                <button type="submit" class="btn btn-danger btn-sm" style="white-space:nowrap;">全组删除</button>
+                                                <button type="button" class="btn btn-danger btn-sm" style="white-space:nowrap;" onclick="showConfirmModal('确认删除', '确定要彻底删除该任务组吗？此操作不可恢复。', () => document.getElementById('delete-group-${group.group_id}').submit())">全组删除</button>
                                             </form>
                                         </div>
                                     </td>
@@ -2006,23 +2099,40 @@
             }
         });
 
-        async function deleteRouteFile(groupName, filename) {
-            if (!confirm(`确定要从 ${groupName} 库中无情删除 ${filename} 吗？`)) return;
-            try {
-                const res = await fetch(`/api/route_groups/${groupName}/${filename}`, { method: 'DELETE' });
-                const result = await res.json();
-                if (result.success) {
-                    reloadGroupViewAfterOperation(groupName);
-                } else {
-                    alert("删除失败: " + result.message);
+        async function deleteRouteGroup(groupName) {
+            showConfirmModal('确认删除组', `确定要彻底删除整个 ${groupName} 路线组吗？此操作将物理删除文件夹内所有文件，且不可恢复！`, async () => {
+                try {
+                    const res = await fetch(`/api/route_groups/${groupName}`, { method: 'DELETE' });
+                    const result = await res.json();
+                    if (result.success) {
+                        loadRouteGroups();
+                    } else {
+                        showAlert("删除失败: " + result.message);
+                    }
+                } catch (e) {
+                    showAlert("网络异常: " + e);
                 }
-            } catch (e) {
-                alert("网络异常: " + e);
-            }
+            });
+        }
+
+        async function deleteRouteFile(groupName, filename) {
+            showConfirmModal('确认删除', `确定要从 ${groupName} 路线组中删除 ${filename} 吗？此操作不可恢复。`, async () => {
+                try {
+                    const res = await fetch(`/api/route_groups/${groupName}/${filename}`, { method: 'DELETE' });
+                    const result = await res.json();
+                    if (result.success) {
+                        reloadGroupViewAfterOperation(groupName);
+                    } else {
+                        showAlert("删除失败: " + result.message);
+                    }
+                } catch (e) {
+                    showAlert("网络异常: " + e);
+                }
+            });
         }
         async function loadAllRunDetails() {
             if (!window.currentHistoryData || window.currentHistoryData.length === 0) {
-                alert("当前学期没有任何历史记录");
+                showAlert("当前学期没有任何历史记录");
                 return;
             }
 
@@ -2152,7 +2262,7 @@
                 if (result.success && result.data && result.data.data && result.data.data.pointsList) {
                     const points = result.data.data.pointsList;
                     if (points.length === 0) {
-                        alert("该文件中没有有效的坐标点 (pointsList = 0)");
+                        showAlert("该文件中没有有效的坐标点 (pointsList = 0)");
                         return;
                     }
 
@@ -2224,10 +2334,10 @@
                         }, 50);
                     }
                 } else {
-                    alert("路线解析失败，内部数据格式无 pointsList。");
+                    showAlert("路线解析失败，内部数据格式无 pointsList。");
                 }
             } catch (e) {
-                alert("拉取报错: " + e);
+                showAlert("拉取报错: " + e);
             }
         }
 
