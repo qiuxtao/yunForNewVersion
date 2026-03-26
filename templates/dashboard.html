@@ -1710,10 +1710,10 @@
                     // Also refresh schedules to handle "Deleted" state
                     loadSchedules();
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state" style="color:var(--danger)">加载失败: ${result.message}</div></td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state" style="color:var(--danger)">加载失败: ${result.message}</div></td></tr>`;
                 }
             } catch (e) {
-                tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state" style="color:var(--danger)">网络异常: ${e}</div></td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state" style="color:var(--danger)">网络异常: ${e}</div></td></tr>`;
             }
         }
 

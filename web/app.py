@@ -605,39 +605,50 @@ async def get_user_history_detail(user_id: int, term_value: str, run_id: str, to
 
 @app.get("/api/route_groups")
 async def list_route_groups(_: bool = Depends(check_admin)):
-    groups = []
-    base_dir = "data/tasks"
-    os.makedirs(base_dir, exist_ok=True)
-    for item in os.listdir(base_dir):
-        item_path = os.path.join(base_dir, item)
-        if os.path.isdir(item_path):
-            files_info = []
-            for f in os.listdir(item_path):
-                if f.endswith('.json'):
-                    path = os.path.join(item_path, f)
-                    size = os.path.getsize(path)
-                    duration = 0
-                    recode_pace = 0
-                    try:
-                        with open(path, 'r', encoding='utf-8') as jf:
-                            jdata = json.load(jf)
-                            res_data = jdata.get("data", {})
-                            duration = float(res_data.get("duration", 0)) / 60.0
-                            recode_pace = float(res_data.get("recodePace", 0))
-                    except Exception:
-                        pass
-                    files_info.append({
-                        "filename": f,
-                        "size_kb": round(size / 1024, 2),
-                        "duration": duration,
-                        "recode_pace": recode_pace
-                    })
-            groups.append({
-                "name": item, 
-                "count": len(files_info),
-                "routes": files_info
-            })
-    return JSONResponse({"success": True, "data": groups})
+    try:
+        groups = []
+        base_dir = "data/tasks"
+        os.makedirs(base_dir, exist_ok=True)
+        for item in os.listdir(base_dir):
+            item_path = os.path.join(base_dir, item)
+            # 实时检查路径是否存在且为目录，防止手动删除引发 FileNotFoundError
+            if os.path.exists(item_path) and os.path.isdir(item_path):
+                files_info = []
+                try:
+                    for f in os.listdir(item_path):
+                        if f.endswith('.json'):
+                            path = os.path.join(item_path, f)
+                            if not os.path.exists(path):
+                                continue
+                            size = os.path.getsize(path)
+                            duration = 0
+                            recode_pace = 0
+                            try:
+                                with open(path, 'r', encoding='utf-8') as jf:
+                                    jdata = json.load(jf)
+                                    res_data = jdata.get("data", {})
+                                    duration = float(res_data.get("duration", 0)) / 60.0
+                                    recode_pace = float(res_data.get("recodePace", 0))
+                            except Exception:
+                                pass
+                            files_info.append({
+                                "filename": f,
+                                "size_kb": round(size / 1024, 2),
+                                "duration": duration,
+                                "recode_pace": recode_pace
+                            })
+                except (OSError, IOError):
+                    # 如果读取子目录失败（例如权限或并在循环中被删除），跳过该组
+                    continue
+                    
+                groups.append({
+                    "name": item, 
+                    "count": len(files_info),
+                    "routes": files_info
+                })
+        return JSONResponse({"success": True, "data": groups})
+    except Exception as e:
+        return JSONResponse({"success": False, "message": f"获取路线组失败: {str(e)}"})
 
 class RouteGroupCreate(BaseModel):
     name: str
