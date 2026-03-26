@@ -52,7 +52,8 @@ LOG_FORMAT = '[%(asctime)s] [%(threadName)s/%(levelname)s]: %(message)s'
 DATE_FORMAT = '%H:%M:%S'
 
 # 显式创建 Root Logger 的 FileHandler 确保直接落盘，StreamHandler 指向已重定向的 stdout
-file_handler = RotatingFileHandler(SYSTEM_LOG_PATH, maxBytes=10*1024*1024, backupCount=5, encoding='utf-8')
+# 将日志文件限制在 1MB，并保留 5 个备份，防止单个文件过大
+file_handler = RotatingFileHandler(SYSTEM_LOG_PATH, maxBytes=1*1024*1024, backupCount=5, encoding='utf-8')
 file_handler.setFormatter(logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT))
 
 logging.basicConfig(
@@ -63,10 +64,23 @@ logging.basicConfig(
     force=True
 )
 
+# 自定义过滤器，极致精简日志
+class AccessLogFilter(logging.Filter):
+    def filter(self, record):
+        msg = record.getMessage()
+        # 如果是 HTTP 请求记录（通常包含方法名）
+        if any(m in msg for m in ["GET ", "POST ", "PUT ", "DELETE "]):
+            # 仅保留登录相关的请求记录，其余全部静默
+            return "/login" in msg
+        # 非网络请求记录（如业务 INFO/ERROR）全部保留
+        return True
+
 for name in ("uvicorn", "uvicorn.access", "uvicorn.error"):
     l = logging.getLogger(name)
     l.handlers = []
     l.propagate = True
+    if name == "uvicorn.access":
+        l.addFilter(AccessLogFilter())
 # =============================================================
 
 # Ensure templates and static dirs exist
@@ -78,6 +92,28 @@ app = FastAPI(title="云运动 Web 控制台")
 templates = Jinja2Templates(directory="templates")
 
 active_sessions = set()
+
+# 中间件：尝试从请求头中获取真实真实公网 IP (兼容 Docker/代理环境)
+@app.middleware("http")
+async def get_real_ip_middleware(request: Request, call_next):
+    # 优先检查常见的代理头
+    x_forwarded_for = request.headers.get("x-forwarded-for")
+    if x_forwarded_for:
+        # X-Forwarded-For 可能包含多个 IP，取第一个
+        real_ip = x_forwarded_for.split(",")[0].strip()
+        # 猴子补丁修改 request.scope 里的 client，以便后续及日志调用能读取到真实 IP
+        new_scope = request.scope.copy()
+        new_scope["client"] = (real_ip, request.scope["client"][1])
+        request._scope = new_scope
+    else:
+        x_real_ip = request.headers.get("x-real-ip")
+        if x_real_ip:
+            new_scope = request.scope.copy()
+            new_scope["client"] = (x_real_ip, request.scope["client"][1])
+            request._scope = new_scope
+            
+    response = await call_next(request)
+    return response
 
 class NotAuthenticatedException(Exception):
     pass
@@ -827,11 +863,10 @@ async def stream_logs_json(_: bool = Depends(check_admin)):
         return {"success": True, "data": "暂无系统日志..."}
         
     try:
-        # Read the last 200 lines
+        # 读取最后 1000 行，提供更充裕的网页端查看量
         with open(log_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
-            # return joined text up to approx 200 lines
-            return {"success": True, "data": "".join(lines[-200:])}
+            return {"success": True, "data": "".join(lines[-1000:])}
     except Exception as e:
         return {"success": False, "data": f"读取日志错误: {e}"}
 
