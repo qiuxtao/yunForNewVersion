@@ -7,3 +7,5 @@ data/
 logs/
 config.ini
 tasks_*/
+tmp_*
+*.log
