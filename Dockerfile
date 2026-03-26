@@ -17,5 +17,5 @@ COPY . .
 # 暴露 FastAPI 端口
 EXPOSE 8000
 
-# 启动 uvicorn 服务
-CMD ["uvicorn", "web.app:app", "--host", "0.0.0.0", "--port", "8000"]
+# 启动 uvicorn 服务 (增加代理头支持以显示真实 IP)
+CMD ["uvicorn", "web.app:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
