@@ -1555,12 +1555,9 @@
 
             localStorage.setItem('activeTab', tabId);
 
-            // 仅针对系统运行日志页面锁定外部滚动
+            // 切换到日志页时回到顶部（日志面板有独立的内部滚动容器，不需要隐藏外部滚动条）
             if (tabId === 'logs') {
-                document.body.style.overflow = 'hidden';
-                window.scrollTo(0, 0); // 避免错位强制回到顶部
-            } else {
-                document.body.style.overflow = '';
+                window.scrollTo(0, 0);
             }
 
             if (tabId === 'logs') {
