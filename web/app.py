@@ -422,24 +422,28 @@ async def toggle_schedule_active(schedule_id: int, db: Session = Depends(get_db)
 async def get_schedules_json(db: Session = Depends(get_db), _: bool = Depends(check_admin)):
     """获取所有定时任务的 JSON 列表"""
     from fastapi.responses import JSONResponse
-    schedules = db.query(models.Schedule).all()
-    results = []
-    for s in schedules:
-        results.append({
-            "id": s.id,
-            "user_id": s.user_id,
-            "username": s.user.username if s.user else "Unknown",
-            "target_time": s.target_time,
-            "route_type": s.route_type,
-            "random_delay_minutes": s.random_delay_minutes,
-            "last_run_status": s.last_run_status,
-            "last_run_time": s.last_run_time.strftime('%Y-%m-%d %H:%M:%S') if s.last_run_time else '-',
-            "group_id": s.group_id,
-            "group_name": getattr(s, 'group_name', '未命名任务组'),
-            "run_days": getattr(s, 'run_days', '1,2,3,4,5,6,7'),
-            "is_active": s.is_active
-        })
-    return JSONResponse({"success": True, "data": results})
+    try:
+        schedules = db.query(models.Schedule).all()
+        results = []
+        for s in schedules:
+            results.append({
+                "id": s.id,
+                "user_id": s.user_id,
+                "username": s.user.username if s.user else "Unknown",
+                "target_time": s.target_time,
+                "route_type": s.route_type,
+                "random_delay_minutes": s.random_delay_minutes,
+                "last_run_status": s.last_run_status,
+                "last_run_time": s.last_run_time.strftime('%Y-%m-%d %H:%M:%S') if s.last_run_time else '-',
+                "group_id": s.group_id,
+                "group_name": getattr(s, 'group_name', '未命名任务组'),
+                "run_days": getattr(s, 'run_days', '1,2,3,4,5,6,7'),
+                "is_active": s.is_active
+            })
+        return JSONResponse({"success": True, "data": results})
+    except Exception as e:
+        return JSONResponse({"success": False, "message": f"加载任务数据失败: {e}"})
+
 
 @app.get("/api/users/{user_id}")
 async def get_user_json(user_id: int, db: Session = Depends(get_db), _: bool = Depends(check_admin)):

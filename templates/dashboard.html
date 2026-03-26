@@ -625,7 +625,7 @@
                         </thead>
                         <tbody id="schedulesTableBody">
                             <tr>
-                                <td colspan="7">
+                                <td colspan="4">
                                     <div class="empty-state">正在加载任务列表...</div>
                                 </td>
                             </tr>
@@ -1647,12 +1647,13 @@
                     } else {
                         let html = '';
                         result.data.forEach(g => {
+                            const safeGroupName = safeJS(g.name);
                             html += `
-                                <tr class="group-row" style="cursor: pointer; background-color: rgba(255,255,255,0.05);" onclick="toggleRouteGroupRows('${g.name}')">
+                                <tr class="group-row" style="cursor: pointer; background-color: rgba(255,255,255,0.05);" onclick="toggleRouteGroupRows('${safeGroupName}')">
                                     <td>
                                         <div style="display:flex; flex-direction:column; gap:4px;">
                                             <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
-                                                <i class="fas fa-folder" id="route-icon-${g.name}" style="color:#fbbf24; font-size:16px;"></i>
+                                                <i class="fas fa-folder" id="route-icon-${safeGroupName}" style="color:#fbbf24; font-size:16px;"></i>
                                                 <span style="font-size: 15px; font-weight: bold; color:var(--text-main); letter-spacing: 0.3px;">${g.name}</span>
                                                 <span style="background:rgba(16,185,129,0.1); color:var(--success); padding:1px 10px; border-radius:12px; font-weight:500; font-size:11px; border:1px solid rgba(16,185,129,0.2);">
                                                     包含 ${g.count} 条路线
@@ -1664,20 +1665,21 @@
                                     <td>-</td>
                                     <td>
                                         <div class="action-cell" style="display:flex; gap:8px; flex-wrap:nowrap; overflow:visible;" onclick="event.stopPropagation();">
-                                            <button class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="renameRouteGroup('${g.name}')">重命名</button>
-                                            <button class="btn btn-danger btn-sm" style="white-space:nowrap;" onclick="deleteRouteGroup('${g.name}')">全组删除</button>
+                                            <button class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="renameRouteGroup('${safeGroupName}')">重命名</button>
+                                            <button class="btn btn-danger btn-sm" style="white-space:nowrap;" onclick="deleteRouteGroup('${safeGroupName}')">全组删除</button>
                                         </div>
                                     </td>
                                 </tr>
                             `;
                             if (g.routes && g.routes.length > 0) {
                                 g.routes.forEach(f => {
+                                    const safeFileName = safeJS(f.filename);
                                     let durDisplay = "-";
                                     if (f.duration) durDisplay = Math.floor(f.duration) + "分" + Math.round((f.duration % 1) * 60) + "秒";
                                     let paceDisplay = "-";
                                     if (f.recode_pace) paceDisplay = Math.floor(f.recode_pace) + "'" + Math.round((f.recode_pace % 1) * 60).toString().padStart(2, '0') + '"';
                                     html += `
-                                        <tr class="child-row route-child-${g.name}" style="display: none; background-color: rgba(0,0,0,0.2);">
+                                        <tr class="child-row route-child-${safeGroupName}" style="display: none; background-color: rgba(0,0,0,0.2);">
                                             <td style="padding-left: 40px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                                                 <i class="fas fa-map-marked-alt" style="color:var(--text-muted); margin-right:8px;"></i>
                                                 ${f.filename} <span style="font-size:11px; color:var(--text-muted);">(${f.size_kb} KB)</span>
@@ -1686,9 +1688,9 @@
                                             <td>${paceDisplay}</td>
                                             <td>
                                                 <div class="action-cell" style="display:flex; gap:8px; flex-wrap:nowrap; overflow:visible;" onclick="event.stopPropagation();">
-                                                    <button class="btn btn-info btn-xs" style="white-space:nowrap;" onclick="previewRoute('${g.name}', '${f.filename}')">预览</button>
-                                                    <button class="btn btn-warning btn-xs" style="white-space:nowrap;" onclick="renameRouteFile('${g.name}', '${f.filename}')">重命名</button>
-                                                    <button class="btn btn-danger btn-xs" style="white-space:nowrap;" onclick="deleteRouteFile('${g.name}', '${f.filename}')">删除</button>
+                                                    <button class="btn btn-info btn-xs" style="white-space:nowrap;" onclick="previewRoute('${safeGroupName}', '${safeFileName}')">预览</button>
+                                                    <button class="btn btn-warning btn-xs" style="white-space:nowrap;" onclick="renameRouteFile('${safeGroupName}', '${safeFileName}')">重命名</button>
+                                                    <button class="btn btn-danger btn-xs" style="white-space:nowrap;" onclick="deleteRouteFile('${safeGroupName}', '${safeFileName}')">删除</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -1696,7 +1698,7 @@
                                 });
                             } else {
                                 html += `
-                                    <tr class="child-row route-child-${g.name}" style="display: none; background-color: rgba(0,0,0,0.2);">
+                                    <tr class="child-row route-child-${safeGroupName}" style="display: none; background-color: rgba(0,0,0,0.2);">
                                         <td colspan="4" style="text-align:center; padding-left: 40px; color:var(--text-muted);">此组内暂无路线 JSON 文件</td>
                                     </tr>
                                 `;
@@ -1706,14 +1708,17 @@
                     }
 
                     // Automatically update the options in schedule panels
-                    updateScheduleRouteOptions(window.availableGroups);
+                    updateScheduleRouteOptions(window.availableGroups || []);
                     // Also refresh schedules to handle "Deleted" state
                     loadSchedules();
                 } else {
                     tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state" style="color:var(--danger)">加载失败: ${result.message}</div></td></tr>`;
+                    window.availableGroups = [];
                 }
             } catch (e) {
+                console.error("加载路线库失败:", e);
                 tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state" style="color:var(--danger)">网络异常: ${e}</div></td></tr>`;
+                window.availableGroups = [];
             }
         }
 
@@ -1993,7 +1998,7 @@
             showInputModal('路线重命名', `将 ${filename} 重命名为:`, filename, async (newName) => {
                 if (newName === filename) return;
                 try {
-                    const res = await fetch(`/api/route_groups/${groupName}/${filename}/rename`, {
+                    const res = await fetch(`/api/route_groups/${encodeURIComponent(groupName)}/${encodeURIComponent(filename)}/rename`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ new_name: newName })
@@ -2029,6 +2034,7 @@
         function toggleGroupRows(groupId) {
             const rows = document.querySelectorAll('.child-' + groupId);
             const icon = document.getElementById('icon-' + groupId);
+            let isExpanded = false;
             rows.forEach(r => {
                 if (r.style.display === 'none') {
                     r.style.display = 'table-row';
@@ -2072,7 +2078,7 @@
                 const result = await res.json();
                 if (result.success) {
                     if (result.data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">尚未创建任何调度规则</div></td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">尚未创建任何调度规则</div></td></tr>';
                     } else {
                         const groups = {};
                         result.data.forEach(s => {
@@ -2093,17 +2099,22 @@
                         
                         let html = '';
                         Object.values(groups).forEach(group => {
-                            const userIds = encodeURIComponent(JSON.stringify(group.tasks.map(t => t.user_id)));
-                            
+                            const userIdsEncoded = encodeURIComponent(JSON.stringify(group.tasks.map(t => t.user_id)));
+                            const safeGroupId = safeJS(group.group_id);
+                            const safeGroupName = safeJS(group.group_name);
+                            const safeRouteType = safeJS(group.route_type);
+                            const safeTime = safeJS(group.target_time);
+                            const safeRunDays = safeJS(group.run_days);
+
                             const isMissing = window.availableGroups && !window.availableGroups.includes(group.route_type);
                             const routeDisplay = isMissing ? `<span style="text-decoration:line-through;">${group.route_type}</span>(丢失)` : `${group.route_type}`;
 
                             html += `
-                                <tr class="group-row" style="cursor: pointer; background-color: rgba(255,255,255,0.05);" onclick="toggleGroupRows('${group.group_id}')">
+                                <tr class="group-row" style="cursor: pointer; background-color: rgba(255,255,255,0.05);" onclick="toggleGroupRows('${safeGroupId}')">
                                     <td style="vertical-align: middle;">
                                         <div style="display:flex; flex-direction:column; gap:4px;">
                                             <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
-                                                <i class="fas fa-chevron-right" id="icon-${group.group_id}" style="margin-right: 2px; width: 14px;"></i>
+                                                <i class="fas fa-chevron-right" id="icon-${safeGroupId}" style="margin-right: 2px; width: 14px;"></i>
                                                 <span style="font-size: 15px; font-weight: bold; color:var(--text-main);">${group.group_name || '未命名任务组'}</span>
                                                 <span style="background:rgba(59,130,246,0.1); color:var(--primary); padding:1px 10px; border-radius:12px; font-weight:500; font-size:11px; border:1px solid rgba(59,130,246,0.2);">
                                                     包含 ${group.tasks.length} 个账户
@@ -2120,10 +2131,10 @@
                                     <td style="vertical-align: middle;">-</td>
                                     <td style="vertical-align: middle;">
                                         <div style="display:flex; gap:8px; flex-wrap:wrap; align-items: center;" onclick="event.stopPropagation();">
-                                            <button type="button" class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="editGroup('${group.group_id}', '${group.group_name}', '${group.target_time}', '${group.route_type}', ${group.random_delay_minutes}, '${userIds}', '${group.run_days}')">编辑组</button>
-                                            <form id="delete-group-${group.group_id}" action="/schedules/delete_group" method="POST" style="margin:0;">
+                                            <button type="button" class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="editGroup('${safeGroupId}', '${safeGroupName}', '${safeTime}', '${safeRouteType}', ${group.random_delay_minutes}, '${userIdsEncoded}', '${safeRunDays}')">编辑组</button>
+                                            <form id="delete-group-${safeGroupId}" action="/schedules/delete_group" method="POST" style="margin:0;">
                                                 <input type="hidden" name="group_id" value="${group.group_id}">
-                                                <button type="button" class="btn btn-danger btn-sm" style="white-space:nowrap;" onclick="showConfirmModal('确认删除', '确定要彻底删除该任务组吗？此操作不可恢复。', () => document.getElementById('delete-group-${group.group_id}').submit())">全组删除</button>
+                                                <button type="button" class="btn btn-danger btn-sm" style="white-space:nowrap;" onclick="showConfirmModal('确认删除', '确定要彻底删除该任务组吗？此操作不可恢复。', () => document.getElementById('delete-group-${safeGroupId}').submit())">全组删除</button>
                                             </form>
                                         </div>
                                     </td>
@@ -2136,7 +2147,7 @@
                                 else if (s.last_run_status === 'Failed') statusBadge = '<span class="badge badge-error">Failed</span>';
                                 
                                 html += `
-                                <tr class="child-row child-${group.group_id}" style="display: none; background-color: rgba(0,0,0,0.2);">
+                                <tr class="child-row child-${safeGroupId}" style="display: none; background-color: rgba(0,0,0,0.2);">
                                     <td style="padding-left: 40px; vertical-align: middle;">
                                         <div style="display:flex; align-items:center;">
                                             <label class="switch" style="margin-bottom:0;">
@@ -2161,9 +2172,12 @@
                         });
                         tbody.innerHTML = html;
                     }
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state" style="color:var(--danger)">加载失败: ${result.message}</div></td></tr>`;
                 }
             } catch (e) {
                 console.error("加载任务列表失败:", e);
+                tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state" style="color:var(--danger)">网络异常: ${e}</div></td></tr>`;
             }
         }
 
@@ -2181,7 +2195,7 @@
         async function deleteRouteGroup(groupName) {
             showConfirmModal('确认删除组', `确定要彻底删除整个 ${groupName} 路线组吗？此操作将物理删除文件夹内所有文件，且不可恢复！`, async () => {
                 try {
-                    const res = await fetch(`/api/route_groups/${groupName}`, { method: 'DELETE' });
+                    const res = await fetch(`/api/route_groups/${encodeURIComponent(groupName)}`, { method: 'DELETE' });
                     const result = await res.json();
                     if (result.success) {
                         loadRouteGroups();
@@ -2197,7 +2211,7 @@
         async function deleteRouteFile(groupName, filename) {
             showConfirmModal('确认删除', `确定要从 ${groupName} 路线组中删除 ${filename} 吗？此操作不可恢复。`, async () => {
                 try {
-                    const res = await fetch(`/api/route_groups/${groupName}/${filename}`, { method: 'DELETE' });
+                    const res = await fetch(`/api/route_groups/${encodeURIComponent(groupName)}/${encodeURIComponent(filename)}`, { method: 'DELETE' });
                     const result = await res.json();
                     if (result.success) {
                         reloadGroupViewAfterOperation(groupName);
@@ -2308,6 +2322,11 @@
             }, 3000);
         }
         // --- Route Map Preview Logic ---
+        function safeJS(str) {
+            if (typeof str !== 'string') return str;
+            return str.replace(/'/g, "\\'");
+        }
+
         let mapInstance = null;
         let polylineLayer = null;
 
