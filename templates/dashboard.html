@@ -482,6 +482,256 @@
                 transform: translateY(0);
             }
         }
+
+        /* =============== 移动端适配 =============== */
+        @media (max-width: 768px) {
+
+            /* --- 全局布局 --- */
+            .container {
+                padding: 16px 10px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+                margin-bottom: 20px;
+            }
+
+            .brand {
+                font-size: 20px;
+            }
+
+            /* --- 导航栏：横向滚动 --- */
+            .nav-tabs {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                gap: 8px;
+                margin-bottom: 16px;
+                padding-bottom: 4px;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none; /* Firefox */
+            }
+            .nav-tabs::-webkit-scrollbar {
+                display: none;
+            }
+
+            .nav-tab {
+                flex-shrink: 0;
+                font-size: 13px;
+                padding: 8px 14px;
+                border-radius: 10px;
+                white-space: nowrap;
+            }
+
+            /* --- 面板 --- */
+            .glass-panel {
+                padding: 14px;
+                border-radius: 14px;
+                margin-bottom: 16px;
+            }
+
+            .panel-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+
+            .panel-header .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .panel-title {
+                font-size: 16px;
+            }
+
+            /* --- 表格：卡片化 --- */
+            table {
+                border: none;
+            }
+
+            thead {
+                display: none;
+            }
+
+            tbody tr {
+                display: block;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid var(--glass-border);
+                border-radius: 12px;
+                margin-bottom: 10px;
+                padding: 4px 0;
+            }
+
+            tbody tr:hover td {
+                background: transparent;
+            }
+
+            td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 14px !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+                font-size: 13px;
+                text-align: right;
+                gap: 8px;
+                min-height: 0;
+            }
+
+            td:last-child {
+                border-bottom: none !important;
+            }
+
+            td::before {
+                content: attr(data-label);
+                font-weight: 500;
+                color: var(--text-muted);
+                font-size: 12px;
+                text-align: left;
+                flex-shrink: 0;
+                margin-right: auto;
+            }
+
+            /* 操作列：按钮在卡片底部全宽排列 */
+            td:has(.action-cell) {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            td:has(.action-cell)::before {
+                display: none;
+            }
+
+            .action-cell {
+                display: flex !important;
+                flex-wrap: wrap;
+                gap: 6px !important;
+                width: 100%;
+            }
+
+            .action-cell .btn,
+            .action-cell form {
+                flex: 1 1 calc(50% - 4px);
+                min-width: 0;
+            }
+
+            .action-cell form .btn {
+                width: 100%;
+            }
+
+            /* 折叠组行样式 */
+            .group-row {
+                background: rgba(59, 130, 246, 0.05) !important;
+            }
+
+            .child-row td {
+                padding-left: 14px !important;
+            }
+
+            /* --- 按钮触摸优化 --- */
+            .btn {
+                min-height: 40px;
+                font-size: 13px;
+                padding: 8px 14px;
+            }
+
+            .btn-xs {
+                min-height: 32px;
+                font-size: 11px;
+                padding: 4px 10px;
+            }
+
+            .btn-sm {
+                min-height: 36px;
+                font-size: 12px;
+            }
+
+            /* --- 模态框全屏适配 --- */
+            .modal-overlay {
+                align-items: flex-end;
+                padding: 0;
+            }
+
+            .modal-box {
+                max-width: 100%;
+                border-radius: 20px 20px 0 0;
+                padding: 20px 16px;
+                max-height: 90vh;
+                overflow-y: auto;
+                margin: 0;
+            }
+
+            .modal-overlay.active .modal-box {
+                transform: translateY(0) scale(1);
+            }
+
+            .modal-footer {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+            }
+
+            .form-control,
+            .form-select {
+                font-size: 16px; /* 防止 iOS 缩放 */
+                padding: 10px 12px;
+            }
+
+            /* --- 日志面板 --- */
+            #tab-pane-logs .glass-panel {
+                height: calc(100vh - 180px);
+            }
+
+            #tab-pane-logs .panel-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+
+            #tab-pane-logs .panel-header > div {
+                justify-content: space-between;
+            }
+
+            #logContent {
+                font-size: 11px !important;
+                line-height: 1.4 !important;
+            }
+
+            /* --- 徽章 --- */
+            .badge {
+                font-size: 11px;
+                padding: 2px 8px;
+            }
+
+            /* --- code 标签 --- */
+            code {
+                font-size: 11px;
+                word-break: break-all;
+            }
+
+            /* --- 空状态 --- */
+            .empty-state {
+                padding: 24px 12px;
+                font-size: 13px;
+            }
+
+            /* --- 背景特效缩小 --- */
+            .blob-1 { width: 300px; height: 300px; }
+            .blob-2 { width: 250px; height: 250px; }
+
+            /* --- Toast 容器 --- */
+            #toastContainer {
+                left: 12px !important;
+                right: 12px !important;
+                max-width: none !important;
+            }
+        }
     </style>
     <style>
         .switch {
@@ -563,16 +813,16 @@
                         <tbody>
                             {% for u in users %}
                             <tr>
-                                <td><strong>{{ u.username }}</strong></td>
-                                <td>{{ u.yun_username }}</td>
-                                <td><code>{{ u.device_id }}</code></td>
-                                <td>{{ u.qq_number or '-' }}</td>
-                                <td>
+                                <td data-label="标识名称"><strong>{{ u.username }}</strong></td>
+                                <td data-label="系统学号">{{ u.yun_username }}</td>
+                                <td data-label="设备指纹"><code>{{ u.device_id }}</code></td>
+                                <td data-label="通知目标">{{ u.qq_number or '-' }}</td>
+                                <td data-label="推送类型">
                                     <span class="badge badge-neutral">
                                         {{ '私聊' if u.qq_notify_type == 'private' else '群聊' }}
                                     </span>
                                 </td>
-                                <td>
+                                <td data-label="状态">
                                     {% if u.is_active %}
                                     <span class="badge badge-success">Active</span>
                                     {% else %}
@@ -1651,7 +1901,7 @@
                             const safeGroupName = safeJS(g.name);
                             html += `
                                 <tr class="group-row" style="cursor: pointer; background-color: rgba(255,255,255,0.05);" onclick="toggleRouteGroupRows('${safeGroupName}')">
-                                    <td>
+                                    <td data-label="路线组">
                                         <div style="display:flex; flex-direction:column; gap:4px;">
                                             <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
                                                 <i class="fas fa-folder" id="route-icon-${safeGroupName}" style="color:#fbbf24; font-size:16px;"></i>
@@ -1662,8 +1912,8 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td>-</td>
-                                    <td>-</td>
+                                    <td data-label="耗时">-</td>
+                                    <td data-label="配速">-</td>
                                     <td>
                                         <div class="action-cell" style="display:flex; gap:8px; flex-wrap:nowrap; overflow:visible;" onclick="event.stopPropagation();">
                                             <button class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="renameRouteGroup('${safeGroupName}')">重命名</button>
@@ -1681,12 +1931,12 @@
                                     if (f.recode_pace) paceDisplay = Math.floor(f.recode_pace) + "'" + Math.round((f.recode_pace % 1) * 60).toString().padStart(2, '0') + '"';
                                     html += `
                                         <tr class="child-row route-child-${safeGroupName}" style="display: none; background-color: rgba(0,0,0,0.2);">
-                                            <td style="padding-left: 40px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                            <td data-label="路线文件" style="padding-left: 40px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                                                 <i class="fas fa-map-marked-alt" style="color:var(--text-muted); margin-right:8px;"></i>
                                                 ${f.filename} <span style="font-size:11px; color:var(--text-muted);">(${f.size_kb} KB)</span>
                                             </td>
-                                            <td>${durDisplay}</td>
-                                            <td>${paceDisplay}</td>
+                                            <td data-label="耗时">${durDisplay}</td>
+                                            <td data-label="配速">${paceDisplay}</td>
                                             <td>
                                                 <div class="action-cell" style="display:flex; gap:8px; flex-wrap:nowrap; overflow:visible;" onclick="event.stopPropagation();">
                                                     <button class="btn btn-info btn-xs" style="white-space:nowrap;" onclick="previewRoute('${safeGroupName}', '${safeFileName}')">预览</button>
@@ -2112,7 +2362,7 @@
 
                             html += `
                                 <tr class="group-row" style="cursor: pointer; background-color: rgba(255,255,255,0.05);" onclick="toggleGroupRows('${safeGroupId}')">
-                                    <td style="vertical-align: middle;">
+                                    <td data-label="任务组" style="vertical-align: middle;">
                                         <div style="display:flex; flex-direction:column; gap:4px;">
                                             <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
                                                 <i class="fas fa-chevron-right" id="icon-${safeGroupId}" style="margin-right: 2px; width: 14px;"></i>
@@ -2128,8 +2378,8 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td style="vertical-align: middle;">-</td>
-                                    <td style="vertical-align: middle;">-</td>
+                                    <td data-label="上次状态" style="vertical-align: middle;">-</td>
+                                    <td data-label="结束时间" style="vertical-align: middle;">-</td>
                                     <td style="vertical-align: middle;">
                                         <div style="display:flex; gap:8px; flex-wrap:wrap; align-items: center;" onclick="event.stopPropagation();">
                                             <button type="button" class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="editGroup('${safeGroupId}', '${safeGroupName}', '${safeTime}', '${safeRouteType}', ${group.random_delay_minutes}, '${userIdsEncoded}', '${safeRunDays}')">编辑组</button>
@@ -2149,7 +2399,7 @@
                                 
                                 html += `
                                 <tr class="child-row child-${safeGroupId}" style="display: none; background-color: rgba(0,0,0,0.2);">
-                                    <td style="padding-left: 40px; vertical-align: middle;">
+                                    <td data-label="账户" style="padding-left: 40px; vertical-align: middle;">
                                         <div style="display:flex; align-items:center;">
                                             <label class="switch" style="margin-bottom:0;">
                                                 <input type="checkbox" ${s.is_active ? 'checked' : ''} onchange="toggleTaskActive(${s.id}, this)">
@@ -2158,8 +2408,8 @@
                                             <span style="margin-left: 10px;">${s.username}</span>
                                         </div>
                                     </td>
-                                    <td style="vertical-align: middle;">${statusBadge}</td>
-                                    <td class="log-time" style="vertical-align: middle;">${s.last_run_time}</td>
+                                    <td data-label="上次状态" style="vertical-align: middle;">${statusBadge}</td>
+                                    <td data-label="结束时间" class="log-time" style="vertical-align: middle;">${s.last_run_time}</td>
                                     <td style="vertical-align: middle;">
                                         <div style="display:flex; gap:8px; align-items: center;" onclick="event.stopPropagation();">
                                             <form action="/runs/manual_trigger" method="POST" style="margin:0;">
