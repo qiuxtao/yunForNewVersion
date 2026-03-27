@@ -851,12 +851,102 @@
                 color: var(--text-muted);
             }
 
-            /* --- 补丁：隐藏主菜单冗余列 --- */
-            td[data-label="上次状态"], 
-            td[data-label="结束时间"],
-            td[data-label="耗时"],
-            td[data-label="配速"] {
+            /* --- 补丁：隐藏主菜单冗余列 (仅针对父行) --- */
+            .group-row td[data-label="上次状态"], 
+            .group-row td[data-label="结束时间"],
+            .group-row td[data-label="耗时"],
+            .group-row td[data-label="配速"] {
                 display: none !important;
+            }
+
+            /* --- 补丁：云端记录模态框优化 --- */
+            
+            /* 1. 头部堆叠 */
+            #historyModal .modal-box > div:first-child {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 12px !important;
+                padding-bottom: 16px;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+            }
+
+            #historyModal .modal-box > div:first-child > div:last-child {
+                width: 100%;
+                display: flex !important;
+                flex-wrap: wrap;
+                gap: 8px;
+                justify-content: flex-start !important;
+            }
+
+            #historyTermSelect {
+                width: 100% !important;
+                margin-top: 4px;
+            }
+
+            #termStats {
+                width: 100%;
+                margin-right: 0 !important;
+                margin-bottom: 4px;
+            }
+
+            /* 2. 表格卡片化 */
+            #historyTable thead {
+                display: none !important;
+            }
+
+            #historyTable, #historyTable tbody, #historyTable tr, #historyTable td {
+                display: block !important;
+                width: 100% !important;
+            }
+
+            #historyTable tr {
+                margin-bottom: 16px;
+                background: rgba(255,255,255,0.03);
+                border-radius: 12px;
+                border: 1px solid rgba(255,255,255,0.1);
+                padding: 8px 0;
+            }
+
+            #historyTable td {
+                padding: 8px 16px !important;
+                text-align: right !important;
+                position: relative;
+                min-height: 40px;
+                display: flex !important;
+                justify-content: space-between;
+                align-items: center;
+                border: none !important;
+            }
+
+            #historyTable td::before {
+                content: attr(data-label);
+                font-weight: bold;
+                color: var(--text-secondary);
+                font-size: 13px;
+            }
+
+            #historyTable td:last-child {
+                justify-content: flex-end;
+                padding-top: 12px !important;
+                margin-top: 4px;
+                border-top: 1px solid rgba(255,255,255,0.05) !important;
+            }
+
+            #historyTable td[data-label="结束时间"] {
+                text-align: left !important;
+                flex-direction: column;
+                align-items: flex-end;
+            }
+
+            /* 操作按钮组 */
+            #historyTable .action-cell {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            #historyTable .action-cell .btn {
+                flex: 1;
+                max-width: 120px;
             }
 
             /* --- 全局防溢出补丁 --- */
@@ -1810,7 +1900,7 @@
                     if (!result.data || result.data.length === 0) {
                         termHtml += `<div class="empty-state" style="padding:20px;">该学期尚无相关打卡记录</div>`;
                     } else {
-                        termHtml += '<style>#historyModal .table-responsive table th, #historyTableBody td { padding: 8px 10px !important; font-size: 13px; line-height:1.2; } #historyModal .table-responsive table th:first-child, #historyTableBody td:first-child { padding-left: 24px !important; } #historyModal .table-responsive table th:last-child, #historyTableBody td:last-child { padding-right: 24px !important; } #historyTableBody td button { transform: scale(0.9); transform-origin: left center; }</style><div class="table-responsive" style="margin-bottom:0;"><table><thead><tr><th style="white-space:nowrap;">运动结束时间</th><th style="white-space:nowrap;">状态</th><th style="white-space:nowrap;">耗时</th><th style="white-space:nowrap;">配速</th><th style="white-space:nowrap;">运动里程</th><th style="width: 80px; white-space:nowrap;">操作</th></tr></thead><tbody>';
+                        termHtml += '<div class="table-responsive" style="margin-bottom:0;"><table id="historyTable"><thead><tr><th>运动结束时间</th><th>状态</th><th>耗时</th><th>配速</th><th>运动里程</th><th style="width: 80px;">操作</th></tr></thead><tbody>';
                         result.data.forEach(run => {
                             let rtime = run.recordEndTime || run.endTime || run.recordDate || "-";
                             let displayTime = rtime;
@@ -1840,14 +1930,14 @@
                             }
 
                             termHtml += `<tr>
-                                <td style="color:var(--text-main); white-space:nowrap;">${displayTime}</td>
-                                <td style="white-space:nowrap;">${statusDisplay}</td>
-                                <td id="dur_${run.id}" style="white-space:nowrap;">${durDisplay}</td>
-                                <td id="pace_${run.id}" style="white-space:nowrap;">${paceDisplay}</td>
-                                <td style="color:var(--success); font-weight:500; white-space:nowrap;">${run.recordMileage || '0'} km</td>
-                                <td style="white-space:nowrap; vertical-align:middle;">
-                                    <div style="display:flex; gap:6px; align-items:center;">
-                                        <button class="btn btn-info btn-xs" style="white-space:nowrap;" onclick="previewCloudRoute('${run.id}')">预览</button>
+                                <td data-label="结束时间" style="color:var(--text-main);">${displayTime}</td>
+                                <td data-label="状态">${statusDisplay}</td>
+                                <td data-label="耗时" id="dur_${run.id}">${durDisplay}</td>
+                                <td data-label="配速" id="pace_${run.id}">${paceDisplay}</td>
+                                <td data-label="里程" style="color:var(--success); font-weight:500;">${run.recordMileage || '0'} km</td>
+                                <td>
+                                    <div class="action-cell" style="display:flex; gap:6px; align-items:center;" onclick="event.stopPropagation();">
+                                        <button class="btn btn-info btn-xs" onclick="previewCloudRoute('${run.id}')">预览</button>
                                         <button class="btn btn-secondary btn-xs" style="white-space:nowrap;" onclick="promptSaveRoute('${run.id}', '${run.recordMileage || 0}')">入库</button>
                                     </div>
                                 </td>
