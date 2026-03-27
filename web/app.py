@@ -20,7 +20,6 @@ from notifications.qq_bot import manager
 import sys
 import os
 import logging
-from logging.handlers import RotatingFileHandler
 
 # ================= 极简日志初始化：核心必须最先运行 =================
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -51,16 +50,13 @@ sys.stderr = Tee(SYSTEM_LOG_PATH, 'a', sys.stderr)
 LOG_FORMAT = '[%(asctime)s] [%(threadName)s/%(levelname)s]: %(message)s'
 DATE_FORMAT = '%H:%M:%S'
 
-# 显式创建 Root Logger 的 FileHandler 确保直接落盘，StreamHandler 指向已重定向的 stdout
-# 将日志文件限制在 1MB，并保留 5 个备份，防止单个文件过大
-file_handler = RotatingFileHandler(SYSTEM_LOG_PATH, maxBytes=1*1024*1024, backupCount=5, encoding='utf-8')
-file_handler.setFormatter(logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT))
-
+# Tee 已将 stdout 重定向至 system.log，因此只需 StreamHandler(stdout) 即可实现
+# 控制台输出 + 文件落盘的双写效果，无需额外 FileHandler（否则会导致日志双写）
 logging.basicConfig(
     level=logging.INFO,
     format=LOG_FORMAT,
     datefmt=DATE_FORMAT,
-    handlers=[file_handler, logging.StreamHandler(sys.stdout)],
+    handlers=[logging.StreamHandler(sys.stdout)],
     force=True
 )
 
