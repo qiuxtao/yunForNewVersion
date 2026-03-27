@@ -868,58 +868,79 @@
                 max-height: 100dvh !important;
                 margin: 0 !important;
                 border-radius: 0 !important;
-                padding: 12px 6px !important;
+                padding: 10px 6px !important; /* 更小的 padding */
                 display: flex !important;
                 flex-direction: column !important;
                 overflow: hidden !important;
             }
 
+            /* 头部极致压缩 */
             #historyModal .modal-box > div:first-child {
-                flex-direction: column !important;
-                align-items: flex-start !important;
-                gap: 8px !important;
-                padding-bottom: 10px;
+                flex-direction: row !important; /* 尝试横向排列以节省空间 */
+                flex-wrap: wrap;
+                align-items: center !important;
+                gap: 4px !important;
+                padding-bottom: 6px;
                 border-bottom: 1px solid rgba(255,255,255,0.1);
                 flex-shrink: 0 !important;
+                position: relative;
+            }
+
+            #historyModal .modal-box > div:first-child h2 {
+                font-size: 15px !important;
+                margin-right: auto;
+                max-width: 70%;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             #historyModal .modal-box > div:first-child > div:last-child {
                 width: 100%;
                 display: flex !important;
-                flex-wrap: wrap;
-                gap: 6px;
-                justify-content: flex-start !important;
+                flex-wrap: nowrap; /* 强行一行 */
+                gap: 4px;
+                align-items: center;
+                justify-content: space-between !important;
             }
 
             #historyTermSelect {
-                width: 100% !important;
-                margin-top: 2px;
-                height: 32px !important;
-                padding: 0 8px !important;
-                font-size: 13px !important;
+                flex: 1;
+                margin-top: 0 !important;
+                height: 28px !important;
+                padding: 0 4px !important;
+                font-size: 11px !important;
             }
 
             #termStats {
-                width: 100%;
+                width: auto !important;
                 margin-right: 0 !important;
                 margin-bottom: 0px;
-                font-size: 12px;
-                gap: 6px;
+                font-size: 10px !important;
+                gap: 4px;
+                white-space: nowrap;
             }
 
-            /* 2. 还原緊凑表格模式 */
+            #loadDetailsBtn {
+                padding: 2px 6px !important;
+                font-size: 10px !important;
+                height: 28px !important;
+            }
+
+            /* 2. 还原緊凑表格模式 + 滑动修复 */
             #historyTableContainer {
                 flex: 1 !important;
-                overflow: hidden !important;
-                display: flex !important;
-                flex-direction: column !important;
+                overflow-y: auto !important; /* 直接在此处开启滚动 */
+                overflow-x: hidden !important;
+                -webkit-overflow-scrolling: touch !important;
+                display: block !important;
+                margin-top: 6px !important;
+                padding-bottom: 15px !important;
             }
 
             #historyTableContainer .table-responsive {
-                flex: 1 !important;
-                overflow-y: auto !important;
-                overflow-x: hidden !important; /* 核心：禁止横向滚动 */
-                -webkit-overflow-scrolling: touch;
+                overflow: visible !important; /* 禁用嵌套滚动 */
+                height: auto !important;
             }
 
             #historyTable {
@@ -2294,7 +2315,7 @@
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
                                     <h2 class="panel-title" id="mapPreviewTitle">云端路线预览</h2>
                                     <div style="display:flex; gap: 8px;">
-                                        <button class="btn btn-secondary btn-sm" id="importInPreviewBtn">导入入库</button>
+                                        <button class="btn btn-secondary btn-sm" id="importInPreviewBtn" style="display:none;">导入至路线组</button>
                                         <button class="btn btn-ghost" onclick="closeMapPreview()" style="font-size:24px; padding:0 10px;">&times;</button>
                                     </div>
                                 </div>
@@ -2305,8 +2326,9 @@
                         modal = document.getElementById('mapPreviewModal');
                     }
 
-                    //绑定入库按钮
+                    //绑定并显示入库按钮
                     const importBtn = document.getElementById('importInPreviewBtn');
+                    importBtn.style.display = 'block';
                     importBtn.onclick = () => promptSaveRoute(runId, mileage);
 
                     document.getElementById('mapPreviewTitle').innerText = "云端轨迹解密渲染中...";
@@ -2862,6 +2884,10 @@
 
             document.getElementById('mapPreviewTitle').innerText = filename + " 轨迹预览中...";
             modal.classList.add('active');
+
+            // 路线组预览不需要导入按钮
+            const importBtn = document.getElementById('importInPreviewBtn');
+            if (importBtn) importBtn.style.display = 'none';
 
             try {
                 const res = await fetch(`/api/route_groups/${encodeURIComponent(groupName)}/${encodeURIComponent(filename)}`);
