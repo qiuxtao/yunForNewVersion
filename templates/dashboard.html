@@ -1012,17 +1012,35 @@
             }
         }
 
-        /* === 桌面端高密度补丁 (独立于移动端媒体查询) === */
         #historyTable th, #historyTable td {
-            padding: 6px 8px !important;
+            padding: 4px 6px !important; /* 桌端极致密度状况+3 */
             font-size: 13px !important;
+            border-bottom: 1px solid rgba(255,255,255,0.05) !important;
         }
         #historyTable {
             border-spacing: 0 !important;
             border-collapse: collapse !important;
+            width: 100% !important;
         }
         #historyTable tr:hover {
             background: rgba(255,255,255,0.04) !important;
+        }
+        
+        /* 移动端特殊列宽优化预防换行状况+3 */
+        @media screen and (max-width: 768px) {
+            #historyTable td, #historyTable th {
+                padding: 10px 1px !important;
+                font-size: 9.3px !important; /* 深度压缩字号状况+3 */
+                letter-spacing: -0.2px;
+                white-space: nowrap !important; /* 强制不换行 */
+            }
+            #historyTable td > div {
+                white-space: nowrap !important;
+            }
+            /* 时间列除外，允许其在div内部分两行显示（原有逻辑） */
+            #historyTable td:nth-child(1) {
+                white-space: normal !important;
+            }
         }
     </style>
     <style>
@@ -1213,15 +1231,15 @@
         <div id="tab-pane-logs" class="tab-pane">
             <div class="glass-panel"
                 style="height: calc(100vh - 250px); display: flex; flex-direction: column; margin-bottom: 0;">
-                <div class="panel-header" style="flex-shrink: 0;">
-                    <h2 class="panel-title">系统运行日志</h2>
-                    <div style="display:flex; gap:8px;">
-                        <button class="btn btn-warning" onclick="clearSystemLogs()" id="clearLogBtn">
+                <div class="panel-header" style="flex-shrink: 0; flex-wrap: nowrap; gap: 8px;">
+                    <h2 class="panel-title" style="flex-shrink:0;">系统运行日志</h2>
+                    <div style="display:flex; gap:6px; align-items:center; flex-wrap: nowrap;">
+                        <button class="btn btn-warning" onclick="clearSystemLogs()" id="clearLogBtn" style="padding: 4px 10px; font-size: 12px; height: 32px; white-space: nowrap;">
                             清除日志
                         </button>
-                        <div style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.05); padding:4px 12px; border-radius:20px; border:1px solid rgba(255,255,255,0.1);">
-                            <span style="font-size:13px; color:var(--text-muted); font-weight:500;">自动刷新</span>
-                            <label class="switch" style="margin-bottom:0;">
+                        <div style="display:flex; align-items:center; gap:6px; background:rgba(255,255,255,0.05); padding:2px 8px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); height: 32px; white-space: nowrap;">
+                            <span style="font-size:11px; color:var(--text-muted); font-weight:500;">自动刷新</span>
+                            <label class="switch" style="margin-bottom:0; transform:scale(0.85);">
                                 <input type="checkbox" id="autoRefreshLogToggle" checked onchange="toggleAutoRefreshLogs()">
                                 <span class="slider"></span>
                             </label>
@@ -1275,25 +1293,26 @@
         </div>
     </div>
 
-    <!-- History Modal -->
     <div class="modal-overlay" id="historyModal">
         <div class="modal-box"
-            style="max-width: 780px; width: 95%; height: 95vh; display:flex; flex-direction:column; padding: 20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
-                <div style="display:flex; align-items:center;">
-                    <h2 class="panel-title" id="historyModalTitle">云端记录</h2>
-                </div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <button class="btn btn-info" id="loadDetailsBtn"
-                        style="display:none; padding:6px 16px; font-size:13px;"
-                        onclick="loadAllRunDetails()">补全信息</button>
-                    <div id="termStats" style="display:none; font-size:13px; font-weight:normal; margin-right:8px; align-items:center;">
-                        <span class="badge badge-info" style="margin-right:8px;">总计 <span id="termTotalRuns">0</span> 次</span>
-                        <span class="badge badge-success">合格 <span id="termQualifiedCount" style="font-weight:bold;">0</span> 次</span>
+            style="max-width: 820px; width: 98%; height: 95vh; display:flex; flex-direction:column; padding: 12px;">
+            <div style="display:flex; justify-content:space-between; align-items: flex-start; margin-bottom: 12px; flex-shrink:0;">
+                <div style="flex:1;">
+                    <h2 class="panel-title" id="historyModalTitle" style="font-size:18px; line-height:1.2;">云端记录</h2>
+                    <div style="margin-top:8px;">
+                        <button class="btn btn-info" id="loadDetailsBtn"
+                            style="display:none; width:100%; max-width:200px; padding:4px 12px; font-size:12px; height:32px; white-space:nowrap;"
+                            onclick="loadAllRunDetails()">补全信息</button>
                     </div>
+                </div>
+                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
                     <select id="historyTermSelect" class="form-select"
-                        style="width: auto; padding: 6px 30px 6px 14px; display:none;" onchange="loadTermHistory()">
+                        style="width: 200px; padding: 4px 28px 4px 10px; font-size:12px; height:30px; display:none;" onchange="loadTermHistory()">
                     </select>
+                    <div id="termStats" style="display:none; font-size:11px; font-weight:normal; align-items:center; gap:6px;">
+                        <span class="badge badge-info" style="margin:0;">总计 <span id="termTotalRuns">0</span> 次</span>
+                        <span class="badge badge-success" style="margin:0;">合格 <span id="termQualifiedCount" style="font-weight:bold;">0</span> 次</span>
+                    </div>
                 </div>
             </div>
 
@@ -1306,10 +1325,10 @@
             </div>
             <div id="historyError" style="display:none; color: var(--danger); text-align: center; padding: 20px;"></div>
             <div id="historyTableContainer"
-                style="display:none; flex: 1; min-height: 0; overflow-y: auto; padding-right: 8px;">
+                style="display:none; flex: 1; min-height: 0; overflow-y: auto;">
                 <div id="historyTableBody"></div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer" style="padding: 10px 0 0 0;">
                 <button type="button" class="btn btn-ghost" onclick="closeModal('historyModal')">关闭</button>
             </div>
         </div>
