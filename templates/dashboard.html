@@ -923,10 +923,10 @@
                 }
                 #loadDetailsBtn {
                     grid-area: button !important;
-                    width: auto !important; /* 恢复自适应宽度状况+3 */
+                    width: auto !important;
                     min-width: 80px !important;
-                    margin: 0 auto 0 0 !important; /* 强制靠左状况+3 */
-                    justify-content: center;
+                    margin: 0 !important; /* 贴左状况+3 */
+                    justify-self: start !important;
                 }
                 #termStats {
                     grid-area: stats !important;
@@ -954,10 +954,8 @@
                 flex: 1;
                 margin-top: 0 !important;
                 height: 28px !important;
-                padding: 0 4px !important;
+                padding: 0 30px 0 8px !important; /* 右侧留出 SVG 箭头空间状况+3 */
                 font-size: 11px !important;
-                appearance: auto !important; /* 强制显示倒三角状况+3 */
-                -webkit-appearance: menulist !important;
             }
 
             #termStats {
@@ -1340,8 +1338,8 @@
 
     <div class="modal-overlay" id="historyModal">
         <div class="modal-box"
-            style="max-width: 850px; width: 98%; height: 95vh; display:flex; flex-direction:column; padding: 15px;">
-            <div id="historyHeader" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; flex-shrink:0; flex-wrap: wrap; gap: 8px;">
+            style="max-width: 750px; width: 96%; height: 95vh; display:flex; flex-direction:column; padding: 12px;">
+            <div id="historyHeader" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; flex-shrink:0; flex-wrap: wrap; gap: 6px;">
                 <h2 class="panel-title" id="historyModalTitle" style="font-size:18px; margin: 0; flex-shrink:0;">云端记录</h2>
                 
                 <button class="btn btn-info" id="loadDetailsBtn"
