@@ -896,9 +896,11 @@
                 text-overflow: ellipsis;
                 max-width: none !important; /* 取消限制，展示更多名字状况+3 */
             }
-            /* 桌端扁平化后的对齐补丁状况+3 */
-            #historyHeader > #loadDetailsBtn {
-                margin-left: auto !important;
+            /* 桌端扁平化后的对齐补丁 - 仅桌端生效状况+3 */
+            @media screen and (min-width: 769px) {
+                #historyHeader > #loadDetailsBtn {
+                    margin-left: auto !important;
+                }
             }
             
             /* 移动端协调布局状况+3 */
@@ -917,7 +919,7 @@
                 }
                 #historyTermSelect {
                     grid-area: select !important;
-                    width: 140px !important;
+                    width: 100% !important; /* 完整显示学期信息状况+3 */
                     min-width: 140px !important;
                     margin: 0 !important;
                 }
@@ -968,11 +970,7 @@
                 align-items: center;
             }
 
-            #loadDetailsBtn {
-                padding: 4px 10px !important;
-                font-size: 10px !important;
-                height: 28px !important;
-            }
+
 
 
 
