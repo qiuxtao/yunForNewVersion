@@ -859,19 +859,19 @@
                 display: none !important;
             }
 
-            /* --- 补丁：云端记录模态框优化 (还原为表格并全屏) --- */
+            /* --- 补丁：云端记录模态框优化 (信息流卡片式 + 全屏) --- */
             
-            /* 1. 头部堆叠 */
             #historyModal .modal-box {
                 width: 100vw !important;
                 max-width: 100vw !important;
-                height: 100vh !important;
-                max-height: 100vh !important;
+                height: 100dvh !important; /* 使用 dvh 更好地适配移动端视口 */
+                max-height: 100dvh !important;
                 margin: 0 !important;
                 border-radius: 0 !important;
-                padding: 12px 8px !important;
+                padding: 12px 12px !important;
                 display: flex !important;
                 flex-direction: column !important;
+                overflow: hidden !important; /* 让内部容器滚动 */
             }
 
             #historyModal .modal-box > div:first-child {
@@ -881,6 +881,7 @@
                 padding-bottom: 12px;
                 border-bottom: 1px solid rgba(255,255,255,0.1);
                 flex-shrink: 0 !important;
+                background: transparent !important;
             }
 
             #historyModal .modal-box > div:first-child > div:last-child {
@@ -900,73 +901,147 @@
                 width: 100%;
                 margin-right: 0 !important;
                 margin-bottom: 0px;
-                font-size: 12px;
+                font-size: 13px;
+                gap: 8px;
             }
 
-            /* 2. 还原表格模式 */
+            /* 2. 信息流卡片化 (重构传统表格) */
             #historyTableContainer {
                 flex: 1 !important;
-                overflow: hidden !important;
-                display: flex !important;
-                flex-direction: column !important;
+                overflow-y: auto !important; /* 核心：允许垂直滑动 */
+                -webkit-overflow-scrolling: touch !important;
+                margin-top: 10px !important;
+                padding-bottom: 20px !important;
             }
 
             #historyTableContainer .table-responsive {
-                flex: 1 !important;
-                overflow: auto !important;
-                -webkit-overflow-scrolling: touch;
+                overflow: visible !important; /* 不再需要水平滚动 */
             }
 
             #historyTable {
-                display: table !important;
+                display: block !important;
                 width: 100% !important;
-                min-width: 500px; /* 强制水平滚动以保持表格形态 */
-                border-collapse: collapse !important;
+                border: none !important;
             }
 
             #historyTable thead {
-                display: table-header-group !important;
-                background: rgba(0,0,0,0.2);
+                display: none !important;
+            }
+
+            #historyTable tbody {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 12px !important;
             }
 
             #historyTable tr {
-                display: table-row !important;
-                margin-bottom: 0;
+                display: grid !important;
+                grid-template-areas: 
+                    "time status"
+                    "mileage mileage"
+                    "stats stats"
+                    "actions actions";
+                background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%);
+                border-radius: 16px;
+                border: 1px solid rgba(255,255,255,0.1);
+                padding: 16px !important;
+                margin-bottom: 0 !important;
+                position: relative;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            }
+
+            #historyTable td {
+                display: block !important;
+                padding: 0 !important;
+                border: none !important;
                 background: transparent !important;
-                border-radius: 0;
-                border: none !important;
-                border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+                text-align: left !important;
+                white-space: normal !important;
             }
 
-            #historyTable td, #historyTable th {
-                display: table-cell !important;
-                padding: 10px 8px !important;
+            /* 时间：左上角 */
+            #historyTable td[data-label="结束时间"] {
+                grid-area: time;
+                font-size: 12px;
+                color: var(--text-muted);
+                opacity: 0.8;
+            }
+
+            /* 状态：右上角 */
+            #historyTable td[data-label="状态"] {
+                grid-area: status;
+                text-align: right !important;
+                align-self: flex-start;
+            }
+
+            /* 里程：居中高亮 */
+            #historyTable td[data-label="里程"] {
+                grid-area: mileage;
+                font-size: 32px !important;
+                font-weight: 800 !important;
+                color: var(--success) !important;
                 text-align: center !important;
-                font-size: 11px !important;
-                white-space: nowrap !important;
-                vertical-align: middle !important;
-                border: none !important;
+                padding: 12px 0 4px 0 !important;
+                letter-spacing: -1px;
             }
 
-            #historyTable th {
-                color: var(--text-secondary);
-                font-weight: 500;
+            /* 指标行 (耗时 + 配速)：平分两列 */
+            #historyTable td[data-label="耗时"],
+            #historyTable td[data-label="配速"] {
+                display: inline-block !important;
+                width: 49%;
+                text-align: center !important;
+                padding-top: 8px !important;
+                font-size: 14px !important;
+            }
+            
+            #historyTable td[data-label="耗时"] {
+                grid-area: stats;
+                justify-self: start;
+                border-right: 1px solid rgba(255,255,255,0.1) !important;
+            }
+            
+            #historyTable td[data-label="配速"] {
+                grid-area: stats;
+                justify-self: end;
             }
 
+            /* 隐藏 data-label 伪元素，因为卡片布局不需要它们 */
             #historyTable td::before {
                 display: none !important;
             }
 
-            /* 优化操作列按钮 */
-            #historyTable .action-cell {
-                justify-content: center !important;
-                gap: 4px !important;
+            /* 耗时和配速的标签补充 */
+            #historyTable td[data-label="耗时"]::after {
+                content: " ⏱️";
+                font-size: 12px;
+                opacity: 0.5;
+            }
+            #historyTable td[data-label="配速"]::after {
+                content: " ⚡";
+                font-size: 12px;
+                opacity: 0.5;
             }
 
-            #historyTable .btn-xs {
-                padding: 2px 6px !important;
-                min-height: 28px !important;
-                font-size: 11px !important;
+            /* 操作按钮：底部排列 */
+            #historyTable td:last-child {
+                grid-area: actions;
+                margin-top: 16px !important;
+                padding-top: 12px !important;
+                border-top: 1px solid rgba(255,255,255,0.05) !important;
+            }
+
+            #historyTable .action-cell {
+                display: flex !important;
+                gap: 8px !important;
+                width: 100% !important;
+            }
+
+            #historyTable .action-cell .btn {
+                flex: 1 !important;
+                min-height: 42px !important;
+                font-weight: 600 !important;
+                border-radius: 10px !important;
             }
 
             /* --- 全局防溢出补丁 --- */
