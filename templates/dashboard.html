@@ -890,7 +890,47 @@
 
             #historyModal .modal-box > div:first-child h2 {
                 font-size: 16px !important;
-                margin-right: auto;
+                margin: 0 !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 60%;
+            }
+
+            /* 移动端协调布局状况+3 */
+            @media screen and (max-width: 768px) {
+                #historyModal .modal-box > div:first-child {
+                    display: grid !important;
+                    grid-template-columns: 1fr auto !important;
+                    grid-template-areas: "title select" "controls controls" !important;
+                    gap: 8px !important;
+                    padding-bottom: 12px;
+                }
+                #historyModal .modal-box > div:first-child h2 {
+                    grid-area: title !important;
+                    max-width: 100% !important;
+                }
+                #historyTermSelect {
+                    grid-area: select !important;
+                    width: 130px !important;
+                    min-width: 130px !important;
+                }
+                #historyModal .modal-box > div:first-child > div:last-child {
+                    grid-area: controls !important;
+                    width: 100% !important;
+                    display: flex !important;
+                    justify-content: space-between !important;
+                    align-items: center !important;
+                    gap: 4px !important;
+                }
+                #loadDetailsBtn {
+                    flex: 1 !important;
+                    max-width: none !important;
+                }
+                #termStats {
+                    flex-shrink: 0 !important;
+                    font-size: 10px !important;
+                }
             }
 
             #historyModal .modal-box > div:first-child > div:last-child {
@@ -915,6 +955,8 @@
                 font-size: 10px !important;
                 gap: 4px;
                 white-space: nowrap;
+                display: flex;
+                align-items: center;
             }
 
             #loadDetailsBtn {
@@ -1295,24 +1337,23 @@
 
     <div class="modal-overlay" id="historyModal">
         <div class="modal-box"
-            style="max-width: 820px; width: 98%; height: 95vh; display:flex; flex-direction:column; padding: 12px;">
-            <div style="display:flex; justify-content:space-between; align-items: flex-start; margin-bottom: 12px; flex-shrink:0;">
-                <div style="flex:1;">
-                    <h2 class="panel-title" id="historyModalTitle" style="font-size:18px; line-height:1.2;">云端记录</h2>
-                    <div style="margin-top:8px;">
-                        <button class="btn btn-info" id="loadDetailsBtn"
-                            style="display:none; width:100%; max-width:200px; padding:4px 12px; font-size:12px; height:32px; white-space:nowrap;"
-                            onclick="loadAllRunDetails()">补全信息</button>
-                    </div>
-                </div>
-                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
-                    <select id="historyTermSelect" class="form-select"
-                        style="width: 200px; padding: 4px 28px 4px 10px; font-size:12px; height:30px; display:none;" onchange="loadTermHistory()">
-                    </select>
-                    <div id="termStats" style="display:none; font-size:11px; font-weight:normal; align-items:center; gap:6px;">
+            style="max-width: 850px; width: 98%; height: 95vh; display:flex; flex-direction:column; padding: 15px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; flex-shrink:0; flex-wrap: wrap; gap: 8px;">
+                <h2 class="panel-title" id="historyModalTitle" style="font-size:18px; margin: 0; flex-shrink:0;">云端记录</h2>
+                
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap: wrap; justify-content: flex-end; flex: 1;">
+                    <button class="btn btn-info" id="loadDetailsBtn"
+                        style="display:none; padding:4px 12px; font-size:12px; height:32px; white-space:nowrap;"
+                        onclick="loadAllRunDetails()">补全信息</button>
+                    
+                    <div id="termStats" style="display:none; font-size:12px; font-weight:normal; align-items:center; gap:6px; white-space:nowrap;">
                         <span class="badge badge-info" style="margin:0;">总计 <span id="termTotalRuns">0</span> 次</span>
                         <span class="badge badge-success" style="margin:0;">合格 <span id="termQualifiedCount" style="font-weight:bold;">0</span> 次</span>
                     </div>
+
+                    <select id="historyTermSelect" class="form-select"
+                        style="width: auto; min-width: 150px; padding: 4px 28px 4px 10px; font-size:12px; height:32px; display:none;" onchange="loadTermHistory()">
+                    </select>
                 </div>
             </div>
 
@@ -2345,7 +2386,7 @@
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
                                     <h2 class="panel-title" id="mapPreviewTitle">云端路线预览</h2>
                                     <div style="display:flex; gap: 8px;">
-                                        <button class="btn btn-secondary btn-sm" id="importInPreviewBtn" style="display:none;">导入至路线组</button>
+                                        <button class="btn btn-secondary btn-sm" id="importInPreviewBtn" style="display:none;">导出至路线组</button>
                                         <button class="btn btn-ghost" onclick="closeMapPreview()" style="font-size:24px; padding:0 10px;">&times;</button>
                                     </div>
                                 </div>
