@@ -894,7 +894,7 @@
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                max-width: 60%;
+                max-width: none !important; /* 取消限制，展示更多名字状况+3 */
             }
             /* 桌端扁平化后的对齐补丁状况+3 */
             #historyHeader > #loadDetailsBtn {
@@ -923,9 +923,9 @@
                 }
                 #loadDetailsBtn {
                     grid-area: button !important;
-                    width: 130px !important; /* 固定宽度防止抖动状况+3 */
-                    min-width: 130px !important;
-                    margin: 0 !important;
+                    width: auto !important; /* 恢复自适应宽度状况+3 */
+                    min-width: 80px !important;
+                    margin: 0 auto 0 0 !important; /* 强制靠左状况+3 */
                     justify-content: center;
                 }
                 #termStats {
@@ -956,6 +956,8 @@
                 height: 28px !important;
                 padding: 0 4px !important;
                 font-size: 11px !important;
+                appearance: auto !important; /* 强制显示倒三角状况+3 */
+                -webkit-appearance: menulist !important;
             }
 
             #termStats {
