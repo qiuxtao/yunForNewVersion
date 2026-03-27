@@ -737,6 +737,7 @@
             /* 1. 运行周期复选框：允许换行，防止溢出 */
             .form-group div[style*="display:flex"][style*="gap:8px"] {
                 flex-wrap: wrap !important;
+                gap: 12px 16px !important; /* 增加移动端点击间距 */
             }
 
             /* 2. 系统日志面板：自动刷新区域适配 */
@@ -749,32 +750,65 @@
                 flex: 1 1 auto;
             }
 
-            /* 自动刷新开关的容器：确保不换行 */
+            /* 自动刷新开关的容器：优化移动端显示 */
             #tab-pane-logs .panel-header div[style*="border-radius:20px"] {
-                white-space: nowrap;
-                flex-shrink: 0;
+                white-space: nowrap !important;
+                flex: 1 1 auto;
+                justify-content: center;
+                min-height: 40px;
+                padding: 4px 16px !important;
             }
 
-            /* 3. 路线文件名：移动端允许换行，防止溢出 */
+            /* 3. 路线文件名：修复文件名和大小的显示 */
             .child-row td[data-label="路线文件"] {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: flex-start !important;
                 white-space: normal !important;
-                overflow: visible !important;
-                text-overflow: clip !important;
-                word-break: break-all;
+                word-break: break-all !important;
+                text-align: left !important;
+                padding: 10px 14px !important;
+            }
+            
+            /* 针对文件名内部的 span (大小信息) 处理 */
+            .child-row td[data-label="路线文件"] span {
+                display: inline-block !important; /* 不再强制换行，除非太长 */
+                font-size: 11px;
+                opacity: 0.6;
+                margin-top: 2px;
             }
 
-            /* 4. 路线预览模态框：全屏适配 + 关闭按钮 */
+            /* 4. 路线预览模态框：全屏适配 + 关闭按钮可见性 */
             #mapPreviewModal .modal-box {
-                width: 100% !important;
-                max-width: 100% !important;
+                width: 100vw !important;
+                max-width: 100vw !important;
                 height: 100vh !important;
                 max-height: 100vh !important;
                 border-radius: 0 !important;
-                padding: 12px !important;
+                padding: 10px !important;
+                margin: 0 !important;
+                overflow: hidden !important;
+                display: flex !important;
+                flex-direction: column !important;
             }
 
             #mapPreviewModal .modal-box > div:first-child {
-                flex-shrink: 0;
+                display: flex !important;
+                width: 100% !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                flex-shrink: 0 !important;
+                padding-bottom: 8px;
+            }
+
+            #mapPreviewTitle {
+                flex: 1 !important;
+                max-width: calc(100% - 60px) !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                margin: 0 !important;
+                font-size: 16px !important;
             }
 
             /* 5. 运行日志模态框：标题和按钮纵向排列 */
@@ -796,26 +830,40 @@
                 font-size: 12px !important;
             }
 
-            /* 运行日志表格内容左对齐 */
-            #localHistoryTableContainer td {
-                text-align: left !important;
-            }
-
-            /* 日志消息内容自动换行 */
-            #localHistoryTableContainer td:last-child {
-                word-break: break-all;
-            }
-
-            #localHistoryTableContainer {
-                max-height: 60vh !important;
-            }
-
-            /* 云端记录模态框适配 */
-            #historyModal .modal-box {
+            /* 补丁：空日志状态居中 */
+            #localHistoryTableBody tr td[colspan] {
+                display: block !important;
                 width: 100% !important;
-                height: 100vh !important;
-                border-radius: 0 !important;
-                padding: 12px !important;
+                text-align: center !important;
+                padding: 50px 10px !important;
+                border: none !important;
+                background: transparent !important;
+            }
+            
+            #localHistoryTableBody tr td[colspan]::before {
+                display: none !important;
+            }
+
+            #localHistoryTableBody .empty-state {
+                text-align: center !important;
+                width: 100% !important;
+                display: block !important;
+                color: var(--text-muted);
+            }
+
+            /* --- 补丁：隐藏主菜单冗余列 --- */
+            td[data-label="上次状态"], 
+            td[data-label="结束时间"],
+            td[data-label="耗时"],
+            td[data-label="配速"] {
+                display: none !important;
+            }
+
+            /* --- 全局防溢出补丁 --- */
+            html, body {
+                max-width: 100vw !important;
+                overflow-x: hidden !important;
+                position: relative;
             }
         }
     </style>
