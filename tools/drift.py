@@ -47,17 +47,11 @@ def add_drift(data):
     for index in range(len(latData)):
         latData[index] += drift
 
-    # 计算总距离
-    Distance = 0.0
-    for index in range(len(lonData) - 1):
-        Distance += haversine_distance(latData[index], lonData[index], latData[index + 1], lonData[index + 1])
-    Distance = round(Distance / 10) / 100
-
-    # 生成修改后的坐标列表
+    # 生成修改后的坐标列表（仅偏移坐标，不重新计算里程）
     ChangedData = [f"{lon},{lat}" for lon, lat in zip(lonData, latData)]
     for i in range(min(len(ChangedData), len(data['data']['pointsList']))):
         data['data']['pointsList'][i]['point'] = ChangedData[i]
-    data['data']['recordMileage'] = Distance
+    # recordMileage 保留原始云端值，不覆写，避免 Haversine 与云端算法的里程偏差
 
     return data
 
