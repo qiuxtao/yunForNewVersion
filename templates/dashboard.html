@@ -859,29 +859,28 @@
                 display: none !important;
             }
 
-            /* --- 补丁：云端记录模态框优化 (信息流卡片式 + 全屏) --- */
+            /* --- 补丁：云端记录模态框 (回归表格 + 全屏) --- */
             
             #historyModal .modal-box {
                 width: 100vw !important;
                 max-width: 100vw !important;
-                height: 100dvh !important; /* 使用 dvh 更好地适配移动端视口 */
+                height: 100dvh !important;
                 max-height: 100dvh !important;
                 margin: 0 !important;
                 border-radius: 0 !important;
-                padding: 12px 12px !important;
+                padding: 12px 6px !important;
                 display: flex !important;
                 flex-direction: column !important;
-                overflow: hidden !important; /* 让内部容器滚动 */
+                overflow: hidden !important;
             }
 
             #historyModal .modal-box > div:first-child {
                 flex-direction: column !important;
                 align-items: flex-start !important;
-                gap: 12px !important;
-                padding-bottom: 12px;
+                gap: 8px !important;
+                padding-bottom: 10px;
                 border-bottom: 1px solid rgba(255,255,255,0.1);
                 flex-shrink: 0 !important;
-                background: transparent !important;
             }
 
             #historyModal .modal-box > div:first-child > div:last-child {
@@ -894,139 +893,96 @@
 
             #historyTermSelect {
                 width: 100% !important;
-                margin-top: 4px;
+                margin-top: 2px;
+                height: 32px !important;
+                padding: 0 8px !important;
+                font-size: 13px !important;
             }
 
             #termStats {
                 width: 100%;
                 margin-right: 0 !important;
                 margin-bottom: 0px;
-                font-size: 13px;
-                gap: 8px;
+                font-size: 12px;
+                gap: 6px;
             }
 
-            /* 2. 信息流卡片化 (重构传统表格) */
+            /* 2. 还原緊凑表格模式 */
             #historyTableContainer {
                 flex: 1 !important;
-                overflow-y: auto !important; /* 核心：允许垂直滑动 */
-                -webkit-overflow-scrolling: touch !important;
-                margin-top: 10px !important;
-                padding-bottom: 20px !important;
+                overflow: hidden !important;
+                display: flex !important;
+                flex-direction: column !important;
             }
 
             #historyTableContainer .table-responsive {
-                overflow: visible !important; /* 不再需要水平滚动 */
+                flex: 1 !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important; /* 核心：禁止横向滚动 */
+                -webkit-overflow-scrolling: touch;
             }
 
             #historyTable {
-                display: block !important;
+                display: table !important;
                 width: 100% !important;
+                table-layout: fixed !important; /* 强制等分或按比例，防止溢出 */
+                border-collapse: collapse !important;
                 border: none !important;
             }
 
             #historyTable thead {
-                display: none !important;
-            }
-
-            #historyTable tbody {
-                display: flex !important;
-                flex-direction: column !important;
-                gap: 8px !important; /* 更小的间距 */
+                display: table-header-group !important;
+                background: rgba(255,255,255,0.05);
             }
 
             #historyTable tr {
-                display: grid !important;
-                grid-template-areas: 
-                    "time status"
-                    "metrics metrics"
-                    "actions actions";
-                background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
-                border-radius: 12px;
-                border: 1px solid rgba(255,255,255,0.08);
-                padding: 12px !important;
-                margin-bottom: 0 !important;
-                position: relative;
+                display: table-row !important;
+                border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+                transition: background 0.2s;
             }
 
-            #historyTable td {
-                display: block !important;
-                padding: 0 !important;
+            #historyTable tr:active {
+                background: rgba(255,255,255,0.1) !important;
+            }
+
+            #historyTable td, #historyTable th {
+                display: table-cell !important;
+                padding: 10px 2px !important;
+                text-align: center !important;
+                font-size: 10.5px !important; /* 极致字号以适配 5 列 */
+                white-space: normal !important; /* 允许换行 */
+                word-break: break-all !important;
+                vertical-align: middle !important;
                 border: none !important;
-                background: transparent !important;
-                text-align: left !important;
-                white-space: normal !important;
+                color: var(--text-main);
             }
 
-            /* 时间：左上角 */
-            #historyTable td[data-label="结束时间"] {
-                grid-area: time;
-                font-size: 11px;
-                color: var(--text-muted);
-                opacity: 0.7;
+            #historyTable th {
+                color: var(--text-secondary);
+                font-weight: 500;
+                padding: 8px 2px !important;
             }
 
-            /* 状态：右上角 */
-            #historyTable td[data-label="状态"] {
-                grid-area: status;
-                text-align: right !important;
-                align-self: center;
+            /* 针对各列宽度的微调 */
+            #historyTable th:nth-child(1), #historyTable td:nth-child(1) { width: 30%; } /* 时间 */
+            #historyTable th:nth-child(2), #historyTable td:nth-child(2) { width: 18%; } /* 状态 */
+            #historyTable th:nth-child(3), #historyTable td:nth-child(3) { width: 18%; } /* 耗时 */
+            #historyTable th:nth-child(4), #historyTable td:nth-child(4) { width: 16%; } /* 配速 */
+            #historyTable th:nth-child(5), #historyTable td:nth-child(5) { width: 18%; } /* 里程 */
+
+            #historyTable td::before {
+                display: none !important;
             }
 
-            /* 指标行 (里程 + 耗时 + 配速)：平分权重 */
-            #historyTable td[data-label="里程"],
-            #historyTable td[data-label="耗时"],
-            #historyTable td[data-label="配速"] {
-                display: inline-flex !important;
-                width: 32%; /* 大约平分 */
-                justify-content: center;
-                align-items: center;
-                font-size: 13px !important;
-                font-weight: 500 !important;
-                padding: 10px 0 !important;
-                color: var(--text-main) !important;
-            }
-
-            #historyTable td[data-label="里程"] {
-                grid-area: metrics;
-                justify-content: flex-start;
-                font-weight: 600 !important;
-                color: var(--success) !important;
-            }
-            
-            #historyTable td[data-label="耗时"] {
-                grid-area: metrics;
-                border-left: 1px solid rgba(255,255,255,0.05) !important;
-                border-right: 1px solid rgba(255,255,255,0.05) !important;
-            }
-            
-            #historyTable td[data-label="配速"] {
-                grid-area: metrics;
-                justify-content: flex-end;
-            }
-
-            /* 补充单位/图标 */
-            #historyTable td[data-label="耗时"]::before { content: "⏱️ "; font-size: 10px; opacity: 0.5; }
-            #historyTable td[data-label="配速"]::before { content: "⚡ "; font-size: 10px; opacity: 0.5; }
-
-            /* 操作按钮：极致紧凑 */
-            #historyTable td:last-child {
-                grid-area: actions;
-                margin-top: 8px !important;
-                padding-top: 8px !important;
-                border-top: 1px solid rgba(255,255,255,0.05) !important;
-            }
-
-            #historyTable .action-cell {
-                display: flex !important;
-                gap: 6px !important;
-                width: 100% !important;
-            }
-
-            #historyTable .action-cell .btn {
-                flex: 1 !important;
-                min-height: 36px !important; /* 减小按钮高度 */
-                font-size: 12px !important;
-                border-radius: 8px !important;
+            /* 针对移动端预览模态框（mapPreviewModal）的全屏优化 */
+            #mapPreviewModal .modal-box {
+                width: 100vw !important;
+                max-width: 100vw !important;
+                height: 100dvh !important;
+                max-height: 100dvh !important;
+                margin: 0 !important;
+                border-radius: 0 !important;
+                padding: 12px !important;
             }
 
             /* --- 全局防溢出补丁 --- */
@@ -1534,7 +1490,7 @@
     </div>
 
     <!-- Save Route Modal -->
-    <div class="modal-overlay" id="saveRouteModal">
+    <div class="modal-overlay" id="saveRouteModal" style="z-index: 300;">
         <div class="modal-box">
             <h2 class="panel-title" style="margin-bottom: 24px;">抽取云端路线至图库</h2>
             <div class="form-group">
@@ -1980,7 +1936,7 @@
                     if (!result.data || result.data.length === 0) {
                         termHtml += `<div class="empty-state" style="padding:20px;">该学期尚无相关打卡记录</div>`;
                     } else {
-                        termHtml += '<div class="table-responsive" style="margin-bottom:0;"><table id="historyTable"><thead><tr><th>运动结束时间</th><th>状态</th><th>耗时</th><th>配速</th><th>运动里程</th><th style="width: 80px;">操作</th></tr></thead><tbody>';
+                        termHtml += '<div class="table-responsive" style="margin-bottom:0;"><table id="historyTable"><thead><tr><th>运动结束时间</th><th>状态</th><th>耗时</th><th>配速</th><th>里程</th></tr></thead><tbody>';
                         result.data.forEach(run => {
                             let rtime = run.recordEndTime || run.endTime || run.recordDate || "-";
                             let displayTime = rtime;
@@ -2009,18 +1965,12 @@
                                 statusDisplay = '<span class="badge badge-error" id="status_' + run.id + '">未合格</span>';
                             }
 
-                            termHtml += `<tr>
+                            termHtml += `<tr style="cursor: pointer;" onclick="previewCloudRoute('${run.id}', '${run.recordMileage || 0}')">
                                 <td data-label="结束时间" style="color:var(--text-main);">${displayTime}</td>
                                 <td data-label="状态">${statusDisplay}</td>
                                 <td data-label="耗时" id="dur_${run.id}">${durDisplay}</td>
                                 <td data-label="配速" id="pace_${run.id}">${paceDisplay}</td>
                                 <td data-label="里程" style="color:var(--success); font-weight:500;">${run.recordMileage || '0'} km</td>
-                                <td>
-                                    <div class="action-cell" style="display:flex; gap:6px; align-items:center;" onclick="event.stopPropagation();">
-                                        <button class="btn btn-info btn-xs" onclick="previewCloudRoute('${run.id}')">预览</button>
-                                        <button class="btn btn-secondary btn-xs" style="white-space:nowrap;" onclick="promptSaveRoute('${run.id}', '${run.recordMileage || 0}')">入库</button>
-                                    </div>
-                                </td>
                             </tr>`;
                         });
                         termHtml += '</tbody></table></div>';
@@ -2319,7 +2269,7 @@
             });
         }
 
-        async function previewCloudRoute(runId) {
+        async function previewCloudRoute(runId, mileage) {
             const userId = document.getElementById('current_history_user').value;
             const termVal = document.getElementById('historyTermSelect').value;
             const token = document.getElementById('current_history_token').value;
@@ -2343,7 +2293,10 @@
                             <div class="modal-box" style="max-width: 800px; height: 80vh; display:flex; flex-direction:column; padding: 20px;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
                                     <h2 class="panel-title" id="mapPreviewTitle">云端路线预览</h2>
-                                    <button class="btn btn-ghost" onclick="closeMapPreview()" style="font-size:24px; padding:0 10px;">&times;</button>
+                                    <div style="display:flex; gap: 8px;">
+                                        <button class="btn btn-secondary btn-sm" id="importInPreviewBtn">导入入库</button>
+                                        <button class="btn btn-ghost" onclick="closeMapPreview()" style="font-size:24px; padding:0 10px;">&times;</button>
+                                    </div>
                                 </div>
                                 <div id="mapRenderArea" style="flex:1; width: 100%; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2);"></div>
                             </div>
@@ -2351,6 +2304,10 @@
                         document.body.insertAdjacentHTML('beforeend', modalHtml);
                         modal = document.getElementById('mapPreviewModal');
                     }
+
+                    //绑定入库按钮
+                    const importBtn = document.getElementById('importInPreviewBtn');
+                    importBtn.onclick = () => promptSaveRoute(runId, mileage);
 
                     document.getElementById('mapPreviewTitle').innerText = "云端轨迹解密渲染中...";
                     modal.classList.add('active');
