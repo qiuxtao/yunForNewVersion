@@ -731,6 +731,92 @@
                 right: 12px !important;
                 max-width: none !important;
             }
+
+            /* ===== 问题修复补丁 ===== */
+
+            /* 1. 运行周期复选框：允许换行，防止溢出 */
+            .form-group div[style*="display:flex"][style*="gap:8px"] {
+                flex-wrap: wrap !important;
+            }
+
+            /* 2. 系统日志面板：自动刷新区域适配 */
+            #tab-pane-logs .panel-header > div[style*="display:flex"] {
+                flex-wrap: wrap;
+                gap: 6px !important;
+            }
+
+            #tab-pane-logs .panel-header .btn {
+                flex: 1 1 auto;
+            }
+
+            /* 自动刷新开关的容器：确保不换行 */
+            #tab-pane-logs .panel-header div[style*="border-radius:20px"] {
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+
+            /* 3. 路线文件名：移动端允许换行，防止溢出 */
+            .child-row td[data-label="路线文件"] {
+                white-space: normal !important;
+                overflow: visible !important;
+                text-overflow: clip !important;
+                word-break: break-all;
+            }
+
+            /* 4. 路线预览模态框：全屏适配 + 关闭按钮 */
+            #mapPreviewModal .modal-box {
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 100vh !important;
+                max-height: 100vh !important;
+                border-radius: 0 !important;
+                padding: 12px !important;
+            }
+
+            #mapPreviewModal .modal-box > div:first-child {
+                flex-shrink: 0;
+            }
+
+            /* 5. 运行日志模态框：标题和按钮纵向排列 */
+            #localHistoryModal .modal-box > div:first-child {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 10px;
+            }
+
+            #localHistoryModal .modal-box > div:first-child > div {
+                width: 100%;
+                display: flex !important;
+            }
+
+            #localHistoryModal .modal-box > div:first-child > div .btn {
+                flex: 1;
+                white-space: nowrap !important;
+                padding: 6px 10px !important;
+                font-size: 12px !important;
+            }
+
+            /* 运行日志表格内容左对齐 */
+            #localHistoryTableContainer td {
+                text-align: left !important;
+            }
+
+            /* 日志消息内容自动换行 */
+            #localHistoryTableContainer td:last-child {
+                word-break: break-all;
+            }
+
+            #localHistoryTableContainer {
+                max-height: 60vh !important;
+            }
+
+            /* 云端记录模态框适配 */
+            #historyModal .modal-box {
+                width: 100% !important;
+                height: 100vh !important;
+                border-radius: 0 !important;
+                padding: 12px !important;
+            }
         }
     </style>
     <style>
@@ -1613,9 +1699,9 @@
                             else badgeHtml = `<span class="badge badge-danger">${log.status}</span>`;
 
                             html += `<tr>
-                                <td style="color:var(--text-muted); font-size:13px;">${log.run_time}</td>
-                                <td>${badgeHtml}</td>
-                                <td>
+                                <td data-label="记录时间" style="color:var(--text-muted); font-size:13px;">${log.run_time}</td>
+                                <td data-label="执行状态">${badgeHtml}</td>
+                                <td data-label="结果输出">
                                     <div style="background:rgba(0,0,0,0.2); padding:8px; border-radius:6px; font-family:monospace; font-size:12px; white-space:pre-wrap; word-break:break-all; color:var(--text-secondary);">${log.message}</div>
                                 </td>
                             </tr>`;
