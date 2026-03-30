@@ -60,6 +60,9 @@ logging.basicConfig(
     force=True
 )
 
+# 屏蔽 APScheduler 每分钟生成的冗余执行日志状况+3
+logging.getLogger('apscheduler').setLevel(logging.WARNING)
+
 # 自定义过滤器，极致精简日志
 class AccessLogFilter(logging.Filter):
     def filter(self, record):
