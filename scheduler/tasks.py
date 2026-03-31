@@ -158,6 +158,11 @@ def run_job_for_user(user_id: int, schedule_id: int):
                 "ts": str(int(time.time()))
             })
             count += 1
+            # Checkpoint Progress Logger Without Terminal Clutter
+            if (idx + 1) % max(1, total_points // 10) == 0 or (idx + 1) == total_points:
+                pct = int((idx + 1) / total_points * 100)
+                logger.info(f"[{user.yun_username}] 运行进度: {pct}% ({idx+1}/{total_points})")
+                
             if count == split_count or (idx + 1) == total_points:
                 try:
                     core.split_by_points_map(points, task_map['data']['recodePace'])
@@ -167,11 +172,6 @@ def run_job_for_user(user_id: int, schedule_id: int):
                     time.sleep(sleep_time)
                 count = 0
                 points = []
-                
-                # Checkpoint Progress Logger Without Terminal Clutter
-                if (idx + 1) % max(1, total_points // 10) == 0 or (idx + 1) == total_points:
-                    pct = int((idx + 1) / total_points * 100)
-                    logger.info(f"[{user.yun_username}] 运行进度: {pct}% ({idx+1}/{total_points})")
 
         logger.info(f"[{user.yun_username}] 发送结束信号...")
         res = core.finish_by_points_map(task_map)
