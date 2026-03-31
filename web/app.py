@@ -74,12 +74,20 @@ class AccessLogFilter(logging.Filter):
         # 非网络请求记录（如业务 INFO/ERROR）全部保留
         return True
 
+class UvicornErrorFilter(logging.Filter):
+    def filter(self, record):
+        if "Invalid HTTP request received" in record.getMessage() or "Invalid HTTP request received." in record.getMessage():
+            return False
+        return True
+
 for name in ("uvicorn", "uvicorn.access", "uvicorn.error"):
     l = logging.getLogger(name)
     l.handlers = []
     l.propagate = True
     if name == "uvicorn.access":
         l.addFilter(AccessLogFilter())
+    elif name == "uvicorn.error":
+        l.addFilter(UvicornErrorFilter())
 # =============================================================
 
 # Ensure templates and static dirs exist
