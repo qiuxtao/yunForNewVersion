@@ -829,7 +829,7 @@ async def delete_route_in_group(group_name: str, filename: str, _: bool = Depend
 
 @app.delete("/api/route_groups/{group_name}")
 async def delete_route_group_entire(group_name: str, _: bool = Depends(check_admin)):
-    if not group_name.startswith("tasks_") or ".." in group_name:
+    if ".." in group_name:
         return JSONResponse({"success": False, "message": "非法路径"})
     import shutil
     group_path = os.path.join("data/tasks", group_name)
