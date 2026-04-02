@@ -47,6 +47,12 @@ def run_job_for_user(user_id: int, schedule_id: int):
 
         logger.info(f"[{user.yun_username}] 开始执行自动化跑步调度 (UserID: {user_id}, Name: {user.username})")
         conf = load_app_config()
+
+        target_qq = user.qq_number
+        target_notify_type = user.qq_notify_type
+        if user.push_group_id and user.push_group:
+            target_qq = user.push_group.qq_number
+            target_notify_type = user.push_group.qq_notify_type
         
         # 提取公共APP参数
         school_host = getattr(user, "school_host", conf.get("Yun", "school_host", fallback=""))
@@ -84,8 +90,8 @@ def run_job_for_user(user_id: int, schedule_id: int):
             error_msg = f"登录失败: {e}"
             logger.error(error_msg)
             add_log(db, user, "Failed", error_msg, sched)
-            if user.qq_number:
-                notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
+            if target_qq:
+                notify_run_failed(target_qq, target_notify_type, user.username, error_msg)
             return
 
         # 初始化 Yun Core
@@ -100,7 +106,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
             error_msg = f"初始化运行参数失败: {msg}"
             logger.error(error_msg)
             add_log(db, user, "Failed", error_msg, sched)
-            if user.qq_number: notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
+            if target_qq: notify_run_failed(target_qq, target_notify_type, user.username, error_msg)
             return
         logger.info(f"[{user.yun_username}] 获取首页运行信息成功")
 
@@ -109,7 +115,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
             error_msg = f"创建跑步记录失败: {msg}"
             logger.error(error_msg)
             add_log(db, user, "Failed", error_msg, sched)
-            if user.qq_number: notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
+            if target_qq: notify_run_failed(target_qq, target_notify_type, user.username, error_msg)
             return
         start_run_time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         logger.info(f"[{user.yun_username}] 开始跑步任务成功: {msg}")
@@ -120,7 +126,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
             error_msg = f"找不到打卡路线文件夹: {path_dir}"
             logger.error(error_msg)
             add_log(db, user, "Failed", error_msg, sched)
-            if user.qq_number: notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
+            if target_qq: notify_run_failed(target_qq, target_notify_type, user.username, error_msg)
             return
 
         files = [f for f in os.listdir(path_dir) if f.endswith('.json')]
@@ -128,7 +134,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
             error_msg = f"文件夹 {path_dir} 中没有可用路线"
             logger.error(error_msg)
             add_log(db, user, "Failed", error_msg, sched)
-            if user.qq_number: notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
+            if target_qq: notify_run_failed(target_qq, target_notify_type, user.username, error_msg)
             return
 
         file = os.path.join(path_dir, random.choice(files))
@@ -203,15 +209,15 @@ def run_job_for_user(user_id: int, schedule_id: int):
                     stats_msg = f"📅 开始时间: {start_run_time_str}\n⏳ 结束时间: {end_run_time_str}\n📄 结算数据: {res}"
 
                 add_log(db, user, "Success", full_log_msg, sched)
-                if user.qq_number:
-                    notify_run_success(user.qq_number, user.qq_notify_type, user.username, mileage, duration, stats_msg)
+                if target_qq:
+                    notify_run_success(target_qq, target_notify_type, user.username, mileage, duration, stats_msg)
             else:
                 raise Exception(res)
         except Exception as e:
             error_msg = str(e)
             logger.error(f"[{user.yun_username}] {error_msg}")
             add_log(db, user, "Failed", error_msg, sched)
-            if user.qq_number: notify_run_failed(user.qq_number, user.qq_notify_type, user.username, error_msg)
+            if target_qq: notify_run_failed(target_qq, target_notify_type, user.username, error_msg)
     finally:
         db.close()
 

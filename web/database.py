@@ -84,3 +84,10 @@ def init_db():
             conn.execute(text("ALTER TABLE users ADD COLUMN school_name VARCHAR DEFAULT '安徽邮电职业技术学院'"))
     except Exception:
         pass
+
+    try:
+        with engine.begin() as conn:
+            from sqlalchemy import text
+            conn.execute(text("ALTER TABLE users ADD COLUMN push_group_id INTEGER DEFAULT NULL"))
+    except Exception:
+        pass

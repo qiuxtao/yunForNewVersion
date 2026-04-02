@@ -218,11 +218,13 @@ async def read_dashboard(request: Request, db: Session = Depends(get_db), _: boo
     users = db.query(models.User).all()
     schedules = db.query(models.Schedule).all()
     logs = db.query(models.RunLog).order_by(models.RunLog.id.desc()).limit(20).all()
+    push_groups = db.query(models.PushGroup).all()
     return templates.TemplateResponse("dashboard.html", {
         "request": request, 
         "users": users,
         "schedules": schedules,
-        "logs": logs
+        "logs": logs,
+        "push_groups": push_groups
     })
 
 @app.post("/users/add")
@@ -231,6 +233,7 @@ async def add_user(
     yun_username: str = Form(...),
     yun_password: str = Form(...),
     school_id: str = Form("195"),
+    push_group_id: str = Form(""),
     qq_number: str = Form(""),
     qq_notify_type: str = Form("private"),
     db: Session = Depends(get_db),
@@ -260,6 +263,7 @@ async def add_user(
         school_id=school_id,
         school_host=school_host,
         school_name=school_name,
+        push_group_id=int(push_group_id) if push_group_id and push_group_id != "custom" else None,
         qq_number=qq_number,
         qq_notify_type=qq_notify_type,
         device_id=device_id,
@@ -279,6 +283,7 @@ async def edit_user(
     yun_username: str = Form(...),
     yun_password: str = Form(""),
     school_id: str = Form("195"),
+    push_group_id: str = Form(""),
     qq_number: str = Form(""),
     qq_notify_type: str = Form("private"),
     db: Session = Depends(get_db),
@@ -308,6 +313,8 @@ async def edit_user(
         user.school_name = school_name
         if yun_password:
             user.yun_password = yun_password
+            
+        user.push_group_id = int(push_group_id) if push_group_id and push_group_id != "custom" else None
         user.qq_number = qq_number
         user.qq_notify_type = qq_notify_type
         db.commit()
@@ -484,6 +491,53 @@ async def manual_trigger_single(
             misfire_grace_time=300
         )
     return RedirectResponse(url="/", status_code=303)
+
+@app.post("/schedules/run")
+async def run_schedule(
+    user_id: int = Form(...),
+    group_id: str = Form(""),
+    db: Session = Depends(get_db),
+    _: bool = Depends(check_admin)
+):
+    from scheduler.tasks import run_job_for_user
+    import threading
+    t = threading.Thread(target=run_job_for_user, args=(user_id, group_id))
+    t.start()
+    return RedirectResponse(url="/", status_code=303)
+
+# ================= Push Groups Management APIs =================
+class PushGroupSchema(BaseModel):
+    name: str
+    qq_number: str
+    qq_notify_type: str
+
+@app.post("/api/push_groups")
+async def create_push_group(data: PushGroupSchema, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    group = models.PushGroup(name=data.name, qq_number=data.qq_number, qq_notify_type=data.qq_notify_type)
+    db.add(group)
+    db.commit()
+    return {"success": True}
+
+@app.put("/api/push_groups/{group_id}")
+async def update_push_group(group_id: int, data: PushGroupSchema, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    group = db.query(models.PushGroup).filter(models.PushGroup.id == group_id).first()
+    if not group: return {"success": False, "msg": "未找到"}
+    group.name = data.name
+    group.qq_number = data.qq_number
+    group.qq_notify_type = data.qq_notify_type
+    db.commit()
+    return {"success": True}
+    
+@app.delete("/api/push_groups/{group_id}")
+async def delete_push_group(group_id: int, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    group = db.query(models.PushGroup).filter(models.PushGroup.id == group_id).first()
+    if group:
+        # 解绑相关用户
+        db.query(models.User).filter(models.User.push_group_id == group_id).update({models.User.push_group_id: None})
+        db.delete(group)
+        db.commit()
+    return {"success": True}
+# ==============================================================
 
 @app.post("/users/delete")
 async def delete_user(user_id: int = Form(...), db: Session = Depends(get_db), _: bool = Depends(check_admin)):

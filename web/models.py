@@ -39,9 +39,23 @@ class User(Base):
     # 用户状态：是否激活了自动跑步
     is_active = Column(Boolean, default=True)
     
+    # 统一推送源外键关联
+    push_group_id = Column(Integer, ForeignKey('push_groups.id'), nullable=True)
+
     # 外键关联
     schedules = relationship("Schedule", back_populates="user", cascade="all, delete-orphan")
     run_logs = relationship("RunLog", back_populates="user", cascade="all, delete-orphan")
+    push_group = relationship("PushGroup", back_populates="users")
+
+class PushGroup(Base):
+    __tablename__ = 'push_groups'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(50), nullable=False) # 推送组自定义名称
+    qq_number = Column(String, default="")
+    qq_notify_type = Column(String, default="private")
+    
+    users = relationship("User", back_populates="push_group")
 
 
 class Schedule(Base):
