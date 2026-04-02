@@ -1166,6 +1166,7 @@
                             {% for u in users %}
                             <tr>
                                 <td data-label="标识名称"><strong>{{ u.username }}</strong></td>
+                                <td data-label="所属学校" style="font-size: 12px; color: var(--text-muted);">{{ u.school_name or '-' }}</td>
                                 <td data-label="系统学号">{{ u.yun_username }}</td>
                                 <td data-label="设备指纹"><code>{{ u.device_id }}</code></td>
                                 <td data-label="通知目标">{{ u.qq_number or '-' }}</td>
@@ -2101,7 +2102,9 @@
                 const user = await response.json();
 
                 document.getElementById('edit_user_id').value = user.id;
-                document.getElementById('edit_school_id').value = user.school_id || '195';
+                const schoolSelect = document.getElementById('edit_school_id');
+                schoolSelect.setAttribute('data-initial', user.school_id || '195');
+                schoolSelect.value = user.school_id || '195'; 
                 document.getElementById('edit_username').value = user.username;
                 document.getElementById('edit_yun_username').value = user.yun_username;
                 document.getElementById('edit_yun_password').value = ''; // Don't show password
@@ -2798,7 +2801,28 @@
         }
 
         // Handle initial load
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 异步加载学校列表并填充所有 .school-select
+            try {
+                const res = await fetch('/api/schools');
+                const json = await res.json();
+                if (json.success && json.data) {
+                    let optionsHtml = '';
+                    json.data.forEach(s => {
+                        optionsHtml += `<option value="${s.schoolId}">${s.schoolName}</option>`;
+                    });
+                    document.querySelectorAll('.school-select').forEach(sel => {
+                        sel.innerHTML = optionsHtml;
+                        // 如果有初始值（比如编辑模式下JS写入的值），尝试保留
+                        if (sel.getAttribute('data-initial')) {
+                            sel.value = sel.getAttribute('data-initial');
+                        } else {
+                            sel.value = "195"; // 默认选择安徽邮电
+                        }
+                    });
+                }
+            } catch(e) { console.error("加载学校列表失败:", e); }
+
             const savedTab = localStorage.getItem('activeTab') || 'accounts';
             switchTab(savedTab);
             
