@@ -387,6 +387,12 @@
             background-size: 16px;
         }
 
+        .form-select option {
+            background-color: #1e293b;
+            color: #ffffff;
+            padding: 10px;
+        }
+
         .form-control:focus,
         .form-select:focus {
             border-color: rgba(59, 130, 246, 0.5);
@@ -1553,8 +1559,6 @@
                     <pre id="logContent"
                         style="margin: 0; color: #a3b8cc; font-family: monospace; font-size: 13px; line-height: 1.5; white-space: pre-wrap; overflow-y: auto; flex: 1; overscroll-behavior: contain;">正在连接日志流...</pre>
                 </div>
-            </div>
-            </div>
         </div> <!-- End Tab Logs -->
 
         <!-- Tab: Push Groups -->
@@ -1699,7 +1703,7 @@
                 <div class="form-group">
                     <label class="form-label">所属学校</label>
                     <div id="add_school_select_modern"></div>
-                    <select name="school_id" id="add_school_id" required style="display:none;"></select>
+                    <select name="school_id" id="add_school_id" style="display:none;"></select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">云运动学号</label>
@@ -1740,7 +1744,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-ghost" onclick="closeModal('addUserModal')">取消</button>
-                    <button type="submit" class="btn btn-primary">登录</button>
+                    <button type="submit" class="btn btn-primary">保存并登录</button>
                 </div>
             </form>
         </div>
@@ -1759,7 +1763,7 @@
                 <div class="form-group">
                     <label class="form-label">所在学校</label>
                     <div id="edit_school_select_modern"></div>
-                    <select name="school_id" id="edit_school_id" required style="display:none;"></select>
+                    <select name="school_id" id="edit_school_id" style="display:none;"></select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">云运动学号</label>
@@ -1801,7 +1805,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-ghost" onclick="closeModal('editUserModal')">取消</button>
-                    <button type="submit" class="btn btn-primary">登录</button>
+                    <button type="submit" class="btn btn-primary">保存修​​改</button>
                 </div>
             </form>
         </div>
