@@ -3108,46 +3108,50 @@
                     }
                 };
 
-                    const handlePointer = (e) => {
-                        // 对于移动事件，只有按下时才触发响应
-                        if (e.type === 'pointermove' && e.buttons !== 1) return;
+                if (this.enableIndex) {
+                    const indexBar = this.container.querySelector('.select-search-index-bar');
+                    if (indexBar) {
+                        const handlePointer = (e) => {
+                            // 对于移动事件，只有按下时才触发响应
+                            if (e.type === 'pointermove' && e.buttons !== 1) return;
+                            
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            const rect = indexBar.getBoundingClientRect();
+                            const y = e.clientY - rect.top;
+                            const percent = Math.min(1, Math.max(0, y / rect.height));
+                            // 确保索引在安全范围内
+                            const safeIndex = Math.min(this.letters.length - 1, Math.floor(percent * this.letters.length));
+                            const letter = this.letters[safeIndex];
+
+                            if (letter && letter !== this.lastTouchLetter) {
+                                this.lastTouchLetter = letter;
+                                this.scrollToLetter(letter);
+                            }
+                        };
+
+                        indexBar.addEventListener('pointerdown', (e) => {
+                            // 捕获指针，即使滑出元素外界也能收到事件
+                            try { indexBar.setPointerCapture(e.pointerId); } catch(err) {}
+                            handlePointer(e);
+                        });
+
+                        indexBar.addEventListener('pointermove', handlePointer);
+
+                        const handlePointerEnd = (e) => {
+                            try { indexBar.releasePointerCapture(e.pointerId); } catch(err) {}
+                            const indicator = this.container.querySelector('.select-search-touch-indicator');
+                            if (indicator) indicator.style.display = 'none';
+                            this.lastTouchLetter = null;
+                        };
+
+                        indexBar.addEventListener('pointerup', handlePointerEnd);
+                        indexBar.addEventListener('pointercancel', handlePointerEnd);
                         
-                        e.preventDefault();
-                        e.stopPropagation();
-
-                        const rect = indexBar.getBoundingClientRect();
-                        const y = e.clientY - rect.top;
-                        const percent = Math.min(1, Math.max(0, y / rect.height));
-                        // 确保索引在安全范围内
-                        const safeIndex = Math.min(this.letters.length - 1, Math.floor(percent * this.letters.length));
-                        const letter = this.letters[safeIndex];
-
-                        if (letter && letter !== this.lastTouchLetter) {
-                            this.lastTouchLetter = letter;
-                            this.scrollToLetter(letter);
-                        }
-                    };
-
-                    indexBar.addEventListener('pointerdown', (e) => {
-                        // 捕获指针，即使滑出元素外界也能收到事件
-                        try { indexBar.setPointerCapture(e.pointerId); } catch(err) {}
-                        handlePointer(e);
-                    });
-
-                    indexBar.addEventListener('pointermove', handlePointer);
-
-                    const handlePointerEnd = (e) => {
-                        try { indexBar.releasePointerCapture(e.pointerId); } catch(err) {}
-                        const indicator = this.container.querySelector('.select-search-touch-indicator');
-                        if (indicator) indicator.style.display = 'none';
-                        this.lastTouchLetter = null;
-                    };
-
-                    indexBar.addEventListener('pointerup', handlePointerEnd);
-                    indexBar.addEventListener('pointercancel', handlePointerEnd);
-                    
-                    // 防御性组织原生touch影响
-                    indexBar.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+                        // 防御性组织原生touch影响
+                        indexBar.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+                    }
                 }
 
                 // 点击外部关闭
