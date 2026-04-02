@@ -546,11 +546,11 @@ class TestPushSchema(BaseModel):
 async def test_push_group(data: TestPushSchema, _: bool = Depends(check_admin)):
     try:
         if data.qq_notify_type == "tgbot":
-            from notifications.tg_bot import _send_tg_message, get_tg_token
-            tg_token = get_tg_token()
+            from notifications.tg_bot import _send_tg_message, get_tg_config
+            tg_token, tg_proxy = get_tg_config()
             if not tg_token:
                 return {"success": False, "msg": "config.ini 中未配置 [TGBot] token"}
-            _send_tg_message(data.qq_number, tg_token, "✅ 这是一条来自云运动控制台的测试推送消息。")
+            _send_tg_message(data.qq_number, tg_token, "✅ 这是一条来自云运动控制台的测试推送消息。", tg_proxy)
         else:
             from notifications.qq_bot import send_private_msg, send_group_msg
             msg = "✅ 这是一条来自云运动控制台的测试推送消息。"
