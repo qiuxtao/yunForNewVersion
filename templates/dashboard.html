@@ -581,40 +581,57 @@
                 font-size: 20px;
             }
             .select-search-index-bar {
-                position: relative;
-                top: 0;
+                position: absolute;
+                top: 60px;
                 right: 0;
-                width: 100%;
-                height: 52px;
+                bottom: 10px;
+                width: 32px;
                 display: flex;
-                flex-direction: row;
-                justify-content: flex-start;
+                flex-direction: column;
+                justify-content: center;
                 align-items: center;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-                padding: 0 15px;
-                background: rgba(255, 255, 255, 0.05);
-                border-bottom: 1px solid var(--glass-border);
-                gap: 8px;
-                scrollbar-width: none;
+                background: rgba(255, 255, 255, 0.02);
+                padding: 0;
+                border-bottom: none;
+                gap: 2px;
                 z-index: 20;
-            }
-            .select-search-index-bar::-webkit-scrollbar {
-                display: none;
+                touch-action: none;
             }
             .index-letter {
                 flex-shrink: 0;
-                padding: 6px 14px;
-                font-size: 14px;
-                background: rgba(255,255,255,0.1);
-                border-radius: 8px;
-                min-width: 40px;
+                padding: 2px 4px;
+                font-size: 11px;
+                background: transparent;
+                border-radius: 4px;
+                min-width: auto;
                 text-align: center;
-                color: #fff;
+                color: #94a3b8;
             }
             .select-search-options {
-                max-height: calc(100vh - 110px) !important;
+                max-height: calc(100vh - 65px) !important;
+                padding-right: 32px;
             }
+        }
+
+        /* 字母滑动预览气泡 */
+        .select-search-touch-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            background: rgba(59, 130, 246, 0.9);
+            color: #fff;
+            font-size: 40px;
+            font-weight: bold;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            z-index: 2100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            pointer-events: none;
         }
 
 
@@ -3014,6 +3031,7 @@
                         <div class="select-search-options">
                             <div class="options-list"></div>
                         </div>
+                        <div class="select-search-touch-indicator"></div>
                     </div>
                 `;
                 this.renderOptions();
@@ -3085,16 +3103,30 @@
 
                 if (this.enableIndex) {
                     const indexBar = this.container.querySelector('.select-search-index-bar');
-                    indexBar.onclick = (e) => {
+                    
+                    const handleTouch = (e) => {
                         e.stopPropagation();
-                        const letter = e.target.dataset.letter;
-                        if (letter) {
-                            const groupEl = this.container.querySelector(`#group-${this.container.id}-${letter}`);
-                            if (groupEl) {
-                                groupEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            }
+                        e.preventDefault();
+                        const touch = e.touches[0];
+                        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                        if (target && target.classList.contains('index-letter')) {
+                            const letter = target.dataset.letter;
+                            this.scrollToLetter(letter);
                         }
                     };
+
+                    indexBar.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const letter = e.target.dataset.letter;
+                        if (letter) this.scrollToLetter(letter);
+                    });
+
+                    indexBar.addEventListener('touchstart', handleTouch);
+                    indexBar.addEventListener('touchmove', handleTouch);
+                    indexBar.addEventListener('touchend', () => {
+                        const indicator = this.container.querySelector('.select-search-touch-indicator');
+                        if (indicator) indicator.style.display = 'none';
+                    });
                 }
 
                 // 点击外部关闭
@@ -3119,6 +3151,20 @@
             close() {
                 this.isOpen = false;
                 this.container.classList.remove('active');
+            }
+
+            scrollToLetter(letter) {
+                const groupEl = this.container.querySelector(`#group-${this.container.id}-${letter}`);
+                if (groupEl) {
+                    groupEl.scrollIntoView({ behavior: 'auto', block: 'start' });
+                    
+                    // 显示气泡提示
+                    const indicator = this.container.querySelector('.select-search-touch-indicator');
+                    if (indicator) {
+                        indicator.innerText = letter;
+                        indicator.style.display = 'flex';
+                    }
+                }
             }
 
             select(id, name) {
