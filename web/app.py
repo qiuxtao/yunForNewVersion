@@ -537,6 +537,30 @@ async def delete_push_group(group_id: int, db: Session = Depends(get_db), _: boo
         db.delete(group)
         db.commit()
     return {"success": True}
+
+class TestPushSchema(BaseModel):
+    qq_number: str
+    qq_notify_type: str
+
+@app.post("/api/push_groups/test")
+async def test_push_group(data: TestPushSchema, _: bool = Depends(check_admin)):
+    try:
+        if data.qq_notify_type == "tgbot":
+            from notifications.tg_bot import _send_tg_message, get_tg_token
+            tg_token = get_tg_token()
+            if not tg_token:
+                return {"success": False, "msg": "config.ini 中未配置 [TGBot] token"}
+            _send_tg_message(data.qq_number, tg_token, "✅ 这是一条来自云运动控制台的测试推送消息。")
+        else:
+            from notifications.qq_bot import send_private_msg, send_group_msg
+            msg = "✅ 这是一条来自云运动控制台的测试推送消息。"
+            if data.qq_notify_type == "group":
+                send_group_msg(data.qq_number, msg)
+            else:
+                send_private_msg(data.qq_number, msg)
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "msg": str(e)}
 # ==============================================================
 
 @app.post("/users/delete")

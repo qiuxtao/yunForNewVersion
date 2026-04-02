@@ -385,6 +385,7 @@
             background-repeat: no-repeat;
             background-position: right 14px center;
             background-size: 16px;
+            padding-right: 36px;
         }
 
         .form-select option {
@@ -1387,7 +1388,7 @@
             <button class="nav-tab active" onclick="switchTab('accounts')" id="tab-btn-accounts">账户授权中心</button>
             <button class="nav-tab" onclick="switchTab('schedules')" id="tab-btn-schedules">定时任务管理</button>
             <button class="nav-tab" onclick="switchTab('routes')" id="tab-btn-routes">跑步路线管理</button>
-            <button class="nav-tab" onclick="switchTab('push')" id="tab-btn-push">消息推送管理</button>
+            <button class="nav-tab" onclick="switchTab('push')" id="tab-btn-push">通知组管理</button>
             <button class="nav-tab" onclick="switchTab('logs')" id="tab-btn-logs">系统运行日志</button>
         </div>
 
@@ -1410,10 +1411,6 @@
                                 <th>标识名称</th>
                                 <th>所属学校</th>
                                 <th>系统学号</th>
-                                <th>设备指纹 (UUID)</th>
-                                <th>通知目标</th>
-                                <th>推送类型</th>
-                                <th>状态</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
@@ -1423,30 +1420,6 @@
                                 <td data-label="标识名称"><strong>{{ u.username }}</strong></td>
                                 <td data-label="所属学校" style="font-size: 12px; color: var(--text-muted);">{{ u.school_name or '-' }}</td>
                                 <td data-label="系统学号">{{ u.yun_username }}</td>
-                                <td data-label="设备指纹"><code>{{ u.device_id }}</code></td>
-                                <td data-label="通知目标">
-                                    {% if u.push_group_id %}
-                                    <span class="badge badge-primary">推组联动: {{ u.push_group.name }}</span>
-                                    {% else %}
-                                    {{ u.qq_number or '-' }}
-                                    {% endif %}
-                                </td>
-                                <td data-label="推送类型">
-                                    {% if u.push_group_id %}
-                                    <span class="badge badge-neutral">联动跟随</span>
-                                    {% else %}
-                                    <span class="badge badge-neutral">
-                                        {{ '私聊' if u.qq_notify_type == 'private' else '群聊' }}
-                                    </span>
-                                    {% endif %}
-                                </td>
-                                <td data-label="状态">
-                                    {% if u.is_active %}
-                                    <span class="badge badge-success">Active</span>
-                                    {% else %}
-                                    <span class="badge badge-error">Inactive</span>
-                                    {% endif %}
-                                </td>
                                 <td>
                                     <div class="action-cell" style="display:flex; gap:8px;">
                                         <button class="btn btn-info" onclick="viewHistory({{ u.id }}, '{{ u.username }}')">云端记录</button>
@@ -1462,7 +1435,7 @@
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="7">
+                                <td colspan="4">
                                     <div class="empty-state">尚未配置任何自动化账户</div>
                                 </td>
                             </tr>
@@ -1566,9 +1539,9 @@
         <div id="tab-pane-push" class="tab-pane">
             <div class="glass-panel">
                 <div class="panel-header">
-                    <h2 class="panel-title">统一消息推送管理</h2>
+                    <h2 class="panel-title">通知组管理</h2>
                     <button class="btn btn-primary" onclick="openModal('pushGroupModal')">
-                        新增推送组
+                        新增通知组
                     </button>
                 </div>
                 <div class="table-responsive">
@@ -1589,7 +1562,7 @@
                                 <td data-label="目标账号">{{ pg.qq_number }}</td>
                                 <td data-label="推送类型">
                                     <span class="badge badge-neutral">
-                                        {{ '私聊' if pg.qq_notify_type == 'private' else '群聊' }}
+                                        {{ '私聊' if pg.qq_notify_type == 'private' else ('Telegram' if pg.qq_notify_type == 'tgbot' else '群聊') }}
                                     </span>
                                 </td>
                                 <td data-label="绑定账户数">
@@ -1597,6 +1570,7 @@
                                 </td>
                                 <td>
                                     <div class="action-cell" style="display:flex; gap:8px;">
+                                        <button class="btn btn-ghost" style="border: 1px solid var(--glass-border);" onclick='testPushGroup({{ pg.qq_number|tojson }}, {{ pg.qq_notify_type|tojson }})'>测试</button>
                                         <button class="btn btn-warning" onclick='editPushGroup({{ pg.id }}, {{ pg.name|tojson }}, {{ pg.qq_number|tojson }}, {{ pg.qq_notify_type|tojson }}, {{ pg.users | map(attribute="id") | list | tojson }})'>编辑</button>
                                         <button type="button" class="btn btn-danger" onclick="deletePushGroup({{ pg.id }})">删除</button>
                                     </div>
@@ -1934,7 +1908,7 @@
     <!-- Push Group Modal -->
     <div class="modal-overlay" id="pushGroupModal">
         <div class="modal-box">
-            <h2 class="panel-title" id="pushGroupModalTitle" style="margin-bottom: 24px;">新增推送组</h2>
+            <h2 class="panel-title" id="pushGroupModalTitle" style="margin-bottom: 24px;">新增通知组</h2>
             <form onsubmit="submitPushGroup(event)" id="pushGroupForm">
                 <input type="hidden" id="pg_id">
                 <div class="form-group">
@@ -3800,44 +3774,48 @@
 
         // Initialize display logic for edit user popups dynamically
         window.addEventListener('DOMContentLoaded', () => {
-            const oldEditUser = window.editUser;
-            window.editUser = function(id) {
-                const tr = document.querySelector(`form#delete-user-${id}`).closest('tr');
-                const badge = tr.querySelector('td[data-label="通知目标"] .badge-primary');
-                
-                // Invoke original if possible but basically we inject values
-                document.getElementById('edit_user_id').value = id;
-                document.getElementById('edit_username').value = tr.cells[0].innerText.trim();
-                document.getElementById('edit_yun_username').value = tr.cells[2].innerText.trim();
-                document.getElementById('edit_yun_password').value = ""; // Always empty buffer
-                
-                const pushGroupSelector = document.getElementById('edit_push_group_id');
-                const customFields = document.getElementById('edit_custom_push_fields');
-                
-                // If it is bind to a group:
-                if (badge && badge.innerText.includes("推组联动")) {
-                    const groupName = badge.innerText.split('联动: ')[1];
-                    let found = false;
-                    for(let opt of pushGroupSelector.options) {
-                        if(opt.text === groupName) {
-                            pushGroupSelector.value = opt.value;
-                            found = true;
-                            break;
-                        }
+            window.editUser = async function(id) {
+                try {
+                    const response = await fetch(`/api/users/${id}`);
+                    const user = await response.json();
+
+                    document.getElementById('edit_user_id').value = user.id;
+                    document.getElementById('edit_username').value = user.username;
+                    document.getElementById('edit_yun_username').value = user.yun_username;
+                    document.getElementById('edit_yun_password').value = '';
+
+                    const ms = typeof ModernSelect !== 'undefined' && ModernSelect.instances ? ModernSelect.instances.get('edit_school_select_modern') : null;
+                    if (ms) {
+                        ms.setValue(user.school_id || '195');
+                    } else {
+                        document.getElementById('edit_school_id').value = user.school_id || '195';
                     }
-                    if(!found) pushGroupSelector.value = 'custom';
-                } else {
-                    pushGroupSelector.value = 'custom';
-                    const qqTextNode = tr.cells[4].innerText.trim();
-                    document.getElementById('edit_qq_number').value = (qqTextNode === '-' ? '' : qqTextNode);
-                    const typeTextNode = tr.cells[5].innerText.trim();
-                    document.getElementById('edit_qq_notify_type').value = typeTextNode.includes('群') ? 'group' : 'private';
+
+                    openModal('editUserModal');
+                } catch (error) {
+                    showAlert('获取用户信息失败: ' + error);
                 }
-                
-                toggleEditCustomPush();
-                openModal('editUserModal');
             };
         });
+
+        async function testPushGroup(target, notifyType) {
+            showToast('正在发送测试消息...', 'info');
+            try {
+                const rs = await fetch('/api/push_groups/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ qq_number: target, qq_notify_type: notifyType })
+                });
+                const json = await rs.json();
+                if (json.success) {
+                    showToast('测试消息发送成功！', 'success');
+                } else {
+                    showToast('发送失败: ' + (json.msg || '未知错误'), 'error');
+                }
+            } catch (e) {
+                showToast('网络异常: ' + e, 'error');
+            }
+        }
     </script>
 </body>
 
