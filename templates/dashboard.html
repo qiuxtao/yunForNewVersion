@@ -516,23 +516,30 @@
             right: 2px;
             top: 55px;
             bottom: 10px;
-            width: 24px;
+            width: 28px;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
             background: rgba(255, 255, 255, 0.02);
             border-radius: 0 12px 12px 0;
             z-index: 10;
+            padding: 4px 0;
+            touch-action: none;
+            user-select: none;
         }
 
         .index-letter {
-            font-size: 10px;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            font-size: 11px;
             color: var(--text-muted);
             cursor: pointer;
-            padding: 1px 4px;
             font-weight: bold;
-            transition: color 0.2s;
+            transition: color 0.1s;
         }
 
         .index-letter:hover {
@@ -588,23 +595,22 @@
                 width: 44px;
                 display: flex;
                 flex-direction: column;
-                justify-content: center;
+                justify-content: space-between;
                 align-items: center;
                 background: rgba(255, 255, 255, 0.02);
-                padding: 0;
+                padding: 4px 0;
                 border-bottom: none;
-                gap: 2px;
+                gap: 0;
                 z-index: 20;
                 touch-action: none;
+                user-select: none;
             }
             .index-letter {
-                flex-shrink: 0;
-                padding: 2px 4px;
+                flex: 1;
                 font-size: 11px;
                 background: transparent;
                 border-radius: 4px;
-                min-width: auto;
-                text-align: center;
+                width: 100%;
                 color: #94a3b8;
             }
             .select-search-options {
@@ -3102,36 +3108,46 @@
                     }
                 };
 
-                if (this.enableIndex) {
-                    const indexBar = this.container.querySelector('.select-search-index-bar');
-                    
-                    const handleTouch = (e) => {
-                        e.stopPropagation();
+                    const handlePointer = (e) => {
+                        // 对于移动事件，只有按下时才触发响应
+                        if (e.type === 'pointermove' && e.buttons !== 1) return;
+                        
                         e.preventDefault();
-                        const touch = e.touches[0];
+                        e.stopPropagation();
+
                         const rect = indexBar.getBoundingClientRect();
-                        const y = touch.clientY - rect.top;
+                        const y = e.clientY - rect.top;
                         const percent = Math.min(1, Math.max(0, y / rect.height));
-                        const index = Math.floor(percent * this.letters.length);
-                        const letter = this.letters[index];
+                        // 确保索引在安全范围内
+                        const safeIndex = Math.min(this.letters.length - 1, Math.floor(percent * this.letters.length));
+                        const letter = this.letters[safeIndex];
+
                         if (letter && letter !== this.lastTouchLetter) {
                             this.lastTouchLetter = letter;
                             this.scrollToLetter(letter);
                         }
                     };
 
-                    indexBar.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const letter = e.target.dataset.letter;
-                        if (letter) this.scrollToLetter(letter);
+                    indexBar.addEventListener('pointerdown', (e) => {
+                        // 捕获指针，即使滑出元素外界也能收到事件
+                        try { indexBar.setPointerCapture(e.pointerId); } catch(err) {}
+                        handlePointer(e);
                     });
 
-                    indexBar.addEventListener('touchstart', handleTouch);
-                    indexBar.addEventListener('touchmove', handleTouch);
-                    indexBar.addEventListener('touchend', () => {
+                    indexBar.addEventListener('pointermove', handlePointer);
+
+                    const handlePointerEnd = (e) => {
+                        try { indexBar.releasePointerCapture(e.pointerId); } catch(err) {}
                         const indicator = this.container.querySelector('.select-search-touch-indicator');
                         if (indicator) indicator.style.display = 'none';
-                    });
+                        this.lastTouchLetter = null;
+                    };
+
+                    indexBar.addEventListener('pointerup', handlePointerEnd);
+                    indexBar.addEventListener('pointercancel', handlePointerEnd);
+                    
+                    // 防御性组织原生touch影响
+                    indexBar.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
                 }
 
                 // 点击外部关闭
