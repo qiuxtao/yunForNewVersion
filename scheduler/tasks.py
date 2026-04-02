@@ -49,8 +49,8 @@ def run_job_for_user(user_id: int, schedule_id: int):
         conf = load_app_config()
         
         # 提取公共APP参数
-        school_host = conf.get("Yun", "school_host", fallback="")
-        school_id = conf.get("Yun", "school_id", fallback="195")
+        school_host = getattr(user, "school_host", conf.get("Yun", "school_host", fallback=""))
+        school_id = getattr(user, "school_id", conf.get("Yun", "school_id", fallback="195"))
         app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
         md5key = conf.get("Yun", "md5key", fallback="")
         platform = conf.get("Yun", "platform", fallback="android")

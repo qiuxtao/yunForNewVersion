@@ -157,6 +157,29 @@ async def qqbot_ws(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     
+GLOBAL_SCHOOLS_CACHE = []
+
+def load_schools_cache():
+    global GLOBAL_SCHOOLS_CACHE
+    if GLOBAL_SCHOOLS_CACHE: return
+    import configparser
+    conf = configparser.ConfigParser()
+    conf.read("config.ini", encoding="utf-8")
+    app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
+    cipherkey = conf.get("Yun", "cipherkey", fallback="")
+    cipherkeyencrypted = conf.get("Yun", "cipherkeyencrypted", fallback="")
+    md5key = conf.get("Yun", "md5key", fallback="")
+    from core.yun import YunCore
+    suc, res = YunCore.get_global_schools(app_edition, cipherkey, cipherkeyencrypted, md5key)
+    if suc:
+        GLOBAL_SCHOOLS_CACHE = res
+
+@app.get("/api/schools")
+async def get_schools_api(_: bool = Depends(check_admin)):
+    load_schools_cache()
+    from fastapi.responses import JSONResponse
+    return JSONResponse({"success": True, "data": GLOBAL_SCHOOLS_CACHE})
+
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request, "error": ""})
@@ -207,6 +230,7 @@ async def add_user(
     username: str = Form(...),
     yun_username: str = Form(...),
     yun_password: str = Form(...),
+    school_id: str = Form("195"),
     qq_number: str = Form(""),
     qq_notify_type: str = Form("private"),
     db: Session = Depends(get_db),
@@ -215,9 +239,17 @@ async def add_user(
     device_id = str(random.randint(1000000000000000, 9999999999999999))
     uuid_str = device_id
     
+    school_name = "未知学校"
+    school_host = "http://47.99.163.239:8080"
+    load_schools_cache()
+    for s in GLOBAL_SCHOOLS_CACHE:
+        if str(s.get("schoolId", "")) == str(school_id):
+            school_name = s.get("schoolName", "")
+            school_host = s.get("schoolUrl", "").rstrip("/")
+            break
 
     # 强制校验
-    if not _validate_yun_sync(yun_username, yun_password):
+    if not _validate_yun_sync(yun_username, yun_password, school_id, school_host):
         from fastapi.responses import HTMLResponse
         return HTMLResponse("<script>alert('【强制校验失败】账号或密码错误，或服务器网络异常。'); history.back();</script>")
 
@@ -225,6 +257,9 @@ async def add_user(
         username=username,
         yun_username=yun_username,
         yun_password=yun_password,
+        school_id=school_id,
+        school_host=school_host,
+        school_name=school_name,
         qq_number=qq_number,
         qq_notify_type=qq_notify_type,
         device_id=device_id,
@@ -243,6 +278,7 @@ async def edit_user(
     username: str = Form(...),
     yun_username: str = Form(...),
     yun_password: str = Form(""),
+    school_id: str = Form("195"),
     qq_number: str = Form(""),
     qq_notify_type: str = Form("private"),
     db: Session = Depends(get_db),
@@ -250,14 +286,26 @@ async def edit_user(
 ):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if user:
+        school_name = "未知学校"
+        school_host = "http://47.99.163.239:8080"
+        load_schools_cache()
+        for s in GLOBAL_SCHOOLS_CACHE:
+            if str(s.get("schoolId", "")) == str(school_id):
+                school_name = s.get("schoolName", "")
+                school_host = s.get("schoolUrl", "").rstrip("/")
+                break
+                
         # 强制校验
         pwd_to_check = yun_password if yun_password else user.yun_password
-        if not _validate_yun_sync(yun_username, pwd_to_check):
+        if not _validate_yun_sync(yun_username, pwd_to_check, school_id, school_host):
             from fastapi.responses import HTMLResponse
             return HTMLResponse("<script>alert('【强制校验失败】账号或密码错误，或服务器网络异常。'); history.back();</script>")
             
         user.username = username
         user.yun_username = yun_username
+        user.school_id = school_id
+        user.school_host = school_host
+        user.school_name = school_name
         if yun_password:
             user.yun_password = yun_password
         user.qq_number = qq_number
@@ -265,12 +313,10 @@ async def edit_user(
         db.commit()
     return RedirectResponse(url="/", status_code=303)
 
-def _validate_yun_sync(yun_username, yun_password):
+def _validate_yun_sync(yun_username, yun_password, school_id, school_host):
     import time as _time
     conf = configparser.ConfigParser()
     conf.read("config.ini", encoding="utf-8")
-    school_host = conf.get("Yun", "school_host", fallback="")
-    school_id = conf.get("Yun", "school_id", fallback="195")
     app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
     md5key = conf.get("Yun", "md5key", fallback="")
     platform_str = conf.get("Yun", "platform", fallback="android")
@@ -291,16 +337,20 @@ def _validate_yun_sync(yun_username, yun_password):
 async def validate_user_credentials(
     yun_username: str = Form(...),
     yun_password: str = Form(...),
+    school_id = Form("195"),
     _: bool = Depends(check_admin)
 ):
     """在添加/编辑用户前，实时验证云运动学号密码是否能正常登录"""
     import time as _time
     from fastapi.responses import JSONResponse
-    conf = configparser.ConfigParser()
-    conf.read("config.ini", encoding="utf-8")
     
-    school_host = conf.get("Yun", "school_host", fallback="")
-    school_id = conf.get("Yun", "school_id", fallback="195")
+    school_name = "未知学校"
+    school_host = "http://47.99.163.239:8080"
+    load_schools_cache()
+    for s in GLOBAL_SCHOOLS_CACHE:
+        if str(s.get("schoolId", "")) == str(school_id):
+            school_host = s.get("schoolUrl", "").rstrip("/")
+            break
     app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
     md5key = conf.get("Yun", "md5key", fallback="")
     platform_str = conf.get("Yun", "platform", fallback="android")
@@ -501,6 +551,7 @@ async def get_user_json(user_id: int, db: Session = Depends(get_db), _: bool = D
         "yun_username": user.yun_username,
         "qq_number": user.qq_number or "",
         "qq_notify_type": user.qq_notify_type or "private",
+        "school_id": getattr(user, "school_id", "195"),
     })
 
 @app.post("/api/logs/clear")
@@ -541,8 +592,8 @@ async def get_user_terms_json(user_id: int, db: Session = Depends(get_db), _: bo
     conf = configparser.ConfigParser()
     conf.read("config.ini", encoding="utf-8")
     
-    school_host = conf.get("Yun", "school_host", fallback="")
-    school_id = conf.get("Yun", "school_id", fallback="195")
+    school_host = getattr(user, "school_host", conf.get("Yun", "school_host", fallback=""))
+    school_id = getattr(user, "school_id", conf.get("Yun", "school_id", fallback="195"))
     app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
     md5key = conf.get("Yun", "md5key", fallback="")
     platform_str = conf.get("Yun", "platform", fallback="android")
@@ -590,8 +641,8 @@ async def get_user_history_by_term_json(user_id: int, term_value: str, token: st
     conf = configparser.ConfigParser()
     conf.read("config.ini", encoding="utf-8")
     
-    school_host = conf.get("Yun", "school_host", fallback="")
-    school_id = conf.get("Yun", "school_id", fallback="195")
+    school_host = getattr(user, "school_host", conf.get("Yun", "school_host", fallback=""))
+    school_id = getattr(user, "school_id", conf.get("Yun", "school_id", fallback="195"))
     app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
     md5key = conf.get("Yun", "md5key", fallback="")
     platform_str = conf.get("Yun", "platform", fallback="android")
@@ -624,8 +675,8 @@ async def get_user_history_detail(user_id: int, term_value: str, run_id: str, to
         
     conf = configparser.ConfigParser()
     conf.read("config.ini", encoding="utf-8")
-    school_host = conf.get("Yun", "school_host", fallback="")
-    school_id = conf.get("Yun", "school_id", fallback="195")
+    school_host = getattr(user, "school_host", conf.get("Yun", "school_host", fallback=""))
+    school_id = getattr(user, "school_id", conf.get("Yun", "school_id", fallback="195"))
     app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
     md5key = conf.get("Yun", "md5key", fallback="")
     platform_str = conf.get("Yun", "platform", fallback="android")

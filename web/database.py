@@ -63,3 +63,24 @@ def init_db():
             conn.execute(text("ALTER TABLE schedules ADD COLUMN run_days VARCHAR(50) DEFAULT '1,2,3,4,5,6,7'"))
     except Exception:
         pass
+        
+    try:
+        with engine.begin() as conn:
+            from sqlalchemy import text
+            conn.execute(text("ALTER TABLE users ADD COLUMN school_id VARCHAR DEFAULT '195'"))
+    except Exception:
+        pass
+
+    try:
+        with engine.begin() as conn:
+            from sqlalchemy import text
+            conn.execute(text("ALTER TABLE users ADD COLUMN school_host VARCHAR DEFAULT 'http://47.99.163.239:8080'"))
+    except Exception:
+        pass
+
+    try:
+        with engine.begin() as conn:
+            from sqlalchemy import text
+            conn.execute(text("ALTER TABLE users ADD COLUMN school_name VARCHAR DEFAULT '安徽邮电职业技术学院'"))
+    except Exception:
+        pass

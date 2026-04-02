@@ -112,6 +112,44 @@ class YunCore:
         m.update(sb.encode("utf-8"))
         return m.hexdigest()
 
+    @staticmethod
+    def get_global_schools(app_edition, cipherkey, cipherkeyencrypted, md5key):
+        utc = str(int(time.time()))
+        uuid = "2211725972932675"
+        sign_data = f'platform=android&utc={utc}&uuid={uuid}&appsecret={md5key}'
+        m = hashlib.md5()
+        m.update(sign_data.encode('utf-8'))
+        sign = m.hexdigest()
+        
+        url = "http://sports.aiyyd.com:9001/api/app/schoolList"
+        headers = {
+            "isApp": "app",
+            "deviceId": uuid,
+            "deviceName": "Xiaomi",
+            "version": app_edition,
+            "platform": "android",
+            "uuid": uuid,
+            "utc": utc,
+            "sign": sign,
+            "Content-Type": "application/json; charset=utf-8",
+            "Content-Length": "217",
+            "Connection": "Keep-Alive",
+            "Accept-Encoding": "gzip",
+            "User-Agent": "okhttp/3.12.0"
+        }
+        data_json = {
+            "cipherKey": cipherkeyencrypted,
+            "content": YunCore.encrypt_sm4("", b64decode(cipherkey), isBytes=False)
+        }
+        try:
+            req = requests.post(url=url, data=json.dumps(data_json), headers=headers, timeout=10)
+            infojson = json.loads(YunCore.decrypt_sm4(req.text, b64decode(cipherkey)).decode())
+            if infojson.get('code') == 200:
+                return True, infojson.get('data', [])
+            return False, "Failed to get schools"
+        except Exception as e:
+            return False, str(e)
+
     def default_post(self, router, data, headers=None, m_host=None, isBytes=False, gen_sign=True):
         m_host = m_host or self.my_host
         url = m_host + router

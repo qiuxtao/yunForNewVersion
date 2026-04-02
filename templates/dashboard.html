@@ -1153,6 +1153,7 @@
                         <thead>
                             <tr>
                                 <th>标识名称</th>
+                                <th>所属学校</th>
                                 <th>系统学号</th>
                                 <th>设备指纹 (UUID)</th>
                                 <th>通知目标</th>
@@ -1382,6 +1383,12 @@
                     <input type="text" class="form-control" name="username" required placeholder="例如: 张三">
                 </div>
                 <div class="form-group">
+                    <label class="form-label">所属学校</label>
+                    <select class="form-select school-select" name="school_id" id="add_school_id" required>
+                        <option value="195">加载中...</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label class="form-label">云运动学号</label>
                     <input type="text" class="form-control" name="yun_username" id="add_yun_username" required>
                 </div>
@@ -1424,6 +1431,12 @@
                 <div class="form-group">
                     <label class="form-label">面板显示名 (备注/姓名)</label>
                     <input type="text" class="form-control" name="username" id="edit_username" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">所在学校</label>
+                    <select class="form-select school-select" name="school_id" id="edit_school_id" required>
+                        <option value="195">加载中...</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">云运动学号</label>
@@ -2088,6 +2101,7 @@
                 const user = await response.json();
 
                 document.getElementById('edit_user_id').value = user.id;
+                document.getElementById('edit_school_id').value = user.school_id || '195';
                 document.getElementById('edit_username').value = user.username;
                 document.getElementById('edit_yun_username').value = user.yun_username;
                 document.getElementById('edit_yun_password').value = ''; // Don't show password
