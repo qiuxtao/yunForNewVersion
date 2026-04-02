@@ -393,6 +393,160 @@
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
         }
 
+        /* --- Modern Searchable Select Component --- */
+        .select-search-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .select-search-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 44px;
+        }
+
+        .select-search-trigger:after {
+            content: "";
+            width: 14px;
+            height: 14px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-size: contain;
+            transition: transform 0.2s;
+        }
+
+        .select-search-container.active .select-search-trigger:after {
+            transform: rotate(180deg);
+        }
+
+        .select-search-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            background: #1e293b;
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            z-index: 1000;
+            max-height: 320px;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            animation: selectFieldFade 0.2s ease;
+        }
+
+        @keyframes selectFieldFade {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .select-search-container.active .select-search-dropdown {
+            display: flex;
+        }
+
+        .select-search-filter {
+            padding: 10px;
+            border-bottom: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .select-search-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .select-search-options {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 4px;
+            max-height: 250px;
+        }
+
+        .select-search-option {
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .select-search-option:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+
+        .select-search-option.selected {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            font-weight: 500;
+        }
+
+        .select-search-group-title {
+            padding: 12px 12px 4px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            opacity: 0.8;
+        }
+
+        .select-search-index-bar {
+            position: absolute;
+            right: 2px;
+            top: 55px;
+            bottom: 10px;
+            width: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 0 12px 12px 0;
+            z-index: 10;
+        }
+
+        .index-letter {
+            font-size: 10px;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 1px 4px;
+            font-weight: bold;
+            transition: color 0.2s;
+        }
+
+        .index-letter:hover {
+            color: var(--primary);
+        }
+
+        .select-search-no-results {
+            padding: 20px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+
         .modal-footer {
             display: flex;
             justify-content: flex-end;
@@ -1385,9 +1539,8 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">所属学校</label>
-                    <select class="form-select school-select" name="school_id" id="add_school_id" required>
-                        <option value="195">加载中...</option>
-                    </select>
+                    <div id="add_school_select_modern"></div>
+                    <select name="school_id" id="add_school_id" required style="display:none;"></select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">云运动学号</label>
@@ -1435,9 +1588,8 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">所在学校</label>
-                    <select class="form-select school-select" name="school_id" id="edit_school_id" required>
-                        <option value="195">加载中...</option>
-                    </select>
+                    <div id="edit_school_select_modern"></div>
+                    <select name="school_id" id="edit_school_id" required style="display:none;"></select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">云运动学号</label>
@@ -1516,9 +1668,8 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">选择路线组</label>
-                    <select class="form-select" name="route_type" id="edit_sched_route">
-                        <option value="tasks_else">邮电操场 (tasks_else)</option>
-                    </select>
+                    <div id="edit_sched_route_modern"></div>
+                    <select name="route_type" id="edit_sched_route" style="display:none;"></select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">防风控随机延迟 (最大延迟分钟数)</label>
@@ -1575,9 +1726,8 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">选择路线组</label>
-                    <select class="form-select" name="route_type">
-                        <option value="tasks_else">邮电操场 (tasks_else)</option>
-                    </select>
+                    <div id="add_sched_route_modern"></div>
+                    <select name="route_type" id="add_sched_route" style="display:none;"></select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">防风控随机延迟 (最大延迟分钟数)</label>
@@ -2102,9 +2252,12 @@
                 const user = await response.json();
 
                 document.getElementById('edit_user_id').value = user.id;
-                const schoolSelect = document.getElementById('edit_school_id');
-                schoolSelect.setAttribute('data-initial', user.school_id || '195');
-                schoolSelect.value = user.school_id || '195'; 
+                const ms = ModernSelect.instances.get('edit_school_select_modern');
+                if (ms) {
+                    ms.setValue(user.school_id || '195');
+                } else {
+                    document.getElementById('edit_school_id').value = user.school_id || '195';
+                }
                 document.getElementById('edit_username').value = user.username;
                 document.getElementById('edit_yun_username').value = user.yun_username;
                 document.getElementById('edit_yun_password').value = ''; // Don't show password
@@ -2120,6 +2273,7 @@
         async function validateCredentials(type) {
             const username = document.getElementById(`${type}_yun_username`).value;
             const password = document.getElementById(`${type}_yun_password`).value;
+            const school_id = document.getElementById(`${type}_school_id`).value;
             const msgDiv = document.getElementById(`${type}_validation_msg`);
             const btn = document.getElementById(`${type}_validate_btn`);
 
@@ -2136,6 +2290,7 @@
                 const formData = new FormData();
                 formData.append('yun_username', username);
                 formData.append('yun_password', password);
+                formData.append('school_id', school_id);
 
                 const response = await fetch('/users/validate', {
                     method: 'POST',
@@ -2334,24 +2489,43 @@
         }
 
         function updateScheduleRouteOptions(groupNames) {
-            const selects = [
-                document.getElementById('edit_sched_route'),
-                document.querySelector('#scheduleModal select[name="route_type"]')
-            ];
-            const placeholder = '<option value="" disabled selected>-- 请选择路线组 --</option>';
-            const options = groupNames.map(g => `<option value="${g}">${g}</option>`).join('');
+            const routeData = groupNames.map(g => ({ id: g, name: g }));
+            const addSel = document.getElementById('add_sched_route');
+            const editSel = document.getElementById('edit_sched_route');
 
-            selects.forEach(sel => {
-                if (!sel) return;
-                const prevVal = sel.value;
-                sel.innerHTML = placeholder + options;
-                if (groupNames.includes(prevVal)) {
-                    sel.value = prevVal;
-                } else if (prevVal === "") {
-                    sel.value = "";
+            // 更新或初始化添加界面的 ModernSelect
+            if (addSel) {
+                let addMs = ModernSelect.instances.get('add_sched_route_modern');
+                if (!addMs) {
+                    addMs = new ModernSelect('add_sched_route_modern', {
+                        data: routeData,
+                        originalSelect: addSel,
+                        placeholder: '请选择路线组...'
+                    });
+                } else {
+                    addMs.data = routeData;
+                    addMs.init();
                 }
-                // If the previous value is gone, it stays on the disabled placeholder
-            });
+            }
+
+            // 更新或初始化编辑界面的 ModernSelect
+            if (editSel) {
+                let editMs = ModernSelect.instances.get('edit_sched_route_modern');
+                if (!editMs) {
+                    editMs = new ModernSelect('edit_sched_route_modern', {
+                        data: routeData,
+                        originalSelect: editSel,
+                        placeholder: '请选择路线组...'
+                    });
+                } else {
+                    editMs.data = routeData;
+                    editMs.init();
+                }
+            }
+
+            const options = groupNames.map(g => `<option value="${g}">${g}</option>`).join('');
+            if (addSel) addSel.innerHTML = options;
+            if (editSel) editSel.innerHTML = options;
         }
 
         function createRouteGroup() {
@@ -2669,7 +2843,15 @@
             document.getElementById('edit_group_id').value = groupId;
             document.getElementById('edit_group_name').value = groupName !== 'null' && groupName !== 'undefined' ? groupName : '';
             document.getElementById('edit_sched_time').value = time;
-            document.getElementById('edit_sched_route').value = route;
+            
+            // 更新 ModernSelect 的值
+            const ms = ModernSelect.instances.get('edit_sched_route_modern');
+            if (ms) {
+                ms.setValue(route);
+            } else {
+                document.getElementById('edit_sched_route').value = route;
+            }
+            
             document.getElementById('edit_sched_delay').value = delay;
             
             const userIds = JSON.parse(decodeURIComponent(userIdsStr));
@@ -2686,6 +2868,197 @@
             });
 
             openModal('editScheduleModal');
+        }
+
+        /**
+         * ModernSelect - 现代感的高性能可搜索选择器
+         */
+        class ModernSelect {
+            static instances = new Map();
+            
+            constructor(containerId, options = {}) {
+                this.container = document.getElementById(containerId);
+                this.originalSelect = options.originalSelect; // 原始隐藏的选择框
+                this.data = options.data || []; // [{id, name}, ...]
+                this.placeholder = options.placeholder || '请搜索...';
+                this.enableIndex = options.enableIndex || false;
+                this.onSelect = options.onSelect || (() => {});
+                this.selectedValue = options.value || '';
+                
+                this.filteredData = [...this.data];
+                this.isOpen = false;
+                
+                // 拼音首字母边界
+                this.pinyinBounds = {
+                    'A': '阿', 'B': '八', 'C': '嚓', 'D': '哒', 'E': '妸', 'F': '发', 'G': '旮',
+                    'H': '铪', 'J': '丌', 'K': '咔', 'L': '垃', 'M': '嘸', 'N': '拿', 'O': '讴',
+                    'P': '趴', 'Q': '七', 'R': '呥', 'S': '仨', 'T': '他', 'W': '屲', 'X': '夕',
+                    'Y': '丫', 'Z': '帀'
+                };
+                this.letters = Object.keys(this.pinyinBounds);
+
+                this.init();
+                ModernSelect.instances.set(containerId, this);
+            }
+
+            getLetter(str) {
+                if (!str) return '#';
+                const char = str.charAt(0);
+                if (/[a-zA-Z]/.test(char)) return char.toUpperCase();
+                
+                let lastLetter = '#';
+                for (const [letter, bound] of Object.entries(this.pinyinBounds)) {
+                    if (char.localeCompare(bound, 'zh-Hans-CN') >= 0) {
+                        lastLetter = letter;
+                    } else {
+                        break;
+                    }
+                }
+                return lastLetter;
+            }
+
+            init() {
+                // 排序数据
+                const collator = new Intl.Collator('zh-Hans-CN', { numeric: true, sensitivity: 'base' });
+                this.data.sort((a, b) => collator.compare(a.name, b.name));
+                this.filteredData = [...this.data];
+
+                this.render();
+                this.bindEvents();
+            }
+
+            render() {
+                const selectedItem = this.data.find(d => String(d.id) === String(this.selectedValue));
+                const displayText = selectedItem ? selectedItem.name : this.placeholder;
+
+                this.container.classList.add('select-search-container');
+                this.container.innerHTML = `
+                    <div class="select-search-trigger">${displayText}</div>
+                    <div class="select-search-dropdown">
+                        <div class="select-search-filter">
+                            <input type="text" class="select-search-input" placeholder="输入关键字查找..." spellcheck="false">
+                        </div>
+                        <div class="select-search-options">
+                            ${this.enableIndex ? `<div class="select-search-index-bar">${this.letters.map(l => `<span class="index-letter" data-letter="${l}">${l}</span>`).join('')}</div>` : ''}
+                            <div class="options-list"></div>
+                        </div>
+                    </div>
+                `;
+                this.renderOptions();
+            }
+
+            renderOptions() {
+                const list = this.container.querySelector('.options-list');
+                if (this.filteredData.length === 0) {
+                    list.innerHTML = '<div class="select-search-no-results">未找到相关结果</div>';
+                    return;
+                }
+
+                let html = '';
+                let lastGroup = null;
+
+                this.filteredData.forEach(item => {
+                    if (this.enableIndex) {
+                        const group = this.getLetter(item.name);
+                        if (group !== lastGroup) {
+                            html += `<div class="select-search-group-title" id="group-${this.container.id}-${group}">${group}</div>`;
+                            lastGroup = group;
+                        }
+                    }
+                    
+                    const isSelected = String(item.id) === String(this.selectedValue);
+                    html += `
+                        <div class="select-search-option ${isSelected ? 'selected' : ''}" data-id="${item.id}" data-name="${item.name}">
+                            ${item.name}
+                        </div>
+                    `;
+                });
+                list.innerHTML = html;
+            }
+
+            bindEvents() {
+                const trigger = this.container.querySelector('.select-search-trigger');
+                const filterInput = this.container.querySelector('.select-search-input');
+                const optionsList = this.container.querySelector('.options-list');
+
+                trigger.onclick = (e) => {
+                    e.stopPropagation();
+                    this.toggle();
+                };
+
+                filterInput.onclick = (e) => e.stopPropagation();
+                filterInput.oninput = (e) => {
+                    const val = e.target.value.toLowerCase().trim();
+                    this.filteredData = this.data.filter(d => d.name.toLowerCase().includes(val));
+                    this.renderOptions();
+                };
+
+                optionsList.onclick = (e) => {
+                    const option = e.target.closest('.select-search-option');
+                    if (option) {
+                        this.select(option.dataset.id, option.dataset.name);
+                    }
+                };
+
+                if (this.enableIndex) {
+                    const indexBar = this.container.querySelector('.select-search-index-bar');
+                    indexBar.onclick = (e) => {
+                        e.stopPropagation();
+                        const letter = e.target.dataset.letter;
+                        if (letter) {
+                            const groupEl = this.container.querySelector(`#group-${this.container.id}-${letter}`);
+                            if (groupEl) {
+                                groupEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                        }
+                    };
+                }
+
+                // 点击外部关闭
+                document.addEventListener('click', () => this.close());
+            }
+
+            toggle() {
+                if (this.isOpen) this.close();
+                else this.open();
+            }
+
+            open() {
+                // 关闭其他实例
+                ModernSelect.instances.forEach(ins => { if (ins !== this) ins.close(); });
+                
+                this.isOpen = true;
+                this.container.classList.add('active');
+                const input = this.container.querySelector('.select-search-input');
+                setTimeout(() => input.focus(), 100);
+            }
+
+            close() {
+                this.isOpen = false;
+                this.container.classList.remove('active');
+            }
+
+            select(id, name) {
+                this.selectedValue = id;
+                this.container.querySelector('.select-search-trigger').innerText = name;
+                if (this.originalSelect) {
+                    this.originalSelect.value = id;
+                    this.originalSelect.dispatchEvent(new Event('change'));
+                }
+                this.onSelect(id, name);
+                this.close();
+                this.renderOptions(); // 更新选中状态
+            }
+
+            setValue(id) {
+                const item = this.data.find(d => String(d.id) === String(id));
+                if (item) {
+                    this.select(id, item.name);
+                } else {
+                    this.selectedValue = '';
+                    this.container.querySelector('.select-search-trigger').innerText = this.placeholder;
+                }
+            }
         }
 
         async function loadSchedules() {
@@ -2802,23 +3175,28 @@
 
         // Handle initial load
         document.addEventListener('DOMContentLoaded', async () => {
-            // 异步加载学校列表并填充所有 .school-select
+            // 异步加载学校列表
+            let schoolData = [];
             try {
                 const res = await fetch('/api/schools');
                 const json = await res.json();
                 if (json.success && json.data) {
-                    let optionsHtml = '';
-                    json.data.forEach(s => {
-                        optionsHtml += `<option value="${s.schoolId}">${s.schoolName}</option>`;
+                    schoolData = json.data.map(s => ({ id: s.schoolId, name: s.schoolName }));
+                    
+                    // 初始化“添加用户”和“编辑用户”的 ModernSelect
+                    new ModernSelect('add_school_select_modern', {
+                        data: schoolData,
+                        originalSelect: document.getElementById('add_school_id'),
+                        placeholder: '搜索并选择学校...',
+                        enableIndex: true,
+                        value: '195'
                     });
-                    document.querySelectorAll('.school-select').forEach(sel => {
-                        sel.innerHTML = optionsHtml;
-                        // 如果有初始值（比如编辑模式下JS写入的值），尝试保留
-                        if (sel.getAttribute('data-initial')) {
-                            sel.value = sel.getAttribute('data-initial');
-                        } else {
-                            sel.value = "195"; // 默认选择安徽邮电
-                        }
+                    
+                    new ModernSelect('edit_school_select_modern', {
+                        data: schoolData,
+                        originalSelect: document.getElementById('edit_school_id'),
+                        placeholder: '搜索并选择学校...',
+                        enableIndex: true
                     });
                 }
             } catch(e) { console.error("加载学校列表失败:", e); }
