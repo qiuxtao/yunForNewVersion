@@ -3697,28 +3697,6 @@
         }
 
         // --- Push Groups Logic ---
-        function toggleAddCustomPush() {
-            const sel = document.getElementById('add_push_group_id').value;
-            const fields = document.getElementById('add_custom_push_fields');
-            if (sel === 'custom') {
-                fields.style.display = 'block';
-            } else {
-                fields.style.display = 'none';
-                document.getElementById('add_qq_number').value = '';
-            }
-        }
-
-        function toggleEditCustomPush() {
-            const sel = document.getElementById('edit_push_group_id').value;
-            const fields = document.getElementById('edit_custom_push_fields');
-            if (sel === 'custom') {
-                fields.style.display = 'block';
-            } else {
-                fields.style.display = 'none';
-                document.getElementById('edit_qq_number').value = '';
-            }
-        }
-
         function editPushGroup(id, name, qq, type, userIds) {
             document.getElementById('pushGroupModalTitle').innerText = '编辑推送组';
             document.getElementById('pg_id').value = id;

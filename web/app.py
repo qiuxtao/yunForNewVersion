@@ -243,9 +243,9 @@ async def add_user(
     school_host = "http://47.99.163.239:8080"
     load_schools_cache()
     for s in GLOBAL_SCHOOLS_CACHE:
-        if str(s.get("schoolId", "")) == str(school_id):
-            school_name = s.get("schoolName", "")
-            school_host = s.get("schoolUrl", "").rstrip("/")
+        if str(s.get("id", "")) == str(school_id):
+            school_name = s.get("name", "")
+            school_host = s.get("host", "").rstrip("/")
             break
 
     # 强制校验
@@ -286,9 +286,9 @@ async def edit_user(
         school_host = "http://47.99.163.239:8080"
         load_schools_cache()
         for s in GLOBAL_SCHOOLS_CACHE:
-            if str(s.get("schoolId", "")) == str(school_id):
-                school_name = s.get("schoolName", "")
-                school_host = s.get("schoolUrl", "").rstrip("/")
+            if str(s.get("id", "")) == str(school_id):
+                school_name = s.get("name", "")
+                school_host = s.get("host", "").rstrip("/")
                 break
                 
         # 强制校验
@@ -343,9 +343,12 @@ async def validate_user_credentials(
     school_host = "http://47.99.163.239:8080"
     load_schools_cache()
     for s in GLOBAL_SCHOOLS_CACHE:
-        if str(s.get("schoolId", "")) == str(school_id):
-            school_host = s.get("schoolUrl", "").rstrip("/")
+        if str(s.get("id", "")) == str(school_id):
+            school_host = s.get("host", "").rstrip("/")
             break
+
+    conf = configparser.ConfigParser()
+    conf.read("config.ini", encoding="utf-8")
     app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
     md5key = conf.get("Yun", "md5key", fallback="")
     platform_str = conf.get("Yun", "platform", fallback="android")
