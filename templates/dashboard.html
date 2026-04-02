@@ -585,7 +585,7 @@
                 top: 60px;
                 right: 0;
                 bottom: 10px;
-                width: 32px;
+                width: 44px;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
@@ -609,7 +609,7 @@
             }
             .select-search-options {
                 max-height: calc(100vh - 65px) !important;
-                padding-right: 32px;
+                padding-right: 44px;
             }
         }
 
@@ -2984,6 +2984,7 @@
                     'Y': '丫', 'Z': '帀'
                 };
                 this.letters = Object.keys(this.pinyinBounds);
+                this.lastTouchLetter = null;
 
                 this.init();
                 ModernSelect.instances.set(containerId, this);
@@ -3108,9 +3109,13 @@
                         e.stopPropagation();
                         e.preventDefault();
                         const touch = e.touches[0];
-                        const target = document.elementFromPoint(touch.clientX, touch.clientY);
-                        if (target && target.classList.contains('index-letter')) {
-                            const letter = target.dataset.letter;
+                        const rect = indexBar.getBoundingClientRect();
+                        const y = touch.clientY - rect.top;
+                        const percent = Math.min(1, Math.max(0, y / rect.height));
+                        const index = Math.floor(percent * this.letters.length);
+                        const letter = this.letters[index];
+                        if (letter && letter !== this.lastTouchLetter) {
+                            this.lastTouchLetter = letter;
                             this.scrollToLetter(letter);
                         }
                     };
