@@ -1559,6 +1559,7 @@
                     <pre id="logContent"
                         style="margin: 0; color: #a3b8cc; font-family: monospace; font-size: 13px; line-height: 1.5; white-space: pre-wrap; overflow-y: auto; flex: 1; overscroll-behavior: contain;">正在连接日志流...</pre>
                 </div>
+            </div>
         </div> <!-- End Tab Logs -->
 
         <!-- Tab: Push Groups -->
@@ -1596,7 +1597,7 @@
                                 </td>
                                 <td>
                                     <div class="action-cell" style="display:flex; gap:8px;">
-                                        <button class="btn btn-warning" onclick='editPushGroup({{ pg.id }}, {{ pg.name|tojson }}, {{ pg.qq_number|tojson }}, {{ pg.qq_notify_type|tojson }})'>编辑</button>
+                                        <button class="btn btn-warning" onclick='editPushGroup({{ pg.id }}, {{ pg.name|tojson }}, {{ pg.qq_number|tojson }}, {{ pg.qq_notify_type|tojson }}, {{ pg.users | map(attribute="id") | list | tojson }})'>编辑</button>
                                         <button type="button" class="btn btn-danger" onclick="deletePushGroup({{ pg.id }})">删除</button>
                                     </div>
                                 </td>
@@ -1713,35 +1714,7 @@
                     <label class="form-label">云运动密码</label>
                     <input type="password" class="form-control" name="yun_password" id="add_yun_password" required>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">消息推送配置来源</label>
-                    <select class="form-select" name="push_group_id" id="add_push_group_id" onchange="toggleAddCustomPush()">
-                        <option value="custom">-- 独立自定义配置 --</option>
-                        {% for group in push_groups %}
-                        <option value="{{ group.id }}">{{ group.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div id="add_custom_push_fields">
-                    <div class="form-group" style="display:flex; gap:8px; align-items:flex-end;">
-                        <div style="flex-grow:1;">
-                            <label class="form-label">自定义推送目标 (QQ号/群号)</label>
-                            <input type="text" class="form-control" name="qq_number" id="add_qq_number"
-                                placeholder="留空则不推送">
-                        </div>
-                    </div>
-                    <div class="form-group" style="display:flex; gap:8px; align-items:flex-end;">
-                        <div style="flex-grow:1;">
-                            <label class="form-label">自定义推送对象类型</label>
-                            <select class="form-select" name="qq_notify_type" id="add_qq_notify_type">
-                                <option value="private">私聊 (个人QQ)</option>
-                                <option value="group">群聊 (QQ群号)</option>
-                            </select>
-                        </div>
-                        <button type="button" class="btn btn-ghost" onclick="testQQNotify('add')"
-                            style="height: 44px; padding: 0 16px; border: 1px solid var(--glass-border);">测试连通</button>
-                    </div>
-                </div>
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-ghost" onclick="closeModal('addUserModal')">取消</button>
                     <button type="submit" class="btn btn-primary">保存并登录</button>
@@ -1774,35 +1747,7 @@
                     <input type="password" class="form-control" name="yun_password" id="edit_yun_password"
                         placeholder="**">
                 </div>
-                <div class="form-group">
-                    <label class="form-label">消息推送配置来源</label>
-                    <select class="form-select" name="push_group_id" id="edit_push_group_id" onchange="toggleEditCustomPush()">
-                        <option value="custom">-- 独立自定义配置 --</option>
-                        {% for group in push_groups %}
-                        <option value="{{ group.id }}">{{ group.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div id="edit_custom_push_fields">
-                    <div class="form-group" style="display:flex; gap:8px; align-items:flex-end;">
-                        <div style="flex-grow:1;">
-                            <label class="form-label">自定义推送目标 (QQ号/群号)</label>
-                            <input type="text" class="form-control" name="qq_number" id="edit_qq_number"
-                                placeholder="留空则不推送">
-                        </div>
-                    </div>
-                    <div class="form-group" style="display:flex; gap:8px; align-items:flex-end;">
-                        <div style="flex-grow:1;">
-                            <label class="form-label">自定义推送对象类型</label>
-                            <select class="form-select" name="qq_notify_type" id="edit_qq_notify_type">
-                                <option value="private">私聊 (个人QQ)</option>
-                                <option value="group">群聊 (QQ群号)</option>
-                            </select>
-                        </div>
-                        <button type="button" class="btn btn-ghost" onclick="testQQNotify('edit')"
-                            style="height: 44px; padding: 0 16px; border: 1px solid var(--glass-border);">测试连通</button>
-                    </div>
-                </div>
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-ghost" onclick="closeModal('editUserModal')">取消</button>
                     <button type="submit" class="btn btn-primary">保存修​​改</button>
@@ -1997,7 +1942,7 @@
                     <input type="text" class="form-control" id="pg_name" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">推送目标 (QQ号/群号)</label>
+                    <label class="form-label">推送目标 (QQ号/群号/TGChatID)</label>
                     <input type="text" class="form-control" id="pg_qq_number" required>
                 </div>
                 <div class="form-group">
@@ -2005,7 +1950,19 @@
                     <select class="form-select" id="pg_qq_notify_type">
                         <option value="private">私聊 (个人QQ)</option>
                         <option value="group">群聊 (QQ群号)</option>
+                        <option value="tgbot">Telegram 机器人</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">授权目标实例（可多选）</label>
+                    <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; max-height: 150px; overflow-y: auto;">
+                        {% for u in users %}
+                        <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" name="pg_user_ids" value="{{ u.id }}" id="pg_usr_{{ u.id }}" class="pg-group-user-cb" style="cursor: pointer;">
+                            <label for="pg_usr_{{ u.id }}" style="cursor: pointer; font-size: 14px; user-select: none;">{{ u.username }} ({{ u.yun_username }})</label>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-ghost" onclick="closeModal('pushGroupModal')">取消</button>
@@ -3788,12 +3745,17 @@
             }
         }
 
-        function editPushGroup(id, name, qq, type) {
+        function editPushGroup(id, name, qq, type, userIds) {
             document.getElementById('pushGroupModalTitle').innerText = '编辑推送组';
             document.getElementById('pg_id').value = id;
             document.getElementById('pg_name').value = name;
             document.getElementById('pg_qq_number').value = qq;
             document.getElementById('pg_qq_notify_type').value = type;
+            
+            document.querySelectorAll('.pg-group-user-cb').forEach(cb => {
+                cb.checked = userIds && userIds.includes(parseInt(cb.value));
+            });
+
             openModal('pushGroupModal');
         }
 
@@ -3809,10 +3771,17 @@
         async function submitPushGroup(e) {
             e.preventDefault();
             const id = document.getElementById('pg_id').value;
+            
+            const checkedUsers = [];
+            document.querySelectorAll('.pg-group-user-cb:checked').forEach(cb => {
+                checkedUsers.push(parseInt(cb.value));
+            });
+
             const data = {
                 name: document.getElementById('pg_name').value,
                 qq_number: document.getElementById('pg_qq_number').value,
-                qq_notify_type: document.getElementById('pg_qq_notify_type').value
+                qq_notify_type: document.getElementById('pg_qq_notify_type').value,
+                user_ids: checkedUsers
             };
             const method = id ? 'PUT' : 'POST';
             const url = id ? `/api/push_groups/${id}` : '/api/push_groups';

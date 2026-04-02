@@ -14,7 +14,20 @@ from web.database import SessionLocal
 from web.models import Schedule, User, RunLog
 from core.auth import AuthManager
 from core.yun import YunCore
-from notifications.qq_bot import notify_run_success, notify_run_failed
+from notifications.qq_bot import notify_run_success as qq_notify_success, notify_run_failed as qq_notify_failed
+from notifications.tg_bot import notify_run_success as tg_notify_success, notify_run_failed as tg_notify_failed
+
+def _dispatch_notify_success(chat_id, notify_type, username, mileage, duration, stats_msg):
+    if notify_type == "tgbot":
+        tg_notify_success(chat_id, notify_type, username, mileage, duration, stats_msg)
+    else:
+        qq_notify_success(chat_id, notify_type, username, mileage, duration, stats_msg)
+
+def _dispatch_notify_failed(chat_id, notify_type, username, error_msg):
+    if notify_type == "tgbot":
+        tg_notify_failed(chat_id, notify_type, username, error_msg)
+    else:
+        qq_notify_failed(chat_id, notify_type, username, error_msg)
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +104,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
             logger.error(error_msg)
             add_log(db, user, "Failed", error_msg, sched)
             if target_qq:
-                notify_run_failed(target_qq, target_notify_type, user.username, error_msg)
+                _dispatch_notify_failed(target_qq, target_notify_type, user.username, error_msg)
             return
 
         # 初始化 Yun Core
@@ -106,7 +119,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
             error_msg = f"初始化运行参数失败: {msg}"
             logger.error(error_msg)
             add_log(db, user, "Failed", error_msg, sched)
-            if target_qq: notify_run_failed(target_qq, target_notify_type, user.username, error_msg)
+            if target_qq: _dispatch_notify_failed(target_qq, target_notify_type, user.username, error_msg)
             return
         logger.info(f"[{user.yun_username}] 获取首页运行信息成功")
 
@@ -115,7 +128,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
             error_msg = f"创建跑步记录失败: {msg}"
             logger.error(error_msg)
             add_log(db, user, "Failed", error_msg, sched)
-            if target_qq: notify_run_failed(target_qq, target_notify_type, user.username, error_msg)
+            if target_qq: _dispatch_notify_failed(target_qq, target_notify_type, user.username, error_msg)
             return
         start_run_time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         logger.info(f"[{user.yun_username}] 开始跑步任务成功: {msg}")
@@ -126,7 +139,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
             error_msg = f"找不到打卡路线文件夹: {path_dir}"
             logger.error(error_msg)
             add_log(db, user, "Failed", error_msg, sched)
-            if target_qq: notify_run_failed(target_qq, target_notify_type, user.username, error_msg)
+            if target_qq: _dispatch_notify_failed(target_qq, target_notify_type, user.username, error_msg)
             return
 
         files = [f for f in os.listdir(path_dir) if f.endswith('.json')]
@@ -134,7 +147,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
             error_msg = f"文件夹 {path_dir} 中没有可用路线"
             logger.error(error_msg)
             add_log(db, user, "Failed", error_msg, sched)
-            if target_qq: notify_run_failed(target_qq, target_notify_type, user.username, error_msg)
+            if target_qq: _dispatch_notify_failed(target_qq, target_notify_type, user.username, error_msg)
             return
 
         file = os.path.join(path_dir, random.choice(files))
@@ -210,14 +223,14 @@ def run_job_for_user(user_id: int, schedule_id: int):
 
                 add_log(db, user, "Success", full_log_msg, sched)
                 if target_qq:
-                    notify_run_success(target_qq, target_notify_type, user.username, mileage, duration, stats_msg)
+                    _dispatch_notify_success(target_qq, target_notify_type, user.username, mileage, duration, stats_msg)
             else:
                 raise Exception(res)
         except Exception as e:
             error_msg = str(e)
             logger.error(f"[{user.yun_username}] {error_msg}")
             add_log(db, user, "Failed", error_msg, sched)
-            if target_qq: notify_run_failed(target_qq, target_notify_type, user.username, error_msg)
+            if target_qq: _dispatch_notify_failed(target_qq, target_notify_type, user.username, error_msg)
     finally:
         db.close()
 

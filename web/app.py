@@ -233,9 +233,6 @@ async def add_user(
     yun_username: str = Form(...),
     yun_password: str = Form(...),
     school_id: str = Form("195"),
-    push_group_id: str = Form(""),
-    qq_number: str = Form(""),
-    qq_notify_type: str = Form("private"),
     db: Session = Depends(get_db),
     _: bool = Depends(check_admin)
 ):
@@ -263,9 +260,6 @@ async def add_user(
         school_id=school_id,
         school_host=school_host,
         school_name=school_name,
-        push_group_id=int(push_group_id) if push_group_id and push_group_id != "custom" else None,
-        qq_number=qq_number,
-        qq_notify_type=qq_notify_type,
         device_id=device_id,
         device_name="Xiaomi",
         uuid=uuid_str,
@@ -283,9 +277,6 @@ async def edit_user(
     yun_username: str = Form(...),
     yun_password: str = Form(""),
     school_id: str = Form("195"),
-    push_group_id: str = Form(""),
-    qq_number: str = Form(""),
-    qq_notify_type: str = Form("private"),
     db: Session = Depends(get_db),
     _: bool = Depends(check_admin)
 ):
@@ -314,9 +305,6 @@ async def edit_user(
         if yun_password:
             user.yun_password = yun_password
             
-        user.push_group_id = int(push_group_id) if push_group_id and push_group_id != "custom" else None
-        user.qq_number = qq_number
-        user.qq_notify_type = qq_notify_type
         db.commit()
     return RedirectResponse(url="/", status_code=303)
 
@@ -506,15 +494,21 @@ async def run_schedule(
     return RedirectResponse(url="/", status_code=303)
 
 # ================= Push Groups Management APIs =================
+from typing import List
+
 class PushGroupSchema(BaseModel):
     name: str
     qq_number: str
     qq_notify_type: str
+    user_ids: List[int] = []
 
 @app.post("/api/push_groups")
 async def create_push_group(data: PushGroupSchema, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
     group = models.PushGroup(name=data.name, qq_number=data.qq_number, qq_notify_type=data.qq_notify_type)
     db.add(group)
+    db.flush()
+    if data.user_ids:
+        db.query(models.User).filter(models.User.id.in_(data.user_ids)).update({models.User.push_group_id: group.id}, synchronize_session=False)
     db.commit()
     return {"success": True}
 
@@ -525,6 +519,12 @@ async def update_push_group(group_id: int, data: PushGroupSchema, db: Session = 
     group.name = data.name
     group.qq_number = data.qq_number
     group.qq_notify_type = data.qq_notify_type
+    
+    # Update foreign keys
+    db.query(models.User).filter(models.User.push_group_id == group.id).update({models.User.push_group_id: None}, synchronize_session=False)
+    if data.user_ids:
+        db.query(models.User).filter(models.User.id.in_(data.user_ids)).update({models.User.push_group_id: group.id}, synchronize_session=False)
+        
     db.commit()
     return {"success": True}
     
