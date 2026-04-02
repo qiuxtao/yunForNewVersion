@@ -3179,16 +3179,33 @@
             }
 
             scrollToLetter(letter) {
-                const groupEl = this.container.querySelector(`#group-${this.container.id}-${letter}`);
-                if (groupEl) {
-                    groupEl.scrollIntoView({ behavior: 'auto', block: 'start' });
-                    
-                    // 显示气泡提示
-                    const indicator = this.container.querySelector('.select-search-touch-indicator');
-                    if (indicator) {
-                        indicator.innerText = letter;
-                        indicator.style.display = 'flex';
+                let targetEl = this.container.querySelector(`#group-${this.container.id}-${letter}`);
+                
+                if (!targetEl) {
+                    // 如果当前字母没有对应的学校分组，则向前寻找最近的分组（类似 iOS 通讯录行为）
+                    const letterIndex = this.letters.indexOf(letter);
+                    for (let i = letterIndex - 1; i >= 0; i--) {
+                        targetEl = this.container.querySelector(`#group-${this.container.id}-${this.letters[i]}`);
+                        if (targetEl) break;
                     }
+                    if (!targetEl) {
+                        // 如果前面没有，再向后找
+                        for (let i = letterIndex + 1; i < this.letters.length; i++) {
+                            targetEl = this.container.querySelector(`#group-${this.container.id}-${this.letters[i]}`);
+                            if (targetEl) break;
+                        }
+                    }
+                }
+
+                if (targetEl) {
+                    targetEl.scrollIntoView({ behavior: 'auto', block: 'start' });
+                }
+                
+                // 气泡提示始终显示用户实际触碰的字母，提供确实的反馈
+                const indicator = this.container.querySelector('.select-search-touch-indicator');
+                if (indicator) {
+                    indicator.innerText = letter;
+                    indicator.style.display = 'flex';
                 }
             }
 
