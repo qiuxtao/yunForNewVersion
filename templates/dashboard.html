@@ -446,78 +446,6 @@
             animation: selectFieldFade 0.2s ease;
         }
 
-        /* 移动端全屏适配 */
-        @media (max-width: 600px) {
-            .select-search-container.active .select-search-dropdown {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
-                max-height: 100vh;
-                border: none;
-                border-radius: 0;
-                z-index: 2000;
-                display: flex;
-            }
-            .select-search-options {
-                max-height: calc(100vh - 65px) !important;
-            }
-            .select-search-filter {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                padding: 12px;
-                border-bottom: 1px solid var(--glass-border);
-            }
-            .select-search-close-mobile {
-                display: flex !important;
-                align-items: center;
-                justify-content: center;
-                width: 36px;
-                height: 36px;
-                background: rgba(255,255,255,0.08);
-                border-radius: 50%;
-                cursor: pointer;
-                flex-shrink: 0;
-                color: #fff;
-                font-size: 20px;
-            }
-            .select-search-index-bar {
-                position: relative;
-                top: 0;
-                right: 0;
-                width: 100%;
-                height: 48px;
-                display: flex;
-                flex-direction: row;
-                justify-content: flex-start;
-                align-items: center;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-                padding: 0 15px;
-                background: rgba(255, 255, 255, 0.05);
-                border-bottom: 1px solid var(--glass-border);
-                gap: 5px;
-                scrollbar-width: none; /* Firefox */
-            }
-            .select-search-index-bar::-webkit-scrollbar {
-                display: none; /* Chrome/Safari */
-            }
-            .index-letter {
-                flex-shrink: 0;
-                padding: 6px 12px;
-                font-size: 14px;
-                background: rgba(255,255,255,0.05);
-                border-radius: 6px;
-                min-width: 36px;
-                text-align: center;
-            }
-            .select-search-options {
-                max-height: calc(100vh - 110px) !important;
-            }
-        }
-
         @keyframes selectFieldFade {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -616,6 +544,77 @@
             text-align: center;
             color: var(--text-muted);
             font-size: 13px;
+        }
+
+        /* 移动端全屏适配 (放在最后以确保优先级) */
+        @media (max-width: 600px) {
+            .select-search-container.active .select-search-dropdown {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                max-height: 100vh;
+                border: none;
+                border-radius: 0;
+                z-index: 2000;
+                display: flex;
+            }
+            .select-search-filter {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 12px;
+                border-bottom: 1px solid var(--glass-border);
+            }
+            .select-search-close-mobile {
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+                width: 36px;
+                height: 36px;
+                background: rgba(255,255,255,0.08);
+                border-radius: 50%;
+                cursor: pointer;
+                flex-shrink: 0;
+                color: #fff;
+                font-size: 20px;
+            }
+            .select-search-index-bar {
+                position: relative;
+                top: 0;
+                right: 0;
+                width: 100%;
+                height: 52px;
+                display: flex;
+                flex-direction: row;
+                justify-content: flex-start;
+                align-items: center;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                padding: 0 15px;
+                background: rgba(255, 255, 255, 0.05);
+                border-bottom: 1px solid var(--glass-border);
+                gap: 8px;
+                scrollbar-width: none;
+                z-index: 20;
+            }
+            .select-search-index-bar::-webkit-scrollbar {
+                display: none;
+            }
+            .index-letter {
+                flex-shrink: 0;
+                padding: 6px 14px;
+                font-size: 14px;
+                background: rgba(255,255,255,0.1);
+                border-radius: 8px;
+                min-width: 40px;
+                text-align: center;
+                color: #fff;
+            }
+            .select-search-options {
+                max-height: calc(100vh - 110px) !important;
+            }
         }
 
 
