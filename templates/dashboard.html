@@ -1388,7 +1388,7 @@
             <button class="nav-tab active" onclick="switchTab('accounts')" id="tab-btn-accounts">账户授权中心</button>
             <button class="nav-tab" onclick="switchTab('schedules')" id="tab-btn-schedules">定时任务管理</button>
             <button class="nav-tab" onclick="switchTab('routes')" id="tab-btn-routes">跑步路线管理</button>
-            <button class="nav-tab" onclick="switchTab('push')" id="tab-btn-push">通知组管理</button>
+            <button class="nav-tab" onclick="switchTab('push')" id="tab-btn-push">消息推送管理</button>
             <button class="nav-tab" onclick="switchTab('logs')" id="tab-btn-logs">系统运行日志</button>
         </div>
 
@@ -1539,9 +1539,9 @@
         <div id="tab-pane-push" class="tab-pane">
             <div class="glass-panel">
                 <div class="panel-header">
-                    <h2 class="panel-title">通知组管理</h2>
+                    <h2 class="panel-title">消息推送管理</h2>
                     <button class="btn btn-primary" onclick="openModal('pushGroupModal')">
-                        新增通知组
+                        新增消息推送组
                     </button>
                 </div>
                 <div class="table-responsive">
@@ -1570,7 +1570,7 @@
                                 </td>
                                 <td>
                                     <div class="action-cell" style="display:flex; gap:8px;">
-                                        <button class="btn btn-ghost" style="border: 1px solid var(--glass-border);" onclick='testPushGroup({{ pg.qq_number|tojson }}, {{ pg.qq_notify_type|tojson }})'>测试</button>
+                                        <button class="btn btn-info" onclick='testPushGroup({{ pg.qq_number|tojson }}, {{ pg.qq_notify_type|tojson }})'>测试</button>
                                         <button class="btn btn-warning" onclick='editPushGroup({{ pg.id }}, {{ pg.name|tojson }}, {{ pg.qq_number|tojson }}, {{ pg.qq_notify_type|tojson }}, {{ pg.users | map(attribute="id") | list | tojson }})'>编辑</button>
                                         <button type="button" class="btn btn-danger" onclick="deletePushGroup({{ pg.id }})">删除</button>
                                     </div>
@@ -1908,7 +1908,7 @@
     <!-- Push Group Modal -->
     <div class="modal-overlay" id="pushGroupModal">
         <div class="modal-box">
-            <h2 class="panel-title" id="pushGroupModalTitle" style="margin-bottom: 24px;">新增通知组</h2>
+            <h2 class="panel-title" id="pushGroupModalTitle" style="margin-bottom: 24px;">新增消息推送组</h2>
             <form onsubmit="submitPushGroup(event)" id="pushGroupForm">
                 <input type="hidden" id="pg_id">
                 <div class="form-group">
