@@ -560,9 +560,9 @@
             font-size: 13px;
         }
 
-        /* 移动端全屏适配 (放在最后以确保优先级) */
+        /* 移动端全屏适配 (针对开启了 mobile-fullscreen 的场景) */
         @media (max-width: 600px) {
-            .select-search-container.active .select-search-dropdown {
+            .select-search-container.active.mobile-fullscreen .select-search-dropdown {
                 position: fixed;
                 top: 0;
                 left: 0;
@@ -574,14 +574,14 @@
                 z-index: 2000;
                 display: flex;
             }
-            .select-search-filter {
+            .mobile-fullscreen .select-search-filter {
                 display: flex;
                 align-items: center;
                 gap: 10px;
                 padding: 12px;
                 border-bottom: 1px solid var(--glass-border);
             }
-            .select-search-close-mobile {
+            .mobile-fullscreen .select-search-close-mobile {
                 display: flex !important;
                 align-items: center;
                 justify-content: center;
@@ -594,7 +594,7 @@
                 color: #fff;
                 font-size: 20px;
             }
-            .select-search-index-bar {
+            .mobile-fullscreen .select-search-index-bar {
                 position: absolute;
                 top: 60px;
                 right: 0;
@@ -612,7 +612,7 @@
                 touch-action: none;
                 user-select: none;
             }
-            .index-letter {
+            .mobile-fullscreen .index-letter {
                 flex: 1;
                 font-size: 11px;
                 background: transparent;
@@ -620,7 +620,7 @@
                 width: 100%;
                 color: #94a3b8;
             }
-            .select-search-options {
+            .mobile-fullscreen .select-search-options {
                 max-height: calc(100vh - 65px) !important;
                 padding-right: 44px;
             }
@@ -2171,7 +2171,9 @@
                         data: termData,
                         originalSelect: document.getElementById('historyTermSelect'),
                         placeholder: '切换学期...',
-                        onSelect: () => loadTermHistory()
+                        onSelect: () => loadTermHistory(),
+                        enableSearch: false,
+                        fullScreenMobile: false
                     };
                     
                     if (!termMs) {
@@ -2669,7 +2671,9 @@
                     editMs = new ModernSelect('edit_sched_route_modern', {
                         data: routeData,
                         originalSelect: editSel,
-                        placeholder: '请选择路线组...'
+                        placeholder: '请选择路线组...',
+                        enableSearch: false,
+                        fullScreenMobile: false
                     });
                 } else {
                     editMs.data = routeData;
@@ -2837,7 +2841,9 @@
                         ms = new ModernSelect('save_route_group_modern', {
                             data: groupData,
                             originalSelect: document.getElementById('save_route_group_select'),
-                            placeholder: '请选择目标路线组...'
+                            placeholder: '请选择目标路线组...',
+                            enableSearch: false,
+                            fullScreenMobile: false
                         });
                     } else {
                         ms.data = groupData;
@@ -3051,6 +3057,11 @@
                 this.data = options.data || []; // [{id, name}, ...]
                 this.placeholder = options.placeholder || '请搜索...';
                 this.enableIndex = options.enableIndex || false;
+                
+                // 新增选项：控制搜索框和移动端全屏
+                this.enableSearch = options.enableSearch !== undefined ? options.enableSearch : true;
+                this.fullScreenMobile = options.fullScreenMobile !== undefined ? options.fullScreenMobile : true;
+
                 this.onSelect = options.onSelect || (() => {});
                 this.selectedValue = options.value || '';
                 
@@ -3102,13 +3113,21 @@
                 const displayText = selectedItem ? selectedItem.name : this.placeholder;
 
                 this.container.classList.add('select-search-container');
+                if (this.fullScreenMobile) {
+                    this.container.classList.add('mobile-fullscreen');
+                } else {
+                    this.container.classList.remove('mobile-fullscreen');
+                }
+
                 this.container.innerHTML = `
                     <div class="select-search-trigger">${displayText}</div>
                     <div class="select-search-dropdown">
+                        ${this.enableSearch ? `
                         <div class="select-search-filter">
                             <div class="select-search-close-mobile" style="display:none;">&larr;</div>
                             <input type="text" class="select-search-input" placeholder="输入关键字查找..." spellcheck="false">
                         </div>
+                        ` : ''}
                         ${this.enableIndex ? `<div class="select-search-index-bar">${this.letters.map(l => `<span class="index-letter" data-letter="${l}">${l}</span>`).join('')}</div>` : ''}
                         <div class="select-search-options">
                             <div class="options-list"></div>
@@ -3169,12 +3188,14 @@
                     };
                 }
 
-                filterInput.onclick = (e) => e.stopPropagation();
-                filterInput.oninput = (e) => {
-                    const val = e.target.value.toLowerCase().trim();
-                    this.filteredData = this.data.filter(d => d.name.toLowerCase().includes(val));
-                    this.renderOptions();
-                };
+                if (filterInput) {
+                    filterInput.onclick = (e) => e.stopPropagation();
+                    filterInput.oninput = (e) => {
+                        const val = e.target.value.toLowerCase().trim();
+                        this.filteredData = this.data.filter(d => d.name.toLowerCase().includes(val));
+                        this.renderOptions();
+                    };
+                }
 
                 optionsList.onclick = (e) => {
                     const option = e.target.closest('.select-search-option');
@@ -3244,8 +3265,10 @@
                 
                 this.isOpen = true;
                 this.container.classList.add('active');
-                const input = this.container.querySelector('.select-search-input');
-                setTimeout(() => input.focus(), 100);
+                if (this.enableSearch) {
+                    const input = this.container.querySelector('.select-search-input');
+                    if (input) setTimeout(() => input.focus(), 100);
+                }
             }
 
             close() {
@@ -3454,7 +3477,9 @@
                     { id: 'tgbot', name: 'Telegram 机器人' }
                 ],
                 originalSelect: document.getElementById('pg_qq_notify_type'),
-                placeholder: '请选择推送类型...'
+                placeholder: '请选择推送类型...',
+                enableSearch: false,
+                fullScreenMobile: false
             });
 
             const savedTab = localStorage.getItem('activeTab') || 'accounts';
