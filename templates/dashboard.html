@@ -1151,67 +1151,93 @@
                 text-overflow: ellipsis;
                 max-width: none !important; /* 取消限制，展示更多名字状况+3 */
             }
-            /* 桌端扁平化后的对齐补丁 - 仅桌端生效状况+3 */
-            @media screen and (min-width: 769px) {
-                #historyHeader > #loadDetailsBtn {
-                    margin-left: auto !important;
-                }
+            /* 桌端扁平化后的对齐补丁 - 状况+3 */
+            .history-header-new {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                width: 100% !important;
+                margin-bottom: 10px !important;
+                flex-shrink: 0 !important;
             }
             
-            /* 移动端协调布局状况+3 */
+            /* 桌面端不额外强制居右按钮，保持自然流 */
+            @media screen and (min-width: 769px) {
+                .history-header-new > div {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+            }
+
+            /* 移动端协调布局 - 移除 Grid，回归更紧凑的 Flex 布局 */
             @media screen and (max-width: 768px) {
-                #historyModal .modal-box > div:first-child {
-                    display: grid !important;
-                    grid-template-columns: 1fr auto !important;
-                    grid-template-areas: "title select" "button stats" !important;
-                    gap: 10px 8px !important;
-                    padding-bottom: 15px;
-                    align-items: center !important;
+                .history-header-new {
+                    flex-direction: column !important;
+                    align-items: flex-start !important;
+                    gap: 8px !important;
                 }
-                #historyModal .modal-box > div:first-child h2 {
-                    grid-area: title !important;
+
+                .history-header-new > h2 {
                     font-size: 16px !important;
+                    width: 100% !important;
                 }
-                #historyTermSelect {
-                    grid-area: select !important;
-                    width: 100% !important; /* 完整显示学期信息状况+3 */
-                    min-width: 140px !important;
-                    margin: 0 !important;
+
+                .history-header-new > div {
+                    width: 100% !important;
+                    display: flex !important;
+                    flex-wrap: wrap !important;
+                    gap: 6px 8px !important;
+                    align-items: center !important;
+                    justify-content: space-between !important;
                 }
+                
+                #history_term_modern_container {
+                    flex: 1 0 100% !important; /* 移动端学期选择器单独占一行 */
+                    order: 3;
+                }
+                
                 #loadDetailsBtn {
-                    grid-area: button !important;
-                    width: auto !important;
-                    min-width: 80px !important;
-                    margin: 0 !important; /* 贴左状况+3 */
-                    justify-self: start !important;
+                    order: 1;
                 }
+                
                 #termStats {
-                    grid-area: stats !important;
-                    justify-content: flex-end !important;
-                    font-size: 11px !important;
-                    margin: 0 !important;
+                    order: 2;
+                    margin-left: 0 !important;
                 }
+
                 /* 统一全端表格字号状况+3 */
                 #historyTable td, #historyTable th {
                     font-size: 13px !important;
                     padding: 8px 1px !important;
-                    white-space: normal !important; /* 同步桌端，允许适度换行 */
+                    white-space: normal !important;
                 }
             }
 
-            #historyModal .modal-box > div:first-child > div:last-child {
-                width: 100%;
-                display: flex !important;
-                flex-wrap: nowrap;
-                gap: 4px;
-                align-items: center;
+            /* 针对历史记录顶部的特制紧凑型 ModernSelect 触发器 */
+            #historyHeader .select-search-trigger,
+            .history-header-new .select-search-trigger {
+                padding: 4px 10px !important; /* 进一步压缩内边距 */
+                min-height: 28px !important;
+                height: 28px !important;
+                font-size: 11.5px !important;
+                border-radius: 6px !important;
+                background: rgba(255, 255, 255, 0.05) !important;
+            }
+
+            /* 处理箭头偏移状况+3 */
+            #historyHeader .select-search-trigger:after,
+            .history-header-new .select-search-trigger:after {
+                width: 10px !important;
+                height: 10px !important;
+                right: 8px !important;
             }
 
             #historyTermSelect {
                 flex: 1;
                 margin-top: 0 !important;
                 height: 28px !important;
-                padding: 0 30px 0 8px !important; /* 右侧留出 SVG 箭头空间状况+3 */
+                padding: 0 30px 0 8px !important;
                 font-size: 11px !important;
             }
 
@@ -1631,25 +1657,28 @@
     <div class="modal-overlay" id="historyModal">
         <div class="modal-box"
             style="max-width: 750px; width: 96%; height: 95vh; display:flex; flex-direction:column; padding: 12px;">
-            <div id="historyHeader" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; flex-shrink:0; flex-wrap: wrap; gap: 6px;">
+            <div id="historyHeader" class="history-header-new">
                 <h2 class="panel-title" id="historyModalTitle" style="font-size:18px; margin: 0; flex-shrink:0;">云端记录</h2>
                 
-                <button class="btn btn-info" id="loadDetailsBtn"
-                    style="display:none; padding:4px 12px; font-size:12px; height:32px; white-space:nowrap;"
-                    onclick="loadAllRunDetails()">补全信息</button>
-                    
-                <div id="termStats" style="display:none; font-size:12px; font-weight:normal; align-items:center; gap:6px; white-space:nowrap;">
-                    <span class="badge badge-info" style="margin:0;">总计 <span id="termTotalRuns">0</span> 次</span>
-                    <span class="badge badge-success" style="margin:0;">合格 <span id="termQualifiedCount" style="font-weight:bold;">0</span> 次</span>
-                </div>
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:nowrap;">
+                    <div id="termStats" style="display:none; font-size:12px; font-weight:normal; align-items:center; gap:6px; white-space:nowrap;">
+                        <span class="badge badge-info" style="margin:0;">总计 <span id="termTotalRuns">0</span> 次</span>
+                        <span class="badge badge-success" style="margin:0;">合格 <span id="termQualifiedCount" style="font-weight:bold;">0</span> 次</span>
+                    </div>
 
-                <div id="history_term_modern_container" style="display:none; min-width: 180px;"></div>
+                    <div id="history_term_modern_container" style="display:none; min-width: 140px;"></div>
+                    
+                    <button class="btn btn-info" id="loadDetailsBtn"
+                        style="display:none; padding:4px 12px; font-size:12px; height:32px; white-space:nowrap;"
+                        onclick="loadAllRunDetails()">补全信息</button>
+                </div>
+                
                 <input type="hidden" id="historyTermSelect">
             </div>
 
             <input type="hidden" id="current_history_user">
             <input type="hidden" id="current_history_token">
-
+            
             <div id="historyLoading"
                 style="display:none; text-align:center; padding: 20px; color: var(--text-secondary);">
                 正在连接云运动获取官方打卡记录数据，请稍候...
