@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
@@ -445,7 +445,7 @@
             border: 1px solid var(--glass-border);
             border-radius: 12px;
             z-index: 1000;
-            max-height: 500px;
+            max-height: min(500px, 80vh); /* 高缩放时也不会被截断 */
             display: none;
             flex-direction: column;
             box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
@@ -482,8 +482,15 @@
         .select-search-options {
             flex-grow: 1;
             overflow-y: auto;
+            overflow-x: hidden;
             padding: 4px;
             max-height: 440px;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+
+        .select-search-options::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
         }
 
         .select-search-option {
@@ -529,7 +536,7 @@
             justify-content: space-between;
             align-items: center;
             background: rgba(255, 255, 255, 0.02);
-            border-radius: 0 12px 12px 0;
+            border-radius: 0 10px 10px 0; /* 贴合下拉菜单的圆角 */
             z-index: 10;
             padding: 4px 0;
             touch-action: none;
@@ -561,7 +568,7 @@
         }
 
         /* 移动端全屏适配 (针对开启了 mobile-fullscreen 的场景) */
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             .select-search-container.active.mobile-fullscreen .select-search-dropdown {
                 position: fixed;
                 top: 0;
@@ -623,6 +630,7 @@
             .mobile-fullscreen .select-search-options {
                 max-height: calc(100vh - 65px) !important;
                 padding-right: 44px;
+                overflow-x: hidden !important; /* 禁止左右滚动 */
             }
         }
 
@@ -3072,8 +3080,8 @@
                 // 拼音首字母边界
                 this.pinyinBounds = {
                     'A': '阿', 'B': '八', 'C': '嚓', 'D': '哒', 'E': '妸', 'F': '发', 'G': '旮',
-                    'H': '铪', 'J': '丌', 'K': '咔', 'L': '垃', 'M': '嘸', 'N': '拿', 'O': '讴',
-                    'P': '趴', 'Q': '七', 'R': '呥', 'S': '仨', 'T': '他', 'W': '屲', 'X': '夕',
+                    'H': '铪', 'I': '丌', 'J': '丌', 'K': '咔', 'L': '垃', 'M': '嘸', 'N': '拿', 'O': '讴',
+                    'P': '趴', 'Q': '七', 'R': '呥', 'S': '仨', 'T': '他', 'U': '屲', 'V': '屲', 'W': '屲', 'X': '夕',
                     'Y': '丫', 'Z': '帀'
                 };
                 this.letters = Object.keys(this.pinyinBounds);
