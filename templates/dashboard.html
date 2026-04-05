@@ -1718,7 +1718,7 @@
                 <div class="form-group">
                     <label class="form-label">云运动密码 (留空表示不修改)</label>
                     <input type="password" class="form-control" name="yun_password" id="edit_yun_password"
-                        placeholder="**">
+                        placeholder="********">
                 </div>
 
                 <div class="modal-footer">
@@ -2408,9 +2408,9 @@
                 document.getElementById('edit_user_id').value = user.id;
                 const ms = ModernSelect.instances.get('edit_school_select_modern');
                 if (ms) {
-                    ms.setValue(user.school_id || '195');
+                    ms.setValue(user.school_id || '');
                 } else {
-                    document.getElementById('edit_school_id').value = user.school_id || '195';
+                    document.getElementById('edit_school_id').value = user.school_id || '';
                 }
                 document.getElementById('edit_username').value = user.username;
                 document.getElementById('edit_yun_username').value = user.yun_username;
@@ -3434,8 +3434,7 @@
                         data: schoolData,
                         originalSelect: document.getElementById('add_school_id'),
                         placeholder: '搜索并选择学校...',
-                        enableIndex: true,
-                        value: '195'
+                        enableIndex: true
                     });
                     
                     new ModernSelect('edit_school_select_modern', {
