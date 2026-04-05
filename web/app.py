@@ -239,8 +239,12 @@ async def add_user(
     device_id = str(random.randint(1000000000000000, 9999999999999999))
     uuid_str = device_id
     
+    if not school_id:
+        from fastapi.responses import HTMLResponse
+        return HTMLResponse("<script>alert('请先选择学校！'); history.back();</script>")
+    
     school_name = "未知学校"
-    school_host = "http://47.99.163.239:8080"
+    school_host = ""
     load_schools_cache()
     for s in GLOBAL_SCHOOLS_CACHE:
         if str(s.get("schoolId", "")) == str(school_id):
@@ -282,8 +286,12 @@ async def edit_user(
 ):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if user:
+        if not school_id:
+            from fastapi.responses import HTMLResponse
+            return HTMLResponse("<script>alert('请选择学校！'); history.back();</script>")
+
         school_name = "未知学校"
-        school_host = "http://47.99.163.239:8080"
+        school_host = ""
         load_schools_cache()
         for s in GLOBAL_SCHOOLS_CACHE:
             if str(s.get("schoolId", "")) == str(school_id):
@@ -339,8 +347,11 @@ async def validate_user_credentials(
     import time as _time
     from fastapi.responses import JSONResponse
     
+    if not school_id:
+        return JSONResponse({"success": False, "message": "请先选择所属学校"})
+    
     school_name = "未知学校"
-    school_host = "http://47.99.163.239:8080"
+    school_host = ""
     load_schools_cache()
     for s in GLOBAL_SCHOOLS_CACHE:
         if str(s.get("schoolId", "")) == str(school_id):
