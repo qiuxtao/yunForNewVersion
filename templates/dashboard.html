@@ -2309,12 +2309,11 @@
             document.getElementById('historyTableContainer').style.display = 'none';
             document.getElementById('historyError').style.display = 'none';
 
-            const userId = document.getElementById('current_history_user').value;
-            const termVal = document.getElementById('historyTermSelect').value;
-            const termName = document.getElementById('historyTermSelect').options[document.getElementById('historyTermSelect').selectedIndex].text;
-            const token = document.getElementById('current_history_token').value;
-
             try {
+                const userId = document.getElementById('current_history_user').value;
+                const termVal = document.getElementById('historyTermSelect').value;
+                const token = document.getElementById('current_history_token').value;
+
                 const url = `/api/users/${userId}/history_by_term?term_value=${encodeURIComponent(termVal)}&token=${encodeURIComponent(token)}`;
                 const response = await fetch(url);
                 const result = await response.json();
