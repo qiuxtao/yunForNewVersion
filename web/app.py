@@ -243,9 +243,9 @@ async def add_user(
     school_host = "http://47.99.163.239:8080"
     load_schools_cache()
     for s in GLOBAL_SCHOOLS_CACHE:
-        if str(s.get("id", "")) == str(school_id):
-            school_name = s.get("name", "")
-            school_host = s.get("host", "").rstrip("/")
+        if str(s.get("schoolId", "")) == str(school_id):
+            school_name = s.get("schoolName", "")
+            school_host = s.get("schoolUrl", "").rstrip("/")
             break
 
     # 强制校验
@@ -286,9 +286,9 @@ async def edit_user(
         school_host = "http://47.99.163.239:8080"
         load_schools_cache()
         for s in GLOBAL_SCHOOLS_CACHE:
-            if str(s.get("id", "")) == str(school_id):
-                school_name = s.get("name", "")
-                school_host = s.get("host", "").rstrip("/")
+            if str(s.get("schoolId", "")) == str(school_id):
+                school_name = s.get("schoolName", "")
+                school_host = s.get("schoolUrl", "").rstrip("/")
                 break
                 
         # 强制校验
@@ -343,8 +343,8 @@ async def validate_user_credentials(
     school_host = "http://47.99.163.239:8080"
     load_schools_cache()
     for s in GLOBAL_SCHOOLS_CACHE:
-        if str(s.get("id", "")) == str(school_id):
-            school_host = s.get("host", "").rstrip("/")
+        if str(s.get("schoolId", "")) == str(school_id):
+            school_host = s.get("schoolUrl", "").rstrip("/")
             break
 
     conf = configparser.ConfigParser()
