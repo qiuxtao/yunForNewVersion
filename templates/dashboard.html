@@ -1643,9 +1643,8 @@
                     <span class="badge badge-success" style="margin:0;">合格 <span id="termQualifiedCount" style="font-weight:bold;">0</span> 次</span>
                 </div>
 
-                <select id="historyTermSelect" class="form-select"
-                    style="width: auto; min-width: 150px; padding: 4px 28px 4px 10px; font-size:12px; height:32px; display:none;" onchange="loadTermHistory()">
-                </select>
+                <div id="history_term_modern_container" style="display:none; min-width: 180px;"></div>
+                <input type="hidden" id="historyTermSelect">
             </div>
 
             <input type="hidden" id="current_history_user">
@@ -1670,7 +1669,7 @@
     <div class="modal-overlay" id="addUserModal">
         <div class="modal-box">
             <h2 class="panel-title" style="margin-bottom: 24px;">登录云运动账户</h2>
-            <form action="/users/add" method="POST" id="addUserForm">
+            <form id="addUserForm" onsubmit="submitAddUser(event)">
                 <div class="form-group">
                     <label class="form-label">面板显示名 (备注/姓名)</label>
                     <input type="text" class="form-control" name="username" required placeholder="例如: 张三">
@@ -1701,7 +1700,7 @@
     <div class="modal-overlay" id="editUserModal">
         <div class="modal-box">
             <h2 class="panel-title" style="margin-bottom: 24px;">编辑云运动账户</h2>
-            <form action="/users/edit" method="POST" id="editUserForm">
+            <form id="editUserForm" onsubmit="submitEditUser(event)">
                 <input type="hidden" name="user_id" id="edit_user_id">
                 <div class="form-group">
                     <label class="form-label">面板显示名 (备注/姓名)</label>
@@ -1850,10 +1849,8 @@
     <div class="modal-overlay" id="saveRouteModal" style="z-index: 300;">
         <div class="modal-box">
             <h2 class="panel-title" style="margin-bottom: 24px;">抽取云端路线至图库</h2>
-            <div class="form-group">
-                <label class="form-label">请选择目标存放路线组 (作为图集库)</label>
-                <select id="save_route_group_select" class="form-select"></select>
-            </div>
+                <div id="save_route_group_modern"></div>
+                <input type="hidden" id="save_route_group_select">
             <input type="hidden" id="save_route_run_id">
             <input type="hidden" id="save_route_mileage">
             <div class="modal-footer">
@@ -1921,11 +1918,8 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">推送对象类型</label>
-                    <select class="form-select" id="pg_qq_notify_type">
-                        <option value="private">私聊 (个人QQ)</option>
-                        <option value="group">群聊 (QQ群号)</option>
-                        <option value="tgbot">Telegram 机器人</option>
-                    </select>
+                    <div id="pg_notify_type_modern"></div>
+                    <input type="hidden" id="pg_qq_notify_type" value="private">
                 </div>
                 <div class="form-group">
                     <label class="form-label">授权目标实例（可多选）</label>
@@ -2167,17 +2161,33 @@
                 const result = await response.json();
 
                 if (result.success && result.data && result.data.length > 0) {
-                    const select = document.getElementById('historyTermSelect');
-                    select.innerHTML = '';
-                    result.data.forEach(term => {
-                        let opt = document.createElement('option');
-                        opt.value = term.value;
-                        opt.text = term.key;
-                        select.appendChild(opt);
-                    });
+                    const termData = result.data.map(t => ({ id: t.value, name: t.key }));
+                    
+                    const termContainer = document.getElementById('history_term_modern_container');
+                    termContainer.style.display = 'block';
+                    
+                    let termMs = ModernSelect.instances.get('history_term_modern_container');
+                    const config = {
+                        data: termData,
+                        originalSelect: document.getElementById('historyTermSelect'),
+                        placeholder: '切换学期...',
+                        onSelect: () => loadTermHistory()
+                    };
+                    
+                    if (!termMs) {
+                        termMs = new ModernSelect('history_term_modern_container', config);
+                    } else {
+                        termMs.data = termData;
+                        termMs.onSelect = config.onSelect;
+                        termMs.init();
+                    }
+                    
+                    // 默认选择第一个
+                    if (termData.length > 0) {
+                        termMs.setValue(termData[0].id);
+                    }
 
                     document.getElementById('current_history_token').value = result.token;
-                    select.style.display = 'block';
 
                     // auto trigger the first term record load
                     await loadTermHistory();
@@ -2817,12 +2827,27 @@
                 const res = await fetch('/api/route_groups');
                 const result = await res.json();
                 if (result.success) {
-                    const sel = document.getElementById('save_route_group_select');
-                    sel.innerHTML = result.data.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
                     if (result.data.length === 0) {
                         showAlert("现在还没有任何路线组！请先在【路线库管理】中创建一个组。");
                         return;
                     }
+
+                    const groupData = result.data.map(g => ({ id: g.name, name: g.name }));
+                    let ms = ModernSelect.instances.get('save_route_group_modern');
+                    if (!ms) {
+                        ms = new ModernSelect('save_route_group_modern', {
+                            data: groupData,
+                            originalSelect: document.getElementById('save_route_group_select'),
+                            placeholder: '请选择目标路线组...'
+                        });
+                    } else {
+                        ms.data = groupData;
+                        ms.init();
+                    }
+                    
+                    // 默认选择第一个
+                    ms.setValue(groupData[0].id);
+
                     document.getElementById('save_route_run_id').value = runId;
                     document.getElementById('save_route_mileage').value = mileage;
                     openModal('saveRouteModal');
@@ -3423,6 +3448,17 @@
                 }
             } catch(e) { console.error("加载学校列表失败:", e); }
 
+            // 初始化“推送组”类型选择 ModernSelect
+            new ModernSelect('pg_notify_type_modern', {
+                data: [
+                    { id: 'private', name: '私聊 (个人QQ)' },
+                    { id: 'group', name: '群聊 (QQ群号)' },
+                    { id: 'tgbot', name: 'Telegram 机器人' }
+                ],
+                originalSelect: document.getElementById('pg_qq_notify_type'),
+                placeholder: '请选择推送类型...'
+            });
+
             const savedTab = localStorage.getItem('activeTab') || 'accounts';
             switchTab(savedTab);
             
@@ -3702,7 +3738,10 @@
             document.getElementById('pg_id').value = id;
             document.getElementById('pg_name').value = name;
             document.getElementById('pg_qq_number').value = qq;
-            document.getElementById('pg_qq_notify_type').value = type;
+            
+            const ms = ModernSelect.instances.get('pg_notify_type_modern');
+            if (ms) ms.setValue(type);
+            else document.getElementById('pg_qq_notify_type').value = type;
             
             document.querySelectorAll('.pg-group-user-cb').forEach(cb => {
                 cb.checked = userIds && userIds.includes(parseInt(cb.value));
@@ -3747,6 +3786,46 @@
                 location.reload();
             } else {
                 showToast(json.msg || '保存失败', 'error');
+            }
+        }
+
+        async function submitAddUser(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            try {
+                const res = await fetch('/users/add', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await res.json();
+                if (result.success) {
+                    location.reload();
+                } else {
+                    showAlert(result.message);
+                }
+            } catch (err) {
+                showAlert('网络异常: ' + err);
+            }
+        }
+
+        async function submitEditUser(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            try {
+                const res = await fetch('/users/edit', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await res.json();
+                if (result.success) {
+                    location.reload();
+                } else {
+                    showAlert(result.message);
+                }
+            } catch (err) {
+                showAlert('网络异常: ' + err);
             }
         }
 

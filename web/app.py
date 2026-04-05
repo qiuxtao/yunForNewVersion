@@ -240,8 +240,8 @@ async def add_user(
     uuid_str = device_id
     
     if not school_id:
-        from fastapi.responses import HTMLResponse
-        return HTMLResponse("<script>alert('请先选择学校！'); history.back();</script>")
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"success": False, "message": "请先选择学校！"})
     
     school_name = "未知学校"
     school_host = ""
@@ -254,8 +254,8 @@ async def add_user(
 
     # 强制校验
     if not _validate_yun_sync(yun_username, yun_password, school_id, school_host):
-        from fastapi.responses import HTMLResponse
-        return HTMLResponse("<script>alert('【强制校验失败】账号或密码错误，或服务器网络异常。'); history.back();</script>")
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"success": False, "message": "【强制校验失败】账号或密码错误，或服务器网络异常。"})
 
     new_user = models.User(
         username=username,
@@ -272,7 +272,8 @@ async def add_user(
     )
     db.add(new_user)
     db.commit()
-    return RedirectResponse(url="/", status_code=303)
+    from fastapi.responses import JSONResponse
+    return JSONResponse({"success": True})
 
 @app.post("/users/edit")
 async def edit_user(
@@ -287,8 +288,8 @@ async def edit_user(
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if user:
         if not school_id:
-            from fastapi.responses import HTMLResponse
-            return HTMLResponse("<script>alert('请选择学校！'); history.back();</script>")
+            from fastapi.responses import JSONResponse
+            return JSONResponse({"success": False, "message": "请选择学校！"})
 
         school_name = "未知学校"
         school_host = ""
@@ -302,8 +303,8 @@ async def edit_user(
         # 强制校验
         pwd_to_check = yun_password if yun_password else user.yun_password
         if not _validate_yun_sync(yun_username, pwd_to_check, school_id, school_host):
-            from fastapi.responses import HTMLResponse
-            return HTMLResponse("<script>alert('【强制校验失败】账号或密码错误，或服务器网络异常。'); history.back();</script>")
+            from fastapi.responses import JSONResponse
+            return JSONResponse({"success": False, "message": "【强制校验失败】账号或密码错误，或服务器网络异常。"})
             
         user.username = username
         user.yun_username = yun_username
@@ -314,7 +315,8 @@ async def edit_user(
             user.yun_password = yun_password
             
         db.commit()
-    return RedirectResponse(url="/", status_code=303)
+    from fastapi.responses import JSONResponse
+    return JSONResponse({"success": True})
 
 def _validate_yun_sync(yun_username, yun_password, school_id, school_host):
     import time as _time
