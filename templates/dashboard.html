@@ -1161,51 +1161,61 @@
                 flex-shrink: 0 !important;
             }
             
-            /* 桌面端不额外强制居右按钮，保持自然流 */
-            @media screen and (min-width: 769px) {
-                .history-header-new > div {
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                }
+            .history-header-new .header-left,
+            .history-header-new .header-right {
+                display: flex;
+                align-items: center;
+                gap: 10px;
             }
 
-            /* 移动端协调布局 - 移除 Grid，回归更紧凑的 Flex 布局 */
+            /* 移动端协调布局 - 采用 2x2 Grid 布局 */
             @media screen and (max-width: 768px) {
                 .history-header-new {
-                    flex-direction: column !important;
-                    align-items: flex-start !important;
-                    gap: 8px !important;
-                }
-
-                .history-header-new > h2 {
-                    font-size: 16px !important;
-                    width: 100% !important;
-                }
-
-                .history-header-new > div {
-                    width: 100% !important;
-                    display: flex !important;
-                    flex-wrap: wrap !important;
-                    gap: 6px 8px !important;
+                    display: grid !important;
+                    grid-template-columns: 1fr auto !important;
+                    grid-template-rows: auto auto !important;
+                    gap: 8px 10px !important;
                     align-items: center !important;
-                    justify-content: space-between !important;
-                }
-                
-                #history_term_modern_container {
-                    flex: 1 0 100% !important; /* 移动端学期选择器单独占一行 */
-                    order: 3;
-                }
-                
-                #loadDetailsBtn {
-                    order: 1;
-                }
-                
-                #termStats {
-                    order: 2;
-                    margin-left: 0 !important;
                 }
 
+                .history-header-new .header-left,
+                .history-header-new .header-right {
+                    display: contents !important; /* 使子元素直接参与外层网格布局 */
+                }
+
+                #historyModalTitle {
+                    grid-column: 1 !important;
+                    grid-row: 1 !important;
+                    font-size: 15px !important;
+                    justify-self: start !important;
+                }
+
+                #history_term_modern_container {
+                    grid-column: 2 !important;
+                    grid-row: 1 !important;
+                    width: 125px !important; /* 限制学期选择器宽度 */
+                    min-width: unset !important;
+                    justify-self: end !important;
+                }
+
+                #loadDetailsBtn {
+                    grid-column: 1 !important;
+                    grid-row: 2 !important;
+                    justify-self: start !important;
+                    height: 26px !important; /* 不太高 */
+                    padding: 2px 10px !important;
+                    font-size: 11px !important;
+                    margin: 0 !important;
+                }
+
+                #termStats {
+                    grid-column: 2 !important;
+                    grid-row: 2 !important;
+                    justify-self: end !important;
+                    margin: 0 !important;
+                    font-size: 11px !important;
+                }
+                
                 /* 统一全端表格字号状况+3 */
                 #historyTable td, #historyTable th {
                     font-size: 13px !important;
@@ -1658,19 +1668,20 @@
         <div class="modal-box"
             style="max-width: 750px; width: 96%; height: 95vh; display:flex; flex-direction:column; padding: 12px;">
             <div id="historyHeader" class="history-header-new">
-                <h2 class="panel-title" id="historyModalTitle" style="font-size:18px; margin: 0; flex-shrink:0;">云端记录</h2>
+                <div class="header-left">
+                    <h2 class="panel-title" id="historyModalTitle" style="font-size:18px; margin: 0; flex-shrink:0;">云端记录</h2>
+                    <button class="btn btn-info" id="loadDetailsBtn"
+                        style="display:none; padding:4px 12px; font-size:12px; height:32px; white-space:nowrap;"
+                        onclick="loadAllRunDetails()">补全信息</button>
+                </div>
                 
-                <div style="display:flex; align-items:center; gap:10px; flex-wrap:nowrap;">
+                <div class="header-right">
                     <div id="termStats" style="display:none; font-size:12px; font-weight:normal; align-items:center; gap:6px; white-space:nowrap;">
                         <span class="badge badge-info" style="margin:0;">总计 <span id="termTotalRuns">0</span> 次</span>
                         <span class="badge badge-success" style="margin:0;">合格 <span id="termQualifiedCount" style="font-weight:bold;">0</span> 次</span>
                     </div>
 
                     <div id="history_term_modern_container" style="display:none; min-width: 140px;"></div>
-                    
-                    <button class="btn btn-info" id="loadDetailsBtn"
-                        style="display:none; padding:4px 12px; font-size:12px; height:32px; white-space:nowrap;"
-                        onclick="loadAllRunDetails()">补全信息</button>
                 </div>
                 
                 <input type="hidden" id="historyTermSelect">
