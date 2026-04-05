@@ -3764,9 +3764,9 @@
 
                     const ms = typeof ModernSelect !== 'undefined' && ModernSelect.instances ? ModernSelect.instances.get('edit_school_select_modern') : null;
                     if (ms) {
-                        ms.setValue(user.school_id || '195');
+                        ms.setValue(user.school_id || '');
                     } else {
-                        document.getElementById('edit_school_id').value = user.school_id || '195';
+                        document.getElementById('edit_school_id').value = user.school_id || '';
                     }
 
                     openModal('editUserModal');

@@ -26,9 +26,9 @@ class User(Base):
     qq_notify_type = Column(String, default="private")
     
     # 学区信息
-    school_id = Column(String, default="195")
-    school_host = Column(String, default="http://47.99.163.239:8080")
-    school_name = Column(String, default="安徽邮电职业技术学院")
+    school_id = Column(String, default="")
+    school_host = Column(String, default="")
+    school_name = Column(String, default="")
     
     # 每个用户独立绑定的设备信息（防止风控）
     device_id = Column(String)

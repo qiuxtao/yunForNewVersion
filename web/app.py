@@ -232,7 +232,7 @@ async def add_user(
     username: str = Form(...),
     yun_username: str = Form(...),
     yun_password: str = Form(...),
-    school_id: str = Form("195"),
+    school_id: str = Form(""),
     db: Session = Depends(get_db),
     _: bool = Depends(check_admin)
 ):
@@ -276,7 +276,7 @@ async def edit_user(
     username: str = Form(...),
     yun_username: str = Form(...),
     yun_password: str = Form(""),
-    school_id: str = Form("195"),
+    school_id: str = Form(""),
     db: Session = Depends(get_db),
     _: bool = Depends(check_admin)
 ):
@@ -332,7 +332,7 @@ def _validate_yun_sync(yun_username, yun_password, school_id, school_host):
 async def validate_user_credentials(
     yun_username: str = Form(...),
     yun_password: str = Form(...),
-    school_id = Form("195"),
+    school_id = Form(""),
     _: bool = Depends(check_admin)
 ):
     """在添加/编辑用户前，实时验证云运动学号密码是否能正常登录"""
@@ -632,7 +632,7 @@ async def get_user_json(user_id: int, db: Session = Depends(get_db), _: bool = D
         "yun_username": user.yun_username,
         "qq_number": user.qq_number or "",
         "qq_notify_type": user.qq_notify_type or "private",
-        "school_id": getattr(user, "school_id", "195"),
+        "school_id": getattr(user, "school_id", ""),
     })
 
 @app.post("/api/logs/clear")
@@ -674,7 +674,7 @@ async def get_user_terms_json(user_id: int, db: Session = Depends(get_db), _: bo
     conf.read("config.ini", encoding="utf-8")
     
     school_host = getattr(user, "school_host", conf.get("Yun", "school_host", fallback=""))
-    school_id = getattr(user, "school_id", conf.get("Yun", "school_id", fallback="195"))
+    school_id = getattr(user, "school_id", conf.get("Yun", "school_id", fallback=""))
     app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
     md5key = conf.get("Yun", "md5key", fallback="")
     platform_str = conf.get("Yun", "platform", fallback="android")
@@ -723,7 +723,7 @@ async def get_user_history_by_term_json(user_id: int, term_value: str, token: st
     conf.read("config.ini", encoding="utf-8")
     
     school_host = getattr(user, "school_host", conf.get("Yun", "school_host", fallback=""))
-    school_id = getattr(user, "school_id", conf.get("Yun", "school_id", fallback="195"))
+    school_id = getattr(user, "school_id", conf.get("Yun", "school_id", fallback=""))
     app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
     md5key = conf.get("Yun", "md5key", fallback="")
     platform_str = conf.get("Yun", "platform", fallback="android")
@@ -757,7 +757,7 @@ async def get_user_history_detail(user_id: int, term_value: str, run_id: str, to
     conf = configparser.ConfigParser()
     conf.read("config.ini", encoding="utf-8")
     school_host = getattr(user, "school_host", conf.get("Yun", "school_host", fallback=""))
-    school_id = getattr(user, "school_id", conf.get("Yun", "school_id", fallback="195"))
+    school_id = getattr(user, "school_id", conf.get("Yun", "school_id", fallback=""))
     app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
     md5key = conf.get("Yun", "md5key", fallback="")
     platform_str = conf.get("Yun", "platform", fallback="android")
