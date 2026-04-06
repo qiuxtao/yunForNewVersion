@@ -1353,7 +1353,8 @@
         @media screen and (max-width: 768px) {
             .history-header-new {
                 display: grid !important;
-                grid-template-columns: 1fr auto !important;
+                /* 左栏自适应，右栏最小可用空间给选框 */
+                grid-template-columns: minmax(0, 1fr) auto !important; 
                 grid-template-rows: auto auto !important;
                 gap: 12px 10px !important;
                 align-items: center !important;
@@ -1361,31 +1362,39 @@
             }
 
             #historyModalTitle {
-                grid-column: 1 !important;
+                grid-column: 1 / 2 !important;
                 grid-row: 1 !important;
                 font-size: 15px !important;
+                justify-self: start !important;
+                /* 防止超长文字挤压导致换行异常，可预留按钮放大空间 */
+                padding-right: 10px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             #history_term_modern_container {
-                grid-column: 2 !important;
+                grid-column: 2 / 3 !important;
                 grid-row: 1 !important;
-                min-width: 155px !important;
-                width: auto !important;
+                /* 限制最大宽度，给标题留足够空间 */
+                max-width: 180px !important;
                 justify-self: end !important;
             }
 
             #loadDetailsBtn {
-                grid-column: 1 !important;
+                grid-column: 1 / 2 !important;
                 grid-row: 2 !important;
                 height: 28px !important;
                 padding: 4px 10px !important;
                 font-size: 11px !important;
                 margin: 0 !important;
                 justify-self: start !important;
+                /* 预留一点点击反馈扩大的空间 */
+                transform-origin: left center;
             }
 
             #termStats {
-                grid-column: 2 !important;
+                grid-column: 2 / 3 !important;
                 grid-row: 2 !important;
                 margin-left: 0 !important;
                 justify-self: end !important;
