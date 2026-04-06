@@ -1349,7 +1349,7 @@
 
         /* 紧凑型 ModernSelect 触发器 */
         .history-header-new .select-search-trigger {
-            padding: 4px 30px 4px 10px !important; /* 右侧留出箭头空间，稍宽 */
+            padding: 4px 36px 4px 10px !important; /* 右侧留出箭头空间 */
             min-height: 28px !important;
             height: 28px !important;
             font-size: 11.5px !important;
@@ -1358,18 +1358,14 @@
         }
         
         .history-header-new .select-search-trigger .select-search-value {
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
             white-space: nowrap !important;
-            flex: 1 !important;
-            min-width: 0 !important;
             text-align: left;
         }
 
         .history-header-new .select-search-trigger:after {
             width: 10px !important;
             height: 10px !important;
-            right: 10px !important; /* 倒三角往右移一点 */
+            right: 6px !important; /* 倒三角距右边缘更近 */
             flex-shrink: 0 !important;
         }
 
@@ -1425,11 +1421,18 @@
                 grid-column: 1 / 2 !important;
                 grid-row: 2 !important;
                 height: 28px !important;
-                padding: 4px 10px !important;
+                min-height: 28px !important;
+                max-height: 28px !important;
+                padding: 0 10px !important; /* 用 0 的上下 padding 确保不会被内容撑大 */
                 font-size: 11.5px !important;
+                line-height: 28px !important;
                 margin: 0 !important;
                 justify-self: start !important;
-                transform-origin: left center; /* 确保放大时向右延展 */
+                transform-origin: left center;
+                overflow: hidden !important; /* 移动端隐藏同步进度文字溢出 */
+                max-width: 80px !important; /* 限制宽度，不显示同步进度 */
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
             }
 
             #termStats {
@@ -1738,7 +1741,7 @@
 
     <div class="modal-overlay" id="historyModal">
         <div class="modal-box"
-            style="max-width: 750px; width: 96%; height: 95vh; display:flex; flex-direction:column; padding: 12px;">
+            style="max-width: 750px; width: 96%; height: 95vh; display:flex; flex-direction:column; padding: 12px 12px 0 12px;">
             <div id="historyHeader" class="history-header-new">
                 <h2 class="panel-title" id="historyModalTitle" style="font-size:18px; margin: 0; flex-shrink:0;">云端记录</h2>
                 <button class="btn btn-info" id="loadDetailsBtn"
@@ -1767,7 +1770,7 @@
             </div>
             <div id="historyError" style="display:none; color: var(--danger); text-align: center; padding: 20px;"></div>
             <div id="historyTableContainer"
-                style="display:none; flex: 1; min-height: 0; overflow-y: auto;">
+                style="display:none; flex: 1; min-height: 0; overflow-y: auto; padding-bottom: 12px;">
                 <div id="historyTableBody"></div>
             </div>
         </div>
