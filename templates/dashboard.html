@@ -1329,7 +1329,7 @@
         /* 桌面端: 标题 + 补全信息 [弹簧] 学期选择 + 统计 + 关闭 */
         #history_term_modern_container {
             min-width: 120px !important;
-            max-width: 200px !important; /* 防止桌面端撑爆 */
+            max-width: 160px !important; /* 进一步收窄桌面端学期选择器以显得更紧凑 */
             flex-shrink: 1 !important; /* 允许被压缩 */
             margin-left: auto !important; /* 弹簧：将自身及其右侧元素推向最右侧 */
         }
@@ -1376,7 +1376,7 @@
         .history-header-new .select-search-dropdown {
             left: auto !important;
             right: 0 !important;
-            min-width: 260px !important; /* 确保学期名不换行 */
+            min-width: 200px !important; /* 缩小下拉面板宽度 */
         }
 
         /* ======= 云端记录模态框 Header 布局 (移动端 2x2 网格) ======= */
@@ -1421,9 +1421,9 @@
             #loadDetailsBtn {
                 grid-column: 1 / 2 !important;
                 grid-row: 2 !important;
-                height: 24px !important;
-                padding: 2px 8px !important;
-                font-size: 11px !important;
+                height: 28px !important;
+                padding: 4px 10px !important;
+                font-size: 11.5px !important;
                 margin: 0 !important;
                 justify-self: start !important;
                 transform-origin: left center; /* 确保放大时向右延展 */
@@ -1735,7 +1735,7 @@
 
     <div class="modal-overlay" id="historyModal">
         <div class="modal-box"
-            style="max-width: 750px; width: 96%; height: 95vh; display:flex; flex-direction:column; padding: 12px 12px 0 12px;">
+            style="max-width: 750px; width: 96%; height: 95vh; display:flex; flex-direction:column; padding: 12px;">
             <div id="historyHeader" class="history-header-new">
                 <h2 class="panel-title" id="historyModalTitle" style="font-size:18px; margin: 0; flex-shrink:0;">云端记录</h2>
                 <button class="btn btn-info" id="loadDetailsBtn"
@@ -1781,9 +1781,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">所属学校</label>
-                    <div style="max-width: 320px;">
-                        <div id="add_school_select_modern"></div>
-                    </div>
+                    <div id="add_school_select_modern"></div>
                     <input type="hidden" name="school_id" id="add_school_id">
                 </div>
                 <div class="form-group">
@@ -1815,9 +1813,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">所在学校</label>
-                    <div style="max-width: 320px;">
-                        <div id="edit_school_select_modern"></div>
-                    </div>
+                    <div id="edit_school_select_modern"></div>
                     <input type="hidden" name="school_id" id="edit_school_id">
                 </div>
                 <div class="form-group">
@@ -2840,9 +2836,11 @@
                             <div class="modal-box" style="max-width: 800px; height: 80vh; display:flex; flex-direction:column; padding: 20px;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
                                     <h2 class="panel-title" id="mapPreviewTitle">云端路线预览</h2>
-                                    <div style="display:flex; gap: 8px;">
+                                    <div style="display:flex; gap: 12px; align-items: center;">
                                         <button class="btn btn-secondary btn-sm" id="importInPreviewBtn" style="display:none;">导出至路线组</button>
-                                        <button class="btn btn-ghost" onclick="closeMapPreview()" style="font-size:24px; padding:0 10px;">&times;</button>
+                                        <button type="button" onclick="closeMapPreview()" style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.08);color:var(--danger);cursor:pointer;transition:all 0.2s;flex-shrink:0;border:none;">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                        </button>
                                     </div>
                                 </div>
                                 <div id="mapRenderArea" style="flex:1; width: 100%; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2);"></div>
@@ -3230,7 +3228,7 @@
                 }
 
                 this.container.innerHTML = `
-                    <div class="select-search-trigger">${displayText}</div>
+                    <div class="select-search-trigger"><span class="select-search-value">${displayText}</span></div>
                     <div class="select-search-dropdown">
                         ${this.enableSearch ? `
                         <div class="select-search-filter">
@@ -3577,7 +3575,7 @@
 
             select(id, name) {
                 this.selectedValue = id;
-                this.container.querySelector('.select-search-trigger').innerText = name;
+                this.container.querySelector('.select-search-value').innerText = name;
                 if (this.originalSelect) {
                     this.originalSelect.value = id;
                     this.originalSelect.dispatchEvent(new Event('change'));
@@ -3593,7 +3591,7 @@
                     this.select(id, item.name);
                 } else {
                     this.selectedValue = '';
-                    this.container.querySelector('.select-search-trigger').innerText = this.placeholder;
+                    this.container.querySelector('.select-search-value').innerText = this.placeholder;
                 }
             }
         }
@@ -3908,7 +3906,9 @@
                     <div class="modal-box" style="max-width: 800px; height: 80vh; display:flex; flex-direction:column; padding: 20px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
                             <h2 class="panel-title" id="mapPreviewTitle">路线预览</h2>
-                            <button class="btn btn-ghost" onclick="closeMapPreview()" style="font-size:24px; padding:0 10px;">&times;</button>
+                            <button type="button" onclick="closeMapPreview()" style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.08);color:var(--danger);cursor:pointer;transition:all 0.2s;flex-shrink:0;border:none;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
                         </div>
                         <div id="mapRenderArea" style="flex:1; width: 100%; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2);"></div>
                     </div>
