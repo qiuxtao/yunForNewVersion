@@ -1448,11 +1448,14 @@
             #historyModal .modal-footer {
                 display: none !important;
             }
+        }
 
-            /* 移动端云端记录最后一张卡片不需要底部边距 */
-            #historyTableBody tbody tr:last-child {
-                margin-bottom: 0 !important;
-            }
+        /* 云端记录：消除表格末尾多余间距（所有设备） */
+        #historyTableBody table {
+            margin-bottom: 0 !important;
+        }
+        #historyTableBody tbody tr:last-child {
+            margin-bottom: 0 !important;
         }
     </style>
     <style>
@@ -1746,7 +1749,7 @@
 
     <div class="modal-overlay" id="historyModal">
         <div class="modal-box"
-            style="max-width: 750px; width: 96%; height: 95vh; display:flex; flex-direction:column; padding: 12px 12px 0 12px;">
+            style="max-width: 750px; width: 96%; height: 95vh; display:flex; flex-direction:column; padding: 12px;">
             <div id="historyHeader" class="history-header-new">
                 <h2 class="panel-title" id="historyModalTitle" style="font-size:18px; margin: 0; flex-shrink:0;">云端记录</h2>
                 <button class="btn btn-info" id="loadDetailsBtn"
