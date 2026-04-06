@@ -3291,8 +3291,9 @@
                             display:flex; position:fixed; top:0; left:0;
                             width:100vw; height:100vh; max-height:100vh;
                             z-index:9999; border-radius:0; border:none;
-                            overflow-x:hidden; flex-direction:column;
+                            overflow:hidden; flex-direction:column;
                             background:#1e293b;
+                            overscroll-behavior:none;
                         `;
 
                         // 插入全屏顶部标题栏（取消 + 选择学校）
@@ -3329,13 +3330,14 @@
                                 padding-right:44px; overflow-x:hidden;
                                 flex-grow:1; overflow-y:auto;
                                 scrollbar-width:none; -ms-overflow-style:none;
+                                overscroll-behavior:contain;
                             `;
                         }
                         // 字母索引栏：从搜索栏下方开始到底部
                         const idxBar = dropdown.querySelector('.select-search-index-bar');
                         if (idxBar) {
                             idxBar.style.cssText = `
-                                position:absolute; top:100px; right:0; bottom:0;
+                                position:absolute; top:46px; right:0; bottom:0;
                                 width:40px; display:flex; flex-direction:column;
                                 justify-content:space-between; align-items:center;
                                 padding:2px 0; z-index:20;
