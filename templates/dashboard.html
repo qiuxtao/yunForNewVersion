@@ -659,16 +659,23 @@
             position: fixed;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -50.5%);
             width: 500px;
             max-width: 90vw;
-            height: 600px;
-            max-height: 80vh;
+            height: 750px;
+            max-height: 90vh;
             margin: 0;
             z-index: 9999;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.1);
             background: #1e293b;
+            animation: modalFadeIn 0.25s ease-out;
+            visibility: hidden; /* 默认先隐藏，由JS由于计算完成后再显示 */
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translate(-50%, -48%); }
+            to { opacity: 1; transform: translate(-50%, -50.5%); }
         }
 
         /* 字母滑动预览气泡 */
@@ -3346,11 +3353,13 @@
                                 overflow:hidden; flex-direction:column;
                                 background:#1e293b;
                                 overscroll-behavior:none;
+                                visibility: visible;
                             `;
                         } else {
                             // 桌面端模态框样式
                             dropdown.classList.add('desktop-modal');
                             dropdown.style.display = 'flex';
+                            // 注意：desktop-modal 样式中定义了 visibility: hidden
                         }
 
                         // 插入顶部标题栏（全屏或模态框均需要）
@@ -3391,7 +3400,7 @@
                             const totalTop = hHeight + fHeight;
 
                             if (opts) {
-                                opts.style.maxHeight = `calc(${isFS ? '100vh' : '600px'} - ${totalTop}px)`;
+                                opts.style.maxHeight = `calc(${isFS ? '100vh' : '750px'} - ${totalTop}px)`;
                                 opts.style.paddingRight = '44px';
                                 opts.style.overflowX = 'hidden';
                                 opts.style.flexGrow = '1';
@@ -3417,6 +3426,11 @@
                                 idxBar.style.userSelect = 'none';
                                 idxBar.style.background = 'rgba(255,255,255,0.02)';
                                 idxBar.style.borderRadius = '0';
+                            }
+                            
+                            // 样式应用并计算完成后，再使桌面弹窗可见
+                            if (isDModal) {
+                                dropdown.style.visibility = 'visible';
                             }
                         }, 10);
                         this._movedToBody = true;
