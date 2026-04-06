@@ -1451,10 +1451,8 @@
 
             /* 移动端 historyModal 的 modal-box 需要禁止自身滚动，改由内部容器滚动 */
             #historyModal .modal-box {
-                overflow-y: hidden !important; /* 覆盖移动端全局 .modal-box 的 overflow-y:auto */
-                padding-bottom: 12px !important; /* 让未滚动到底部和滚动到底部时，都有统一的 12px 空隙 */
-                max-height: 95vh !important;
-                height: 95vh !important;
+                overflow: hidden !important; /* 覆盖移动端全局 .modal-box 的 overflow-y:auto */
+                padding-bottom: 12px !important; /* 统一底部间距 */
             }
         }
 
