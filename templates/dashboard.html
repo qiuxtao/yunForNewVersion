@@ -1349,7 +1349,7 @@
 
         /* 紧凑型 ModernSelect 触发器 */
         .history-header-new .select-search-trigger {
-            padding: 4px 36px 4px 10px !important; /* 右侧留出箭头空间 */
+            padding: 4px 16px 4px 10px !important; /* padding-right 控制箭头距右边缘的距离 */
             min-height: 28px !important;
             height: 28px !important;
             font-size: 11.5px !important;
@@ -1365,7 +1365,7 @@
         .history-header-new .select-search-trigger:after {
             width: 10px !important;
             height: 10px !important;
-            right: 2px !important; /* 倒三角紧贴右边缘 */
+            margin-left: 6px !important; /* 文字与箭头之间的间距 */
             flex-shrink: 0 !important;
         }
 
@@ -1447,6 +1447,11 @@
             /* 移动端彻底隐藏底部遗留的 footer，交由全屏自己掌控 */
             #historyModal .modal-footer {
                 display: none !important;
+            }
+
+            /* 移动端云端记录最后一张卡片不需要底部边距 */
+            #historyTableBody tbody tr:last-child {
+                margin-bottom: 0 !important;
             }
         }
     </style>
