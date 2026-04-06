@@ -3322,30 +3322,46 @@
                         const oldCloseBtn = dropdown.querySelector('.select-search-close-mobile');
                         if (oldCloseBtn) oldCloseBtn.style.display = 'none';
 
-                        // 选项列表：撑满剩余高度（标题48 + 搜索栏50 = ~100px）
-                        const opts = dropdown.querySelector('.select-search-options');
-                        if (opts) {
-                            opts.style.cssText = `
-                                max-height:calc(100vh - 100px) !important;
-                                padding-right:44px; overflow-x:hidden;
-                                flex-grow:1; overflow-y:auto;
-                                scrollbar-width:none; -ms-overflow-style:none;
-                                overscroll-behavior:contain;
-                            `;
-                        }
-                        // 字母索引栏：从搜索栏下方开始到底部
-                        const idxBar = dropdown.querySelector('.select-search-index-bar');
-                        if (idxBar) {
-                            idxBar.style.cssText = `
-                                position:absolute; top:96px; right:0; bottom:0;
-                                width:40px; display:flex; flex-direction:column;
-                                justify-content:space-between; align-items:center;
-                                padding:2px 0; z-index:20;
-                                touch-action:none; user-select:none;
-                                background:rgba(255,255,255,0.02);
-                                border-radius:0;
-                            `;
-                        }
+                        // 延迟计算以确保 offsetHeight 已就绪
+                        setTimeout(() => {
+                            const header = dropdown.querySelector('.fs-header');
+                            const filter = dropdown.querySelector('.select-search-filter');
+                            const opts = dropdown.querySelector('.select-search-options');
+                            const idxBar = dropdown.querySelector('.select-search-index-bar');
+                            
+                            const hHeight = header ? header.offsetHeight : 53;
+                            const fHeight = filter ? filter.offsetHeight : 52;
+                            const totalTop = hHeight + fHeight;
+
+                            if (opts) {
+                                opts.style.maxHeight = `calc(100vh - ${totalTop}px)`;
+                                opts.style.paddingRight = '44px';
+                                opts.style.overflowX = 'hidden';
+                                opts.style.flexGrow = '1';
+                                opts.style.overflowY = 'auto';
+                                opts.style.scrollbarWidth = 'none';
+                                opts.style.msOverflowStyle = 'none';
+                                opts.style.overscrollBehavior = 'contain';
+                            }
+                            
+                            if (idxBar) {
+                                idxBar.style.position = 'absolute';
+                                idxBar.style.top = `${totalTop}px`;
+                                idxBar.style.right = '0';
+                                idxBar.style.bottom = '0';
+                                idxBar.style.width = '36px';
+                                idxBar.style.display = 'flex';
+                                idxBar.style.flexDirection = 'column';
+                                idxBar.style.justifyContent = 'space-between';
+                                idxBar.style.alignItems = 'center';
+                                idxBar.style.padding = '4px 0';
+                                idxBar.style.zIndex = '20';
+                                idxBar.style.touchAction = 'none';
+                                idxBar.style.userSelect = 'none';
+                                idxBar.style.background = 'rgba(255,255,255,0.02)';
+                                idxBar.style.borderRadius = '0';
+                            }
+                        }, 10);
                         this._movedToBody = true;
                     }
                 }
