@@ -1328,9 +1328,10 @@
 
         /* 桌面端: 标题 + 补全信息 [弹簧] 学期选择 + 统计 + 关闭 */
         #history_term_modern_container {
-            min-width: 120px !important;
-            max-width: 160px !important; /* 进一步收窄桌面端学期选择器以显得更紧凑 */
-            flex-shrink: 1 !important; /* 允许被压缩 */
+            width: 180px !important; /* 统一所有设备的学期选择器宽度 */
+            min-width: 180px !important;
+            max-width: 180px !important;
+            flex-shrink: 0 !important;
             margin-left: auto !important; /* 弹簧：将自身及其右侧元素推向最右侧 */
         }
 
@@ -1348,13 +1349,12 @@
 
         /* 紧凑型 ModernSelect 触发器 */
         .history-header-new .select-search-trigger {
-            padding: 4px 28px 4px 10px !important; /* 右侧留出箭头空间 */
+            padding: 4px 30px 4px 10px !important; /* 右侧留出箭头空间，稍宽 */
             min-height: 28px !important;
             height: 28px !important;
             font-size: 11.5px !important;
             border-radius: 6px !important;
             background: rgba(255, 255, 255, 0.05) !important;
-            /* 将文字溢出处理转移到内部 span，防止影响绝对定位的箭头 */
         }
         
         .history-header-new .select-search-trigger .select-search-value {
@@ -1369,14 +1369,15 @@
         .history-header-new .select-search-trigger:after {
             width: 10px !important;
             height: 10px !important;
-            right: 8px !important;
+            right: 10px !important; /* 倒三角往右移一点 */
+            flex-shrink: 0 !important;
         }
 
-        /* 下拉面板：右对齐展开，确保学期名一行显示 */
+        /* 下拉面板：右对齐展开 */
         .history-header-new .select-search-dropdown {
             left: auto !important;
             right: 0 !important;
-            min-width: 200px !important; /* 缩小下拉面板宽度 */
+            min-width: 220px !important;
         }
 
         /* ======= 云端记录模态框 Header 布局 (移动端 2x2 网格) ======= */
@@ -1407,7 +1408,9 @@
             #history_term_modern_container {
                 grid-column: 2 / 3 !important;
                 grid-row: 2 !important; /* 移动到第二行，在合格次数左边 */
-                max-width: 170px !important; /* 防止过宽 */
+                width: 180px !important; /* 与桌面端统一 */
+                min-width: 180px !important;
+                max-width: 180px !important;
                 justify-self: end !important;
                 margin-left: 0 !important; /* 消除桌面的弹簧效果 */
             }
@@ -1739,7 +1742,7 @@
             <div id="historyHeader" class="history-header-new">
                 <h2 class="panel-title" id="historyModalTitle" style="font-size:18px; margin: 0; flex-shrink:0;">云端记录</h2>
                 <button class="btn btn-info" id="loadDetailsBtn"
-                    style="display:none; padding:4px 12px; font-size:12px; height:32px; white-space:nowrap;"
+                    style="display:none; padding:4px 12px; font-size:12px; height:28px; white-space:nowrap;"
                     onclick="loadAllRunDetails()">补全信息</button>
 
                 <div id="history_term_modern_container" style="display:none;"></div>
@@ -2428,7 +2431,7 @@
                 if (result.success) {
                     window.currentHistoryData = result.data;
                     const tbody = document.getElementById('historyTableBody');
-                    let termHtml = '<div style="margin-bottom: 24px;">';
+                    let termHtml = '<div>';
 
                     let totalRuns = result.data ? result.data.length : 0;
                     let qualifiedRuns = 0;
