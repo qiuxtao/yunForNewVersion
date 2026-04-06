@@ -1306,7 +1306,27 @@
             flex-shrink: 0 !important;
         }
 
-        /* 桌面端: 标题 + 补全信息 [弹簧] 统计 + 学期选择 */
+        #historyHeaderCloseBtn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.08); /* 轻微背景 */
+            color: var(--danger); /* 红色醒目 */
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        #historyHeaderCloseBtn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.1);
+        }
+
+        /* 桌面端: 标题 + 补全信息 [弹簧] 统计 + 学期选择 + 关闭 */
         #termStats {
             margin-left: auto !important;
             display: flex;
@@ -1349,16 +1369,17 @@
             min-width: 260px !important; /* 确保学期名不换行 */
         }
 
-        /* ======= 云端记录模态框 Header 布局 (移动端 2x2 Grid) ======= */
+        /* ======= 云端记录模态框 Header 布局 (移动端 2x2 网格) ======= */
         @media screen and (max-width: 768px) {
             .history-header-new {
                 display: grid !important;
-                /* 左栏自适应，右栏最小可用空间给选框 */
-                grid-template-columns: minmax(0, 1fr) auto !important; 
+                /* 三列: 均分标题、自适应学期选择、固定关闭按钮 */
+                grid-template-columns: minmax(0, 1fr) auto auto !important; 
                 grid-template-rows: auto auto !important;
                 gap: 12px 10px !important;
                 align-items: center !important;
                 flex-wrap: unset !important;
+                padding-bottom: 5px; /* 取代原有 marginBottom */
             }
 
             #historyModalTitle {
@@ -1366,18 +1387,23 @@
                 grid-row: 1 !important;
                 font-size: 15px !important;
                 justify-self: start !important;
-                /* 防止超长文字挤压导致换行异常，可预留按钮放大空间 */
                 padding-right: 10px;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                transform-origin: left center;
             }
 
             #history_term_modern_container {
                 grid-column: 2 / 3 !important;
                 grid-row: 1 !important;
-                /* 限制最大宽度，给标题留足够空间 */
-                max-width: 180px !important;
+                max-width: 170px !important; /* 给标题留出更多空间 */
+                justify-self: end !important;
+            }
+
+            #historyHeaderCloseBtn {
+                grid-column: 3 / 4 !important;
+                grid-row: 1 !important;
                 justify-self: end !important;
             }
 
@@ -1389,15 +1415,19 @@
                 font-size: 11px !important;
                 margin: 0 !important;
                 justify-self: start !important;
-                /* 预留一点点击反馈扩大的空间 */
-                transform-origin: left center;
+                transform-origin: left center; /* 确保放大时向右延展 */
             }
 
             #termStats {
-                grid-column: 2 / 3 !important;
+                grid-column: 2 / 4 !important; /* 跨越右侧两列 */
                 grid-row: 2 !important;
                 margin-left: 0 !important;
                 justify-self: end !important;
+            }
+            
+            /* 移动端彻底隐藏底部遗留的 footer，交由全屏自己掌控 */
+            #historyModal .modal-footer {
+                display: none !important;
             }
         }
     </style>
@@ -1707,6 +1737,10 @@
                 <div id="history_term_modern_container" style="display:none;"></div>
                 
                 <input type="hidden" id="historyTermSelect">
+                
+                <button type="button" id="historyHeaderCloseBtn" onclick="closeModal('historyModal')">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
 
             <input type="hidden" id="current_history_user">
@@ -1721,6 +1755,7 @@
                 style="display:none; flex: 1; min-height: 0; overflow-y: auto;">
                 <div id="historyTableBody"></div>
             </div>
+            <!-- 桌面端保留底部关闭按钮，移动端则隐藏 -->
             <div class="modal-footer" style="padding: 10px 0 0 0;">
                 <button type="button" class="btn btn-ghost" onclick="closeModal('historyModal')">关闭</button>
             </div>
