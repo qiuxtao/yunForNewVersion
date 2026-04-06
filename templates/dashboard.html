@@ -1463,6 +1463,16 @@
         #historyTableBody tbody tr:last-child {
             margin-bottom: 0 !important;
         }
+
+        /* 移动端：将表格元素改为 block 布局，避免 table 渲染引擎产生隐藏间距 */
+        @media screen and (max-width: 768px) {
+            #historyTableBody table,
+            #historyTableBody tbody {
+                display: block !important;
+                overflow: visible !important;
+                border-radius: 0 !important;
+            }
+        }
     </style>
     <style>
         .switch {
