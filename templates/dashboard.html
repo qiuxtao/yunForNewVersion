@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
@@ -578,8 +578,9 @@
                 max-height: 100vh;
                 border: none;
                 border-radius: 0;
-                z-index: 2000;
+                z-index: 9999;
                 display: flex;
+                overflow-x: hidden; /* 禁止水平滚动 */
             }
             .mobile-fullscreen .select-search-filter {
                 display: flex;
@@ -3274,8 +3275,32 @@
                 
                 this.isOpen = true;
                 this.container.classList.add('active');
+
+                // 移动端全屏模式：将下拉面板移到 body 以绕过 backdrop-filter 破坏 position:fixed
+                if (this.fullScreenMobile && window.innerWidth <= 768) {
+                    const dropdown = this.container.querySelector('.select-search-dropdown');
+                    if (dropdown) {
+                        this._dropdownOriginalParent = dropdown.parentNode;
+                        this._dropdownEl = dropdown; // 保存引用
+                        document.body.appendChild(dropdown);
+                        // 确保样式类生效
+                        dropdown.style.display = 'flex';
+                        dropdown.style.position = 'fixed';
+                        dropdown.style.top = '0';
+                        dropdown.style.left = '0';
+                        dropdown.style.width = '100vw';
+                        dropdown.style.height = '100vh';
+                        dropdown.style.maxHeight = '100vh';
+                        dropdown.style.zIndex = '9999';
+                        dropdown.style.borderRadius = '0';
+                        dropdown.style.border = 'none';
+                        dropdown.style.overflowX = 'hidden';
+                        this._movedToBody = true;
+                    }
+                }
+
                 if (this.enableSearch) {
-                    const input = this.container.querySelector('.select-search-input');
+                    const input = (this._movedToBody ? document.body : this.container).querySelector('.select-search-input');
                     if (input) setTimeout(() => input.focus(), 100);
                 }
             }
@@ -3283,16 +3308,34 @@
             close() {
                 this.isOpen = false;
                 this.container.classList.remove('active');
+
+                // 将下拉面板移回原始容器
+                if (this._movedToBody && this._dropdownEl) {
+                    this._dropdownEl.style.cssText = ''; // 清除内联样式
+                    if (this._dropdownOriginalParent) {
+                        this._dropdownOriginalParent.appendChild(this._dropdownEl);
+                    }
+                    this._movedToBody = false;
+                }
+            }
+
+            // 辅助方法：获取当前下拉面板的根节点（可能在 container 或 body 上）
+            _getDropdownRoot() {
+                if (this._movedToBody && this._dropdownEl) {
+                    return this._dropdownEl;
+                }
+                return this.container;
             }
 
             scrollToLetter(letter) {
-                let targetEl = this.container.querySelector(`#group-${this.container.id}-${letter}`);
+                const root = this._getDropdownRoot();
+                let targetEl = root.querySelector(`#group-${this.container.id}-${letter}`);
                 
                 if (!targetEl) {
                     // 如果当前字母没有对应的学校分组，则向前寻找最近的分组（类似 iOS 通讯录行为）
                     const letterIndex = this.letters.indexOf(letter);
                     for (let i = letterIndex - 1; i >= 0; i--) {
-                        targetEl = this.container.querySelector(`#group-${this.container.id}-${this.letters[i]}`);
+                        targetEl = root.querySelector(`#group-${this.container.id}-${this.letters[i]}`);
                         if (targetEl) break;
                     }
                     if (!targetEl) {
@@ -3309,7 +3352,7 @@
                 }
                 
                 // 气泡提示始终显示用户实际触碰的字母，提供确实的反馈
-                const indicator = this.container.querySelector('.select-search-touch-indicator');
+                const indicator = root.querySelector('.select-search-touch-indicator');
                 if (indicator) {
                     indicator.innerText = letter;
                     indicator.style.display = 'flex';
