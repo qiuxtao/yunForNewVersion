@@ -1448,6 +1448,14 @@
             #historyModal .modal-footer {
                 display: none !important;
             }
+
+            /* 移动端 historyModal 的 modal-box 需要禁止自身滚动，改由内部容器滚动 */
+            #historyModal .modal-box {
+                overflow-y: hidden !important; /* 覆盖移动端全局 .modal-box 的 overflow-y:auto */
+                padding-bottom: 0 !important; /* 消除移动端 20px 底部 padding */
+                max-height: 95vh !important;
+                height: 95vh !important;
+            }
         }
 
         /* 云端记录：消除表格末尾多余间距（所有设备） */
@@ -2106,6 +2114,7 @@
 
         function openModal(id) {
             document.getElementById(id).classList.add('active');
+            document.body.style.overflow = 'hidden'; /* 防止背景滚动穿透 */
         }
 
         function showAlert(message, title = '提示') {
@@ -2171,6 +2180,10 @@
         }
         function closeModal(id) {
             document.getElementById(id).classList.remove('active');
+            /* 检查是否还有其他活动模态框，如果没有则恢复 body 滚动 */
+            if (!document.querySelector('.modal-overlay.active')) {
+                document.body.style.overflow = '';
+            }
             // Reset validation messages
             if (id === 'addUserModal') document.getElementById('add_validation_msg').innerHTML = '';
             if (id === 'editUserModal') document.getElementById('edit_validation_msg').innerHTML = '';
