@@ -3325,16 +3325,17 @@
                         const opts = dropdown.querySelector('.select-search-options');
                         if (opts) {
                             opts.style.cssText = `
-                                max-height:calc(100vh - 110px) !important;
+                                max-height:calc(100vh - 100px) !important;
                                 padding-right:44px; overflow-x:hidden;
-                                flex-grow:1;
+                                flex-grow:1; overflow-y:auto;
+                                scrollbar-width:none; -ms-overflow-style:none;
                             `;
                         }
                         // 字母索引栏：从搜索栏下方开始到底部
                         const idxBar = dropdown.querySelector('.select-search-index-bar');
                         if (idxBar) {
                             idxBar.style.cssText = `
-                                position:absolute; top:110px; right:0; bottom:0;
+                                position:absolute; top:100px; right:0; bottom:0;
                                 width:40px; display:flex; flex-direction:column;
                                 justify-content:space-between; align-items:center;
                                 padding:2px 0; z-index:20;
