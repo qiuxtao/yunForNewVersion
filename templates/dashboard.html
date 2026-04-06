@@ -1326,20 +1326,24 @@
             transform: scale(1.1);
         }
 
-        /* 桌面端: 标题 + 补全信息 [弹簧] 统计 + 学期选择 + 关闭 */
-        #termStats {
-            margin-left: auto !important;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            white-space: nowrap;
-            font-size: 12px;
-        }
-
+        /* 桌面端: 标题 + 补全信息 [弹簧] 学期选择 + 统计 + 关闭 */
         #history_term_modern_container {
             min-width: 120px !important;
             max-width: 200px !important; /* 防止桌面端撑爆 */
             flex-shrink: 1 !important; /* 允许被压缩 */
+            margin-left: auto !important; /* 弹簧：将自身及其右侧元素推向最右侧 */
+        }
+
+        #termStats {
+            margin-left: 0 !important;
+            display: flex;
+            flex-direction: column; /* 上下堆叠 */
+            align-items: flex-end; /* 右对齐 */
+            justify-content: center;
+            gap: 2px;
+            white-space: nowrap;
+            font-size: 11px;
+            line-height: 1.2;
         }
 
         /* 紧凑型 ModernSelect 触发器 */
@@ -1383,7 +1387,7 @@
             }
 
             #historyModalTitle {
-                grid-column: 1 / 2 !important;
+                grid-column: 1 / 3 !important; /* 第一行标题横跨两列，留充足空间 */
                 grid-row: 1 !important;
                 font-size: 15px !important;
                 justify-self: start !important;
@@ -1396,9 +1400,10 @@
 
             #history_term_modern_container {
                 grid-column: 2 / 3 !important;
-                grid-row: 1 !important;
-                max-width: 170px !important; /* 给标题留出更多空间 */
+                grid-row: 2 !important; /* 移动到第二行，在合格次数左边 */
+                max-width: 170px !important; /* 防止过宽 */
                 justify-self: end !important;
+                margin-left: 0 !important; /* 消除桌面的弹簧效果 */
             }
 
             #historyHeaderCloseBtn {
@@ -1419,10 +1424,12 @@
             }
 
             #termStats {
-                grid-column: 2 / 4 !important; /* 跨越右侧两列 */
-                grid-row: 2 !important;
+                grid-column: 3 / 4 !important; /* 第三列最右侧 */
+                grid-row: 2 !important; /* 第二行 */
                 margin-left: 0 !important;
                 justify-self: end !important;
+                flex-direction: column !important; /* 确保移动端也是上下堆叠 */
+                align-items: flex-end !important;
             }
             
             /* 移动端彻底隐藏底部遗留的 footer，交由全屏自己掌控 */
@@ -1728,18 +1735,17 @@
                 <button class="btn btn-info" id="loadDetailsBtn"
                     style="display:none; padding:4px 12px; font-size:12px; height:32px; white-space:nowrap;"
                     onclick="loadAllRunDetails()">补全信息</button>
-                    
-                <div id="termStats" style="display:none; font-size:12px; font-weight:normal; align-items:center; gap:6px; white-space:nowrap;">
-                    <span class="badge badge-info" style="margin:0;">总计 <span id="termTotalRuns">0</span> 次</span>
-                    <span class="badge badge-success" style="margin:0;">合格 <span id="termQualifiedCount" style="font-weight:bold;">0</span> 次</span>
-                </div>
 
                 <div id="history_term_modern_container" style="display:none;"></div>
-                
                 <input type="hidden" id="historyTermSelect">
+                    
+                <div id="termStats" style="display:none;">
+                    <span class="badge badge-info" style="margin:0; font-size:10px; padding:2px 6px;">总计 <span id="termTotalRuns">0</span> 次</span>
+                    <span class="badge badge-success" style="margin:0; font-size:10px; padding:2px 6px;">合格 <span id="termQualifiedCount" style="font-weight:bold;">0</span> 次</span>
+                </div>
                 
                 <button type="button" id="historyHeaderCloseBtn" onclick="closeModal('historyModal')">
-                    <i class="fas fa-times"></i>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
             </div>
 
@@ -3417,9 +3423,11 @@
                                 border-bottom:1px solid rgba(255,255,255,0.1);
                             `;
                             header.innerHTML = `
-                                <span class="fs-cancel" style="color:#60a5fa;font-size:15px;cursor:pointer;">取消</span>
+                                <span style="width:28px;"></span>
                                 <span style="color:#fff;font-size:16px;font-weight:600;">${isMobile ? "选择学校" : "检索学校"}</span>
-                                <span style="width:32px;"></span>
+                                <span class="fs-cancel" style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.08);color:var(--danger);cursor:pointer;transition:all 0.2s;flex-shrink:0;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </span>
                             `;
                             dropdown.insertBefore(header, dropdown.firstChild);
                             header.querySelector('.fs-cancel').onclick = (e) => {
