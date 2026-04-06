@@ -3283,18 +3283,39 @@
                         this._dropdownOriginalParent = dropdown.parentNode;
                         this._dropdownEl = dropdown; // 保存引用
                         document.body.appendChild(dropdown);
-                        // 确保样式类生效
-                        dropdown.style.display = 'flex';
-                        dropdown.style.position = 'fixed';
-                        dropdown.style.top = '0';
-                        dropdown.style.left = '0';
-                        dropdown.style.width = '100vw';
-                        dropdown.style.height = '100vh';
-                        dropdown.style.maxHeight = '100vh';
-                        dropdown.style.zIndex = '9999';
-                        dropdown.style.borderRadius = '0';
-                        dropdown.style.border = 'none';
-                        dropdown.style.overflowX = 'hidden';
+                        // 全屏样式（因为移出了 .mobile-fullscreen 容器，CSS 级联断裂，需要内联）
+                        dropdown.style.cssText = `
+                            display:flex; position:fixed; top:0; left:0;
+                            width:100vw; height:100vh; max-height:100vh;
+                            z-index:9999; border-radius:0; border:none;
+                            overflow-x:hidden; flex-direction:column;
+                            background:#1e293b;
+                        `;
+                        // 选项列表：撑满剩余高度
+                        const opts = dropdown.querySelector('.select-search-options');
+                        if (opts) {
+                            opts.style.cssText = `
+                                max-height:calc(100vh - 55px) !important;
+                                padding-right:44px; overflow-x:hidden;
+                                flex-grow:1;
+                            `;
+                        }
+                        // 字母索引栏：贴合右边缘、上下无空隙
+                        const idxBar = dropdown.querySelector('.select-search-index-bar');
+                        if (idxBar) {
+                            idxBar.style.cssText = `
+                                position:absolute; top:55px; right:0; bottom:0;
+                                width:40px; display:flex; flex-direction:column;
+                                justify-content:space-between; align-items:center;
+                                padding:4px 0; z-index:20;
+                                touch-action:none; user-select:none;
+                                background:rgba(255,255,255,0.02);
+                                border-radius:0;
+                            `;
+                        }
+                        // 搜索栏：显示关闭按钮
+                        const closeBtn = dropdown.querySelector('.select-search-close-mobile');
+                        if (closeBtn) closeBtn.style.display = 'flex';
                         this._movedToBody = true;
                     }
                 }
@@ -3311,7 +3332,14 @@
 
                 // 将下拉面板移回原始容器
                 if (this._movedToBody && this._dropdownEl) {
-                    this._dropdownEl.style.cssText = ''; // 清除内联样式
+                    // 清除所有内联样式（下拉面板 + 子元素）
+                    this._dropdownEl.style.cssText = '';
+                    const opts = this._dropdownEl.querySelector('.select-search-options');
+                    if (opts) opts.style.cssText = '';
+                    const idxBar = this._dropdownEl.querySelector('.select-search-index-bar');
+                    if (idxBar) idxBar.style.cssText = '';
+                    const closeBtn = this._dropdownEl.querySelector('.select-search-close-mobile');
+                    if (closeBtn) closeBtn.style.display = 'none';
                     if (this._dropdownOriginalParent) {
                         this._dropdownOriginalParent.appendChild(this._dropdownEl);
                     }
