@@ -3149,7 +3149,8 @@
             }
 
             renderOptions() {
-                const list = this.container.querySelector('.options-list');
+                const root = this._getDropdownRoot();
+                const list = root.querySelector('.options-list');
                 if (this.filteredData.length === 0) {
                     list.innerHTML = '<div class="select-search-no-results">未找到相关结果</div>';
                     return;
@@ -3247,7 +3248,8 @@
 
                         const handlePointerEnd = (e) => {
                             try { indexBar.releasePointerCapture(e.pointerId); } catch(err) {}
-                            const indicator = this.container.querySelector('.select-search-touch-indicator');
+                            const root = this._getDropdownRoot();
+                            const indicator = root.querySelector('.select-search-touch-indicator');
                             if (indicator) indicator.style.display = 'none';
                             this.lastTouchLetter = null;
                         };
@@ -3281,9 +3283,10 @@
                     const dropdown = this.container.querySelector('.select-search-dropdown');
                     if (dropdown) {
                         this._dropdownOriginalParent = dropdown.parentNode;
-                        this._dropdownEl = dropdown; // 保存引用
+                        this._dropdownEl = dropdown;
                         document.body.appendChild(dropdown);
-                        // 全屏样式（因为移出了 .mobile-fullscreen 容器，CSS 级联断裂，需要内联）
+
+                        // 全屏样式
                         dropdown.style.cssText = `
                             display:flex; position:fixed; top:0; left:0;
                             width:100vw; height:100vh; max-height:100vh;
@@ -3291,31 +3294,55 @@
                             overflow-x:hidden; flex-direction:column;
                             background:#1e293b;
                         `;
-                        // 选项列表：撑满剩余高度
+
+                        // 插入全屏顶部标题栏（取消 + 选择学校）
+                        let header = dropdown.querySelector('.fs-header');
+                        if (!header) {
+                            header = document.createElement('div');
+                            header.className = 'fs-header';
+                            header.style.cssText = `
+                                display:flex; align-items:center; justify-content:space-between;
+                                padding:14px 16px; flex-shrink:0;
+                                border-bottom:1px solid rgba(255,255,255,0.1);
+                            `;
+                            header.innerHTML = `
+                                <span class="fs-cancel" style="color:#60a5fa;font-size:15px;cursor:pointer;">取消</span>
+                                <span style="color:#fff;font-size:16px;font-weight:600;">选择学校</span>
+                                <span style="width:32px;"></span>
+                            `;
+                            dropdown.insertBefore(header, dropdown.firstChild);
+                            header.querySelector('.fs-cancel').onclick = (e) => {
+                                e.stopPropagation();
+                                this.close();
+                            };
+                        }
+
+                        // 隐藏旧的搜索栏关闭按钮（用新标题栏取代）
+                        const oldCloseBtn = dropdown.querySelector('.select-search-close-mobile');
+                        if (oldCloseBtn) oldCloseBtn.style.display = 'none';
+
+                        // 选项列表：撑满剩余高度（标题48 + 搜索栏50 = ~100px）
                         const opts = dropdown.querySelector('.select-search-options');
                         if (opts) {
                             opts.style.cssText = `
-                                max-height:calc(100vh - 55px) !important;
+                                max-height:calc(100vh - 110px) !important;
                                 padding-right:44px; overflow-x:hidden;
                                 flex-grow:1;
                             `;
                         }
-                        // 字母索引栏：贴合右边缘、上下无空隙
+                        // 字母索引栏：从搜索栏下方开始到底部
                         const idxBar = dropdown.querySelector('.select-search-index-bar');
                         if (idxBar) {
                             idxBar.style.cssText = `
-                                position:absolute; top:55px; right:0; bottom:0;
+                                position:absolute; top:110px; right:0; bottom:0;
                                 width:40px; display:flex; flex-direction:column;
                                 justify-content:space-between; align-items:center;
-                                padding:4px 0; z-index:20;
+                                padding:2px 0; z-index:20;
                                 touch-action:none; user-select:none;
                                 background:rgba(255,255,255,0.02);
                                 border-radius:0;
                             `;
                         }
-                        // 搜索栏：显示关闭按钮
-                        const closeBtn = dropdown.querySelector('.select-search-close-mobile');
-                        if (closeBtn) closeBtn.style.display = 'flex';
                         this._movedToBody = true;
                     }
                 }
@@ -3338,8 +3365,16 @@
                     if (opts) opts.style.cssText = '';
                     const idxBar = this._dropdownEl.querySelector('.select-search-index-bar');
                     if (idxBar) idxBar.style.cssText = '';
-                    const closeBtn = this._dropdownEl.querySelector('.select-search-close-mobile');
-                    if (closeBtn) closeBtn.style.display = 'none';
+                    // 移除全屏标题栏
+                    const fsHeader = this._dropdownEl.querySelector('.fs-header');
+                    if (fsHeader) fsHeader.remove();
+                    // 重置搜索
+                    const searchInput = this._dropdownEl.querySelector('.select-search-input');
+                    if (searchInput) {
+                        searchInput.value = '';
+                        this.filteredData = [...this.data];
+                        this.renderOptions();
+                    }
                     if (this._dropdownOriginalParent) {
                         this._dropdownOriginalParent.appendChild(this._dropdownEl);
                     }
