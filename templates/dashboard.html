@@ -634,6 +634,42 @@
                 overflow-x: hidden !important; /* 禁止左右滚动 */
             }
         }
+        
+        /* 桌面端模态框模式 */
+        .select-search-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            z-index: 9998;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .select-search-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        .select-search-dropdown.desktop-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            max-width: 90vw;
+            height: 600px;
+            max-height: 80vh;
+            margin: 0;
+            z-index: 9999;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #1e293b;
+        }
 
         /* 字母滑动预览气泡 */
         .select-search-touch-indicator {
@@ -3071,6 +3107,7 @@
                 // 新增选项：控制搜索框和移动端全屏
                 this.enableSearch = options.enableSearch !== undefined ? options.enableSearch : true;
                 this.fullScreenMobile = options.fullScreenMobile !== undefined ? options.fullScreenMobile : true;
+                this.desktopModal = options.desktopModal !== undefined ? options.desktopModal : false;
 
                 this.onSelect = options.onSelect || (() => {});
                 this.selectedValue = options.value || '';
@@ -3278,25 +3315,45 @@
                 this.isOpen = true;
                 this.container.classList.add('active');
 
-                // 移动端全屏模式：将下拉面板移到 body 以绕过 backdrop-filter 破坏 position:fixed
-                if (this.fullScreenMobile && window.innerWidth <= 768) {
+                const isMobile = window.innerWidth <= 768;
+                const isFS = (this.fullScreenMobile && isMobile);
+                const isDModal = (this.desktopModal && !isMobile);
+
+                // 模态框或全屏模式：将下拉面板移到 body
+                if (isFS || isDModal) {
                     const dropdown = this.container.querySelector('.select-search-dropdown');
                     if (dropdown) {
                         this._dropdownOriginalParent = dropdown.parentNode;
                         this._dropdownEl = dropdown;
                         document.body.appendChild(dropdown);
 
-                        // 全屏样式
-                        dropdown.style.cssText = `
-                            display:flex; position:fixed; top:0; left:0;
-                            width:100vw; height:100vh; max-height:100vh;
-                            z-index:9999; border-radius:0; border:none;
-                            overflow:hidden; flex-direction:column;
-                            background:#1e293b;
-                            overscroll-behavior:none;
-                        `;
+                        // 显示遮罩层
+                        this._overlay = document.querySelector('.select-search-overlay');
+                        if (!this._overlay) {
+                            this._overlay = document.createElement('div');
+                            this._overlay.className = 'select-search-overlay';
+                            document.body.appendChild(this._overlay);
+                        }
+                        this._overlay.classList.add('active');
+                        this._overlay.onclick = () => this.close();
 
-                        // 插入全屏顶部标题栏（取消 + 选择学校）
+                        if (isFS) {
+                            // 移动端全屏样式
+                            dropdown.style.cssText = `
+                                display:flex; position:fixed; top:0; left:0;
+                                width:100vw; height:100vh; max-height:100vh;
+                                z-index:9999; border-radius:0; border:none;
+                                overflow:hidden; flex-direction:column;
+                                background:#1e293b;
+                                overscroll-behavior:none;
+                            `;
+                        } else {
+                            // 桌面端模态框样式
+                            dropdown.classList.add('desktop-modal');
+                            dropdown.style.display = 'flex';
+                        }
+
+                        // 插入顶部标题栏（全屏或模态框均需要）
                         let header = dropdown.querySelector('.fs-header');
                         if (!header) {
                             header = document.createElement('div');
@@ -3308,7 +3365,7 @@
                             `;
                             header.innerHTML = `
                                 <span class="fs-cancel" style="color:#60a5fa;font-size:15px;cursor:pointer;">取消</span>
-                                <span style="color:#fff;font-size:16px;font-weight:600;">选择学校</span>
+                                <span style="color:#fff;font-size:16px;font-weight:600;">${isMobile ? "选择学校" : "检索学校"}</span>
                                 <span style="width:32px;"></span>
                             `;
                             dropdown.insertBefore(header, dropdown.firstChild);
@@ -3318,7 +3375,7 @@
                             };
                         }
 
-                        // 隐藏旧的搜索栏关闭按钮（用新标题栏取代）
+                        // 隐藏旧的移动端搜索栏关闭按钮
                         const oldCloseBtn = dropdown.querySelector('.select-search-close-mobile');
                         if (oldCloseBtn) oldCloseBtn.style.display = 'none';
 
@@ -3334,7 +3391,7 @@
                             const totalTop = hHeight + fHeight;
 
                             if (opts) {
-                                opts.style.maxHeight = `calc(100vh - ${totalTop}px)`;
+                                opts.style.maxHeight = `calc(${isFS ? '100vh' : '600px'} - ${totalTop}px)`;
                                 opts.style.paddingRight = '44px';
                                 opts.style.overflowX = 'hidden';
                                 opts.style.flexGrow = '1';
@@ -3378,8 +3435,13 @@
 
                 // 将下拉面板移回原始容器
                 if (this._movedToBody && this._dropdownEl) {
+                    // 隐藏遮罩层
+                    if (this._overlay) this._overlay.classList.remove('active');
+
                     // 清除所有内联样式（下拉面板 + 子元素）
                     this._dropdownEl.style.cssText = '';
+                    this._dropdownEl.classList.remove('desktop-modal');
+                    
                     const opts = this._dropdownEl.querySelector('.select-search-options');
                     if (opts) opts.style.cssText = '';
                     const idxBar = this._dropdownEl.querySelector('.select-search-index-bar');
@@ -3591,14 +3653,16 @@
                         data: schoolData,
                         originalSelect: document.getElementById('add_school_id'),
                         placeholder: '搜索并选择学校...',
-                        enableIndex: true
+                        enableIndex: true,
+                        desktopModal: true
                     });
                     
                     new ModernSelect('edit_school_select_modern', {
                         data: schoolData,
                         originalSelect: document.getElementById('edit_school_id'),
                         placeholder: '搜索并选择学校...',
-                        enableIndex: true
+                        enableIndex: true,
+                        desktopModal: true
                     });
                 }
             } catch(e) { console.error("加载学校列表失败:", e); }
