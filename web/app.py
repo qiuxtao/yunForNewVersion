@@ -909,6 +909,40 @@ class RouteSaveReq(BaseModel):
     filename: str
     content: dict
 
+import math
+
+def calculate_distance(lat1, lon1, lat2, lon2):
+    R = 6371000  # radius in meters
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi, dlam = math.radians(lat2 - lat1), math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2)**2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+def is_similar_route(pointsA, pointsB, max_avg_offset=30):
+    coordsA, coordsB = [], []
+    for p in pointsA:
+        pt = p.get("point", "")
+        if pt and "," in pt:
+            try:
+                pts = pt.split(",")
+                coordsA.append((float(pts[1]), float(pts[0])))
+            except: pass
+    for p in pointsB:
+        pt = p.get("point", "")
+        if pt and "," in pt:
+            try:
+                pts = pt.split(",")
+                coordsB.append((float(pts[1]), float(pts[0])))
+            except: pass
+            
+    if not coordsA or not coordsB: return False
+    # 允许 5% 长度差异
+    if abs(len(coordsA) - len(coordsB)) > max(5, len(coordsA) * 0.05): return False
+    
+    n = min(len(coordsA), len(coordsB))
+    total_dist = sum(calculate_distance(coordsA[i][0], coordsA[i][1], coordsB[i][0], coordsB[i][1]) for i in range(n))
+    return (total_dist / n) <= max_avg_offset
+
 @app.post("/api/route_groups/{group_name}/save")
 async def save_route_to_group(group_name: str, req: RouteSaveReq, _: bool = Depends(check_admin)):
     if ".." in group_name or ".." in req.filename:
@@ -927,11 +961,17 @@ async def save_route_to_group(group_name: str, req: RouteSaveReq, _: bool = Depe
                         with open(existing_path, 'r', encoding='utf-8') as ef:
                             existing_data = json.load(ef)
                             existing_points = existing_data.get("data", {}).get("pointsList", [])
-                            if existing_points and new_points == existing_points:
-                                return JSONResponse({
-                                    "success": False, 
-                                    "message": f"检测到重复路线：该轨迹与组内已存在的 [{existing_file}] 完全相同，已拦截导入。"
-                                })
+                            if existing_points:
+                                if new_points == existing_points:
+                                    return JSONResponse({
+                                        "success": False, 
+                                        "message": f"检测到重复路线：该轨迹与组内已存在的 [{existing_file}] 完全相同，已拦截导入。"
+                                    })
+                                elif is_similar_route(new_points, existing_points, max_avg_offset=30):
+                                    return JSONResponse({
+                                        "success": False, 
+                                        "message": f"检测到高度相似路线（偏移过小）：该轨迹与已存在的 [{existing_file}] 形状雷同，已被拦截。"
+                                    })
                     except Exception:
                         pass
     except Exception as check_e:
