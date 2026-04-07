@@ -1369,11 +1369,32 @@
             flex-shrink: 0 !important;
         }
 
-        /* 下拉面板：右对齐展开 */
+        /* 下拉面板：右对齐展开，统一样式风格 */
         .history-header-new .select-search-dropdown {
             left: auto !important;
             right: 0 !important;
-            min-width: 220px !important;
+            min-width: 200px !important;
+            background: rgba(30, 41, 59, 0.95) !important;
+            backdrop-filter: blur(10px);
+            padding: 4px !important;
+            border-radius: 8px !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+
+        /* 统一下拉菜单选项的字体、圆角和高亮色，与触发按钮高度匹配 */
+        .history-header-new .select-search-option {
+            padding: 8px 12px !important;
+            font-size: 11.5px !important;
+            border-radius: 6px !important;
+        }
+
+        .history-header-new .select-search-option.selected {
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: #fff !important;
+        }
+        
+        .history-header-new .select-search-option:hover {
+            background: rgba(255, 255, 255, 0.05) !important;
         }
 
         /* ======= 云端记录模态框 Header 布局 (移动端 2x2 网格) ======= */
