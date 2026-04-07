@@ -916,6 +916,27 @@ async def save_route_to_group(group_name: str, req: RouteSaveReq, _: bool = Depe
     group_path = os.path.join("data/tasks", group_name)
     if not os.path.exists(group_path):
         os.makedirs(group_path)
+        
+    try:
+        new_points = req.content.get("data", {}).get("pointsList", [])
+        if new_points:
+            for existing_file in os.listdir(group_path):
+                if existing_file.endswith(".json"):
+                    existing_path = os.path.join(group_path, existing_file)
+                    try:
+                        with open(existing_path, 'r', encoding='utf-8') as ef:
+                            existing_data = json.load(ef)
+                            existing_points = existing_data.get("data", {}).get("pointsList", [])
+                            if existing_points and new_points == existing_points:
+                                return JSONResponse({
+                                    "success": False, 
+                                    "message": f"检测到重复路线：该轨迹与组内已存在的 [{existing_file}] 完全相同，已拦截导入。"
+                                })
+                    except Exception:
+                        pass
+    except Exception as check_e:
+        print(f"路线重复检测异常: {check_e}")
+
     fname = req.filename if req.filename.endswith('.json') else f"{req.filename}.json"
     path = os.path.join(group_path, fname)
     try:
