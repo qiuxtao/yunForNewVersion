@@ -2513,7 +2513,7 @@
                     if (!result.data || result.data.length === 0) {
                         termHtml += `<div class="empty-state" style="padding:20px;">该学期尚无相关打卡记录</div>`;
                     } else {
-                        termHtml += '<div class="table-responsive" style="margin-bottom:0;"><table id="historyTable"><thead><tr><th>运动结束时间</th><th>状态</th><th>耗时</th><th>配速</th><th>里程</th></tr></thead><tbody>';
+                        termHtml += '<div class="table-responsive" style="margin-bottom:0;"><table id="historyTable"><thead><tr><th>运动结束时间</th><th>状态</th><th>耗时</th><th>配速</th><th>步频</th><th>里程</th></tr></thead><tbody>';
                         result.data.forEach(run => {
                             let rtime = run.recordEndTime || run.endTime || run.recordDate || "-";
                             let displayTime = rtime;
@@ -2532,6 +2532,9 @@
                                 let s = Math.round((rawPace % 1) * 60).toString().padStart(2, '0');
                                 paceDisplay = m + "'" + s + '"';
                             }
+                            
+                            let cadence = run.recodeCadence || run.cadence || 0;
+                            let cadenceDisplay = cadence > 0 ? `<span style="font-size:13px">${cadence}</span> <span style="font-size:11px; color:var(--text-secondary)">步/分</span>` : "-";
 
                             let statusDisplay = '<span class="badge badge-neutral" id="status_' + run.id + '">待补全</span>';
                             // If the list API already provides it (sometimes it does as 'qualified')
@@ -2547,6 +2550,7 @@
                                 <td data-label="状态">${statusDisplay}</td>
                                 <td data-label="耗时" id="dur_${run.id}">${durDisplay}</td>
                                 <td data-label="配速" id="pace_${run.id}">${paceDisplay}</td>
+                                <td data-label="步频" id="cadence_${run.id}">${cadenceDisplay}</td>
                                 <td data-label="里程" style="color:var(--success); font-weight:500;">${run.recordMileage || '0'} km</td>
                             </tr>`;
                         });
@@ -2713,27 +2717,28 @@
                     <table style="table-layout: fixed; width: 100%;">
                         <thead>
                             <tr>
-                                <th style="width: 45%">路线文件 / 编组</th>
+                                <th style="width: 35%">路线文件 / 编组</th>
                                 <th style="width: 10%">耗时</th>
                                 <th style="width: 12%">配速</th>
+                                <th style="width: 10%">里程</th>
                                 <th style="width: 33%">操作</th>
                             </tr>
                         </thead>
                         <tbody id="routeGroupsTableBody">
-                            <tr><td colspan="4"><div class="empty-state">正在加载路线库数据...</div></td></tr>
+                            <tr><td colspan="5"><div class="empty-state">正在加载路线库数据...</div></td></tr>
                         </tbody>
                     </table>
                 `;
             }
             const tbody = document.getElementById('routeGroupsTableBody');
-            tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">正在加载路线库数据...</div></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">正在加载路线库数据...</div></td></tr>';
             try {
                 const res = await fetch('/api/route_groups');
                 const result = await res.json();
                 if (result.success) {
                     window.availableGroups = result.data.map(g => g.name);
                     if (result.data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">尚未创建任何路线组文件夹</div></td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state">尚未创建任何路线组文件夹</div></td></tr>';
                     } else {
                         let html = '';
                         result.data.forEach(g => {
@@ -2753,6 +2758,7 @@
                                     </td>
                                     <td data-label="耗时">-</td>
                                     <td data-label="配速">-</td>
+                                    <td data-label="里程">-</td>
                                     <td>
                                         <div class="action-cell" style="display:flex; gap:8px; flex-wrap:nowrap; overflow:visible;" onclick="event.stopPropagation();">
                                             <button class="btn btn-warning btn-sm" style="white-space:nowrap;" onclick="renameRouteGroup('${safeGroupName}')">重命名</button>
@@ -2776,6 +2782,7 @@
                                             </td>
                                             <td data-label="耗时">${durDisplay}</td>
                                             <td data-label="配速">${paceDisplay}</td>
+                                            <td data-label="里程" style="color:var(--success);">${f.recode_mileage ? f.recode_mileage + ' km' : '-'}</td>
                                             <td>
                                                 <div class="action-cell" style="display:flex; gap:8px; flex-wrap:nowrap; overflow:visible;" onclick="event.stopPropagation();">
                                                     <button class="btn btn-info btn-xs" style="white-space:nowrap;" onclick="previewRoute('${safeGroupName}', '${safeFileName}')">预览</button>
@@ -2789,7 +2796,7 @@
                             } else {
                                 html += `
                                     <tr class="child-row route-child-${safeGroupName}" style="display: none; background-color: rgba(0,0,0,0.2);">
-                                        <td colspan="4" style="text-align:center; padding-left: 40px; color:var(--text-muted);">此组内暂无路线 JSON 文件</td>
+                                        <td colspan="5" style="text-align:center; padding-left: 40px; color:var(--text-muted);">此组内暂无路线 JSON 文件</td>
                                     </tr>
                                 `;
                             }
