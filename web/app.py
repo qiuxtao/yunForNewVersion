@@ -816,6 +816,7 @@ async def list_route_groups(_: bool = Depends(check_admin)):
                             duration = 0
                             recode_pace = 0
                             recode_mileage = 0
+                            recode_cadence = 0
                             try:
                                 with open(path, 'r', encoding='utf-8') as jf:
                                     jdata = json.load(jf)
@@ -823,6 +824,7 @@ async def list_route_groups(_: bool = Depends(check_admin)):
                                     duration = float(res_data.get("duration", 0)) / 60.0
                                     recode_pace = float(res_data.get("recodePace", 0))
                                     recode_mileage = float(res_data.get("recordMileage", 0))
+                                    recode_cadence = res_data.get("recodeCadence", 0)
                             except Exception:
                                 pass
                             files_info.append({
@@ -830,7 +832,8 @@ async def list_route_groups(_: bool = Depends(check_admin)):
                                 "size_kb": round(size / 1024, 2),
                                 "duration": duration,
                                 "recode_pace": recode_pace,
-                                "recode_mileage": recode_mileage
+                                "recode_mileage": recode_mileage,
+                                "recode_cadence": recode_cadence
                             })
                 except (OSError, IOError):
                     # 如果读取子目录失败（例如权限或并在循环中被删除），跳过该组
@@ -877,6 +880,7 @@ async def list_routes_in_group(group_name: str, _: bool = Depends(check_admin)):
             duration = 0
             recode_pace = 0
             recode_mileage = 0
+            recode_cadence = 0
             try:
                 with open(path, 'r', encoding='utf-8') as jf:
                     jdata = json.load(jf)
@@ -884,6 +888,7 @@ async def list_routes_in_group(group_name: str, _: bool = Depends(check_admin)):
                     duration = float(res_data.get("duration", 0)) / 60.0
                     recode_pace = float(res_data.get("recodePace", 0))
                     recode_mileage = float(res_data.get("recordMileage", 0))
+                    recode_cadence = res_data.get("recodeCadence", 0)
             except Exception:
                 pass
                 
@@ -892,7 +897,8 @@ async def list_routes_in_group(group_name: str, _: bool = Depends(check_admin)):
                 "size_kb": round(size / 1024, 2),
                 "duration": duration,
                 "recode_pace": recode_pace,
-                "recode_mileage": recode_mileage
+                "recode_mileage": recode_mileage,
+                "recode_cadence": recode_cadence
             })
     return JSONResponse({"success": True, "data": files})
 
