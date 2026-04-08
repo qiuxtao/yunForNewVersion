@@ -47,6 +47,27 @@ def add_drift(data):
     ChangedData = [f"{lon},{lat}" for lon, lat in zip(lonData, latData)]
     for i in range(min(len(ChangedData), len(data['data']['pointsList']))):
         data['data']['pointsList'][i]['point'] = ChangedData[i]
+        
+    # 加入时间波动（随机正负 5% 的偏离值）
+    dur_ratio = random.uniform(0.95, 1.05)
+    
+    if 'duration' in data['data']:
+        new_dur = int(float(data['data']['duration']) * dur_ratio)
+        data['data']['duration'] = new_dur
+        
+        # 重新计算整体配速
+        mileage = float(data['data'].get('recordMileage', 0))
+        if mileage > 0:
+            new_pace = (new_dur / 60.0) / mileage
+            data['data']['recodePace'] = round(new_pace, 2)
+            
+    # 等比例缩放每一个点上的耗时属性和瞬时速度
+    for pt in data['data']['pointsList']:
+        if 'runTime' in pt:
+            pt['runTime'] = int(float(pt['runTime']) * dur_ratio)
+        if 'speed' in pt:
+            pt['speed'] = round(float(pt['speed']) / dur_ratio, 2)
+
     # recordMileage 保留原始云端值，不覆写，避免 Haversine 与云端算法的里程偏差
 
     return data
