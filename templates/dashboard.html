@@ -3907,7 +3907,8 @@
                 // If it already seems correctly hydrated (not zeroes), skip to save time.
                 // But Yun api might natively have zeroes if the run was truly 0 duration, 
                 // we'll fetch anyway if it's currently 0 to be sure.
-                if (run.duration > 0 || run.recodePace > 0) {
+                let currentCadence = run.recodeCadence || run.cadence || run.runSteps || 0;
+                if (run.duration > 0 && run.recodePace > 0 && currentCadence > 0) {
                     loadedCount++;
                     continue;
                 }
@@ -3925,6 +3926,7 @@
 
                         run.duration = runDetail.duration || 0;
                         run.recodePace = runDetail.recodePace || 0;
+                        run.recodeCadence = runDetail.recodeCadence || runDetail.cadence || runDetail.runSteps || 0;
 
                         // Robust check for qualification (handle 1, "1", true, etc.)
                         const q = runDetail.qualified;
@@ -3944,13 +3946,24 @@
                             let s = Math.round((run.recodePace % 1) * 60).toString().padStart(2, '0');
                             paceDisplay = m + "'" + s + '"';
                         }
+                        
+                        let cadenceDisplay = '<span style="color:var(--text-secondary); font-size:12px;">待补全</span>';
+                        if (run.recodeCadence > 0) {
+                            cadenceDisplay = `<span style="font-size:13px">${run.recodeCadence}</span> <span style="font-size:11px; color:var(--text-secondary)">步/分</span>`;
+                        } else if (runDetail.runSteps > 0 && run.duration > 0) {
+                            let calculatedCadence = Math.round(runDetail.runSteps / (run.duration / 60));
+                            cadenceDisplay = `<span style="font-size:13px">${calculatedCadence}</span> <span style="font-size:11px; color:var(--text-secondary)">步/分</span>`;
+                            run.recodeCadence = calculatedCadence;
+                        }
 
                         const durTd = document.getElementById(`dur_${run.id}`);
                         const paceTd = document.getElementById(`pace_${run.id}`);
+                        const cadenceTd = document.getElementById(`cadence_${run.id}`);
                         const statusSpan = document.getElementById(`status_${run.id}`);
 
-                        if (durTd) durTd.innerText = durDisplay;
-                        if (paceTd) paceTd.innerText = paceDisplay;
+                        if (durTd) durTd.innerHTML = durDisplay;
+                        if (paceTd) paceTd.innerHTML = paceDisplay;
+                        if (cadenceTd) cadenceTd.innerHTML = cadenceDisplay;
                         if (statusSpan) {
                             if (isOk) {
                                 statusSpan.className = 'badge badge-success';
