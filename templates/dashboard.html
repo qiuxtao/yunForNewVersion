@@ -2545,18 +2545,14 @@
                             }
                             let cadenceDisplay = cadence > 0 ? `<span style="font-size:13px">${cadence}</span> <span style="font-size:11px; color:var(--text-secondary)">步/分</span>` : '<span style="color:var(--text-secondary); font-size:12px;">待补全</span>';
 
-                            let statusDisplay = '<span class="badge badge-neutral" id="status_' + run.id + '">待补全</span>';
                             // If the list API already provides it (sometimes it does as 'qualified')
                             const q = run.qualified;
                             const iq = run.isQualified;
                             const isOkFast = (q == 1 || q == "1" || q === true || iq == 1 || iq == "1" || iq === true);
-                            const isFailFast = (q == 0 || q == "0" || q === false || iq == 0 || iq == "0" || iq === false);
                             
+                            let statusDisplay = '<span class="badge badge-error" id="status_' + run.id + '">未合格</span>';
                             if (isOkFast) {
                                 statusDisplay = '<span class="badge badge-success" id="status_' + run.id + '">合格</span>';
-                            } else if (isFailFast) {
-                                // Only show 'unqualified' if it's explicitly 0, otherwise stay in '待补全'
-                                statusDisplay = '<span class="badge badge-error" id="status_' + run.id + '">未合格</span>';
                             }
 
                             termHtml += `<tr style="cursor: pointer;" onclick="previewCloudRoute('${run.id}', '${run.recordMileage || 0}')">
