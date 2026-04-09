@@ -2543,7 +2543,7 @@
                                     cadence = Math.round(possibleSteps / (rawDur / 60));
                                 }
                             }
-                            let cadenceDisplay = cadence > 0 ? `<span style="font-size:13px">${cadence}</span> <span style="font-size:11px; color:var(--text-secondary)">步/分</span>` : "-";
+                            let cadenceDisplay = cadence > 0 ? `<span style="font-size:13px">${cadence}</span> <span style="font-size:11px; color:var(--text-secondary)">步/分</span>` : '<span style="color:var(--text-secondary); font-size:12px;">待补全</span>';
 
                             let statusDisplay = '<span class="badge badge-neutral" id="status_' + run.id + '">待补全</span>';
                             // If the list API already provides it (sometimes it does as 'qualified')
