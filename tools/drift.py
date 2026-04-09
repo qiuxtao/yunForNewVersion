@@ -41,20 +41,17 @@ def add_drift(data, enable_coord_drift=True, enable_duration_random=True, enable
     因为坐标和距离在之前已经计算完善，所以只需所有点按统一偏移平移即可。
     """
     if enable_coord_drift:
-        drift = random.uniform(-0.0005, 0.0005)
-    else:
-        drift = 0.0
+        drift = random.uniform(-0.000000001, 0.000000001)
+        lonData, latData = split_data(data)
+        for index in range(len(lonData)):
+            lonData[index] += drift
+        for index in range(len(latData)):
+            latData[index] += drift
 
-    lonData, latData = split_data(data)
-    for index in range(len(lonData)):
-        lonData[index] += drift
-    for index in range(len(latData)):
-        latData[index] += drift
-
-    # 生成修改后的坐标列表（仅偏移坐标，不重新计算里程）
-    ChangedData = [f"{lon},{lat}" for lon, lat in zip(lonData, latData)]
-    for i in range(min(len(ChangedData), len(data['data']['pointsList']))):
-        data['data']['pointsList'][i]['point'] = ChangedData[i]
+        # 生成修改后的坐标列表（仅偏移坐标，不重新计算里程）
+        ChangedData = [f"{lon},{lat}" for lon, lat in zip(lonData, latData)]
+        for i in range(min(len(ChangedData), len(data['data']['pointsList']))):
+            data['data']['pointsList'][i]['point'] = ChangedData[i]
         
     # 加入时间波动（随机正负 5% 的偏离值）
     dur_ratio = random.uniform(0.95, 1.05) if enable_duration_random else 1.0
