@@ -1290,8 +1290,11 @@
         @media screen and (max-width: 768px) {
             #historyTable td, #historyTable th {
                 padding: 10px 1px !important;
-                font-size: 13px !important;
-                letter-spacing: -0.2px;
+                font-size: 9.5px !important; /* 为了挤进 6 列极力压缩字号 */
+                letter-spacing: -0.3px;
+            }
+            #historyTable th {
+                white-space: nowrap !important;
             }
         }
 
