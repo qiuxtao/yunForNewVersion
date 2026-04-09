@@ -61,6 +61,12 @@ def add_drift(data):
             new_pace = (new_dur / 60.0) / mileage
             data['data']['recodePace'] = round(new_pace, 2)
             
+    # 让步频也跟着随机波动一下（正负 5%）独立于耗时的波动
+    if 'recodeCadence' in data['data']:
+        orig_cadence = float(data['data']['recodeCadence'])
+        cadence_factor = random.uniform(0.95, 1.05)
+        data['data']['recodeCadence'] = int(orig_cadence * cadence_factor)
+            
     # 等比例缩放每一个点上的耗时属性和瞬时速度
     for pt in data['data']['pointsList']:
         if 'runTime' in pt:
