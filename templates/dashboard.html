@@ -1637,12 +1637,12 @@
                     <table style="table-layout: fixed; width: 100%;">
                         <thead>
                             <tr>
-                                <th style="width: 32%">路线文件 / 编组</th>
-                                <th style="width: 9%">耗时</th>
-                                <th style="width: 10%">配速</th>
-                                <th style="width: 10%">步频</th>
-                                <th style="width: 9%">里程</th>
-                                <th style="width: 30%">操作</th>
+                                <th style="width: 40%">路线文件 / 编组</th>
+                                <th style="width: 8%">耗时</th>
+                                <th style="width: 9%">配速</th>
+                                <th style="width: 9%">步频</th>
+                                <th style="width: 8%">里程</th>
+                                <th style="width: 26%">操作</th>
                             </tr>
                         </thead>
                         <tbody id="routeGroupsTableBody">
@@ -2727,12 +2727,12 @@
                     <table style="table-layout: fixed; width: 100%;">
                         <thead>
                             <tr>
-                                <th style="width: 32%">路线文件 / 编组</th>
-                                <th style="width: 9%">耗时</th>
-                                <th style="width: 10%">配速</th>
-                                <th style="width: 10%">步频</th>
-                                <th style="width: 9%">里程</th>
-                                <th style="width: 30%">操作</th>
+                                <th style="width: 40%">路线文件 / 编组</th>
+                                <th style="width: 8%">耗时</th>
+                                <th style="width: 9%">配速</th>
+                                <th style="width: 9%">步频</th>
+                                <th style="width: 8%">里程</th>
+                                <th style="width: 26%">操作</th>
                             </tr>
                         </thead>
                         <tbody id="routeGroupsTableBody">
@@ -3084,7 +3084,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        filename: `tasklist_${mileage}km_${runId}.json`,
+                        filename: `tasklist_${runId}.json`,
                         content: detailResult.data
                     })
                 });
