@@ -1296,6 +1296,11 @@
             #historyTable th {
                 white-space: nowrap !important;
             }
+            #historyTable .badge {
+                padding: 2px 2px !important;
+                font-size: 0.85em !important;
+                white-space: nowrap;
+            }
         }
 
         /* ======= 云端记录模态框 Header 布局 (全局/桌面端) ======= */
@@ -2533,14 +2538,14 @@
                             let displayTime = rtime;
                             if (rtime.includes(" ")) {
                                 let parts = rtime.split(" ");
-                                displayTime = `<div>${parts[0]}</div><div style="color:var(--text-secondary); font-size:12px; margin-top:2px;">${parts[1]}</div>`;
+                                displayTime = `<div>${parts[0]}</div><div style="color:var(--text-secondary); font-size:0.9em; margin-top:2px;">${parts[1]}</div>`;
                             }
 
                             let rawDur = run.duration || 0;
-                            let durDisplay = (rawDur === 0) ? '<span style="color:var(--text-secondary); font-size:12px;">待补全</span>' : (Math.floor(rawDur / 60) + "分" + (rawDur % 60) + "秒");
+                            let durDisplay = (rawDur === 0) ? '<span style="color:var(--text-secondary); font-size:0.9em;">待补全</span>' : (Math.floor(rawDur / 60) + "分" + (rawDur % 60) + "秒");
 
                             let rawPace = run.recodePace || 0;
-                            let paceDisplay = (rawPace === 0) ? '<span style="color:var(--text-secondary); font-size:12px;">待补全</span>' : "-";
+                            let paceDisplay = (rawPace === 0) ? '<span style="color:var(--text-secondary); font-size:0.9em;">待补全</span>' : "-";
                             if (rawPace > 0) {
                                 let m = Math.floor(rawPace);
                                 let s = Math.round((rawPace % 1) * 60).toString().padStart(2, '0');
@@ -2555,7 +2560,7 @@
                                     cadence = Math.round(possibleSteps / (rawDur / 60));
                                 }
                             }
-                            let cadenceDisplay = cadence > 0 ? `<span style="font-size:13px">${cadence}</span> <span style="font-size:11px; color:var(--text-secondary)">步/分</span>` : '<span style="color:var(--text-secondary); font-size:12px;">待补全</span>';
+                            let cadenceDisplay = cadence > 0 ? `<span style="font-size:1em">${cadence}</span> <span style="font-size:0.8em; color:var(--text-secondary)">步/分</span>` : '<span style="color:var(--text-secondary); font-size:0.9em;">待补全</span>';
 
                             // If the list API already provides it (sometimes it does as 'qualified')
                             const q = run.qualified;
@@ -3960,12 +3965,12 @@
                             paceDisplay = m + "'" + s + '"';
                         }
                         
-                        let cadenceDisplay = '<span style="color:var(--text-secondary); font-size:12px;">待补全</span>';
+                        let cadenceDisplay = '<span style="color:var(--text-secondary); font-size:0.9em;">待补全</span>';
                         if (run.recodeCadence > 0) {
-                            cadenceDisplay = `<span style="font-size:13px">${run.recodeCadence}</span> <span style="font-size:11px; color:var(--text-secondary)">步/分</span>`;
+                            cadenceDisplay = `<span style="font-size:1em">${run.recodeCadence}</span> <span style="font-size:0.8em; color:var(--text-secondary)">步/分</span>`;
                         } else if (runDetail.runSteps > 0 && run.duration > 0) {
                             let calculatedCadence = Math.round(runDetail.runSteps / (run.duration / 60));
-                            cadenceDisplay = `<span style="font-size:13px">${calculatedCadence}</span> <span style="font-size:11px; color:var(--text-secondary)">步/分</span>`;
+                            cadenceDisplay = `<span style="font-size:1em">${calculatedCadence}</span> <span style="font-size:0.8em; color:var(--text-secondary)">步/分</span>`;
                             run.recodeCadence = calculatedCadence;
                         }
 
