@@ -1241,12 +1241,13 @@
                 padding: 8px 2px !important;
             }
 
-            /* 针对各列宽度的微调 */
-            #historyTable th:nth-child(1), #historyTable td:nth-child(1) { width: 30%; } /* 时间 */
-            #historyTable th:nth-child(2), #historyTable td:nth-child(2) { width: 18%; } /* 状态 */
-            #historyTable th:nth-child(3), #historyTable td:nth-child(3) { width: 18%; } /* 耗时 */
-            #historyTable th:nth-child(4), #historyTable td:nth-child(4) { width: 16%; } /* 配速 */
-            #historyTable th:nth-child(5), #historyTable td:nth-child(5) { width: 18%; } /* 里程 */
+            /* 针对各列宽度的微调，加入第6列 */
+            #historyTable th:nth-child(1), #historyTable td:nth-child(1) { width: 22%; } /* 时间 */
+            #historyTable th:nth-child(2), #historyTable td:nth-child(2) { width: 14%; } /* 状态 */
+            #historyTable th:nth-child(3), #historyTable td:nth-child(3) { width: 16%; } /* 耗时 */
+            #historyTable th:nth-child(4), #historyTable td:nth-child(4) { width: 14%; } /* 配速 */
+            #historyTable th:nth-child(5), #historyTable td:nth-child(5) { width: 16%; } /* 步频 */
+            #historyTable th:nth-child(6), #historyTable td:nth-child(6) { width: 18%; } /* 里程 */
 
             #historyTable td::before {
                 display: none !important;
@@ -1484,6 +1485,14 @@
         }
         #historyTableBody tbody tr:last-child {
             margin-bottom: 0 !important;
+        }
+        /* 路线管理表格：后方数据列强制禁止换行 */
+        #routesTableContainer th, #routesTableContainer td {
+            white-space: nowrap;
+        }
+        #routesTableContainer th:nth-child(1), #routesTableContainer td:nth-child(1) {
+            white-space: normal;
+            word-break: break-all;
         }
     </style>
     <style>
