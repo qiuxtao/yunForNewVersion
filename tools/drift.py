@@ -35,8 +35,16 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     return  Distance
     #Chatgpt真好用啊#
 
-def add_drift(data):
-    drift = random.uniform(-0.000000001, 0.000000001)
+def add_drift(data, enable_coord_drift=True, enable_duration_random=True, enable_cadence_random=True):
+    """
+    给坐标加上一个轻微的随机偏移量，实现简单的动态伪装。
+    因为坐标和距离在之前已经计算完善，所以只需所有点按统一偏移平移即可。
+    """
+    if enable_coord_drift:
+        drift = random.uniform(-0.0005, 0.0005)
+    else:
+        drift = 0.0
+
     lonData, latData = split_data(data)
     for index in range(len(lonData)):
         lonData[index] += drift
@@ -49,7 +57,7 @@ def add_drift(data):
         data['data']['pointsList'][i]['point'] = ChangedData[i]
         
     # 加入时间波动（随机正负 5% 的偏离值）
-    dur_ratio = random.uniform(0.95, 1.05)
+    dur_ratio = random.uniform(0.95, 1.05) if enable_duration_random else 1.0
     
     if 'duration' in data['data']:
         new_dur = int(float(data['data']['duration']) * dur_ratio)
@@ -64,7 +72,7 @@ def add_drift(data):
     # 让步频也跟着随机波动一下（正负 5%）独立于耗时的波动
     if 'recodeCadence' in data['data']:
         orig_cadence = float(data['data']['recodeCadence'])
-        cadence_factor = random.uniform(0.95, 1.05)
+        cadence_factor = random.uniform(0.95, 1.05) if enable_cadence_random else 1.0
         data['data']['recodeCadence'] = int(orig_cadence * cadence_factor)
             
     # 等比例缩放每一个点上的耗时属性和瞬时速度

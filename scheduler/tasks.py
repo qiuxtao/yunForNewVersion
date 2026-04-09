@@ -86,7 +86,10 @@ def run_job_for_user(user_id: int, schedule_id: int):
             "single_mileage_min_offset": conf.get("Run", "single_mileage_min_offset", fallback="0.5"),
             "single_mileage_max_offset": conf.get("Run", "single_mileage_max_offset", fallback="-0.5"),
             "cadence_min_offset": conf.get("Run", "cadence_min_offset", fallback="30"),
-            "cadence_max_offset": conf.get("Run", "cadence_max_offset", fallback="-150")
+            "cadence_max_offset": conf.get("Run", "cadence_max_offset", fallback="-150"),
+            "enable_coord_drift": conf.getboolean("Run", "enable_coord_drift", fallback=True),
+            "enable_duration_random": conf.getboolean("Run", "enable_duration_random", fallback=True),
+            "enable_cadence_random": conf.getboolean("Run", "enable_cadence_random", fallback=True)
         }
         split_count = int(conf.get("Run", "split_count", fallback="10"))
 
@@ -155,7 +158,10 @@ def run_job_for_user(user_id: int, schedule_id: int):
             task_map = json.loads(f.read())
             
         from tools.drift import add_drift
-        task_map = add_drift(task_map)
+        enable_coord_drift = run_config.get("enable_coord_drift", True)
+        enable_duration_random = run_config.get("enable_duration_random", True)
+        enable_cadence_random = run_config.get("enable_cadence_random", True)
+        task_map = add_drift(task_map, enable_coord_drift, enable_duration_random, enable_cadence_random)
 
         points = []
         count = 0
