@@ -2535,7 +2535,14 @@
                                 paceDisplay = m + "'" + s + '"';
                             }
                             
-                            let cadence = run.recodeCadence || run.cadence || 0;
+                            let cadence = run.recodeCadence || run.cadence || run.stepRate || run.stepNum || run.stepFrequency || run.runSteps || 0;
+                            // 尝试通过可能的步数字段和耗时计算步频
+                            if (!cadence && rawDur > 0) {
+                                let possibleSteps = run.StepNumber || run.recordStepNum || run.recordStep || run.steps || 0;
+                                if (possibleSteps > 0) {
+                                    cadence = Math.round(possibleSteps / (rawDur / 60));
+                                }
+                            }
                             let cadenceDisplay = cadence > 0 ? `<span style="font-size:13px">${cadence}</span> <span style="font-size:11px; color:var(--text-secondary)">步/分</span>` : "-";
 
                             let statusDisplay = '<span class="badge badge-neutral" id="status_' + run.id + '">待补全</span>';
