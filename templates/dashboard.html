@@ -2371,15 +2371,12 @@
                         termMs.init();
                     }
                     
-                    // 默认选择第一个
+                    document.getElementById('current_history_token').value = result.token;
+
+                    // 默认选择第一个 (由于配置了 onSelect，这会自动触发第一学期的 loadTermHistory)
                     if (termData.length > 0) {
                         termMs.setValue(termData[0].id);
                     }
-
-                    document.getElementById('current_history_token').value = result.token;
-
-                    // auto trigger the first term record load
-                    await loadTermHistory();
                 } else {
                     document.getElementById('historyLoading').style.display = 'none';
                     document.getElementById('historyError').style.display = 'block';
