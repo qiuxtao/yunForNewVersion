@@ -1447,22 +1447,32 @@
                 justify-self: end !important;
             }
 
-            #loadDetailsBtn {
+            #historyButtonsWrapper {
                 grid-column: 1 / 2 !important;
                 grid-row: 2 !important;
+                justify-self: start !important;
+                display: flex !important;
+                align-items: center;
+                margin: 0 !important;
+            }
+
+            #loadDetailsBtn {
                 height: 28px !important;
                 min-height: 28px !important;
                 max-height: 28px !important;
-                padding: 0 10px !important; /* 用 0 的上下 padding 确保不会被内容撑大 */
+                padding: 0 10px !important;
                 font-size: 11.5px !important;
                 line-height: 28px !important;
                 margin: 0 !important;
-                justify-self: start !important;
                 transform-origin: left center;
-                overflow: hidden !important; /* 移动端隐藏同步进度文字溢出 */
-                max-width: 80px !important; /* 限制宽度，不显示同步进度 */
+                overflow: hidden !important;
+                max-width: 80px !important;
                 text-overflow: ellipsis !important;
                 white-space: nowrap !important;
+            }
+
+            #copyDataBtn {
+                display: none !important;
             }
 
             #termStats {
