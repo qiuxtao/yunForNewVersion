@@ -1799,9 +1799,14 @@
             style="max-width: 750px; width: 96%; height: 95vh; display:flex; flex-direction:column; padding: 12px;">
             <div id="historyHeader" class="history-header-new">
                 <h2 class="panel-title" id="historyModalTitle" style="font-size:18px; margin: 0; flex-shrink:0;">云端记录</h2>
-                <button class="btn btn-info" id="loadDetailsBtn"
-                    style="display:none; padding:4px 12px; font-size:12px; height:28px; white-space:nowrap;"
-                    onclick="loadAllRunDetails()">补全信息</button>
+                <div id="historyButtonsWrapper" style="display:none; gap: 8px;">
+                    <button class="btn btn-info" id="loadDetailsBtn"
+                        style="padding:4px 12px; font-size:12px; height:28px; white-space:nowrap;"
+                        onclick="loadAllRunDetails()">补全信息</button>
+                    <button class="btn btn-secondary" id="copyDataBtn"
+                        style="padding:4px 12px; font-size:12px; height:28px; white-space:nowrap;"
+                        onclick="copyCloudData()">一键复制</button>
+                </div>
 
                 <div id="history_term_modern_container" style="display:none;"></div>
                 <input type="hidden" id="historyTermSelect">
@@ -2328,6 +2333,55 @@
             }
         }
 
+        function copyCloudData() {
+            if (!window.currentHistoryData || window.currentHistoryData.length === 0) {
+                showToast('当前没有可复制的数据', 'error');
+                return;
+            }
+            
+            let tsv = "运动结束时间\t状态\t耗时\t配速\t步频\t里程(km)\n";
+            
+            window.currentHistoryData.forEach(run => {
+                let rtime = run.recordEndTime || run.endTime || run.recordDate || "-";
+                
+                let rawDur = run.duration || 0;
+                let durStr = (rawDur === 0) ? "待补全" : (Math.floor(rawDur / 60) + "分" + (rawDur % 60) + "秒");
+                
+                let rawPace = run.recodePace || 0;
+                let paceStr = (rawPace === 0) ? "待补全" : "-";
+                if (rawPace > 0) {
+                    let m = Math.floor(rawPace);
+                    let s = Math.round((rawPace % 1) * 60).toString().padStart(2, '0');
+                    paceStr = m + "'" + s + '"';
+                }
+                
+                let cadence = run.recodeCadence || run.cadence || run.stepRate || run.stepNum || run.stepFrequency || run.runSteps || 0;
+                if (!cadence && rawDur > 0) {
+                    let possibleSteps = run.StepNumber || run.recordStepNum || run.recordStep || run.steps || 0;
+                    if (possibleSteps > 0) {
+                        cadence = Math.round(possibleSteps / (rawDur / 60));
+                    }
+                }
+                let cadenceStr = cadence > 0 ? cadence : "待补全";
+                
+                const q = run.qualified;
+                const iq = run.isQualified;
+                const qs = run.qualifiedStatus;
+                const isOkFast = (q == 1 || q == "1" || q === true || iq == 1 || iq == "1" || iq === true || qs == 1 || qs == "1" || qs === "合格");
+                let statusStr = isOkFast ? "合格" : "未合格";
+                
+                let mileage = run.recordMileage || '0';
+                
+                tsv += `${rtime}\t${statusStr}\t${durStr}\t${paceStr}\t${cadenceStr}\t${mileage}\n`;
+            });
+            
+            navigator.clipboard.writeText(tsv).then(() => {
+                showToast('数据已复制到剪贴板，可直接粘贴至 Excel', 'success');
+            }).catch(err => {
+                showToast('复制失败，请重试或检查浏览器权限', 'error');
+            });
+        }
+
         async function viewHistory(userId, username) {
             document.getElementById('historyModalTitle').innerText = '云端记录 - ' + username;
             
@@ -2585,7 +2639,7 @@
 
                     document.getElementById('historyLoading').style.display = 'none';
                     document.getElementById('historyTableContainer').style.display = 'block';
-                    document.getElementById('loadDetailsBtn').style.display = 'block';
+                    document.getElementById('historyButtonsWrapper').style.display = 'flex';
                 } else {
                     document.getElementById('historyLoading').style.display = 'none';
                     document.getElementById('historyError').style.display = 'block';
