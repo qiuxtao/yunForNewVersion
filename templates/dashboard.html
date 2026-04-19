@@ -2998,6 +2998,7 @@
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
                                     <h2 class="panel-title" id="mapPreviewTitle">云端路线预览</h2>
                                     <div style="display:flex; gap: 12px; align-items: center;">
+                                        <button class="btn btn-secondary btn-sm" id="animPlayBtn" onclick="toggleAnimation()" style="display:none; padding:4px 10px; font-size:12px;">▶ 轨迹动画</button>
                                         <button class="btn btn-secondary btn-sm" id="importInPreviewBtn" style="display:none;">导出至路线组</button>
                                         <button type="button" onclick="closeMapPreview()" style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.08);color:var(--danger);cursor:pointer;transition:all 0.2s;flex-shrink:0;border:none;">
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -3072,17 +3073,12 @@
                                 attribution: 'Tiles &copy; Esri',
                                 maxZoom: 19
                             }).addTo(mapInstance);
-
-                            if (polylineLayer) mapInstance.removeLayer(polylineLayer);
-                            polylineLayer = L.polyline(latLngs, { color: '#60a5fa', weight: 4, opacity: 0.8 }).addTo(mapInstance);
-                            if (latLngs.length > 0) mapInstance.fitBounds(polylineLayer.getBounds(), { padding: [30, 30] });
+                            drawLine(latLngs);
                         }, 50);
                     } else {
                         setTimeout(() => {
                             mapInstance.invalidateSize();
-                            if (polylineLayer) mapInstance.removeLayer(polylineLayer);
-                            polylineLayer = L.polyline(latLngs, { color: '#60a5fa', weight: 4, opacity: 0.8 }).addTo(mapInstance);
-                            if (latLngs.length > 0) mapInstance.fitBounds(polylineLayer.getBounds(), { padding: [30, 30] });
+                            drawLine(latLngs);
                         }, 50);
                     }
                 } else {
@@ -4086,9 +4082,12 @@
                     <div class="modal-box" style="max-width: 800px; height: 80vh; display:flex; flex-direction:column; padding: 20px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
                             <h2 class="panel-title" id="mapPreviewTitle">路线预览</h2>
-                            <button type="button" onclick="closeMapPreview()" style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.08);color:var(--danger);cursor:pointer;transition:all 0.2s;flex-shrink:0;border:none;">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                            </button>
+                            <div style="display:flex; gap: 12px; align-items: center;">
+                                <button class="btn btn-secondary btn-sm" id="animPlayBtn" onclick="toggleAnimation()" style="display:none; padding:4px 10px; font-size:12px;">▶ 轨迹动画</button>
+                                <button type="button" onclick="closeMapPreview()" style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.08);color:var(--danger);cursor:pointer;transition:all 0.2s;flex-shrink:0;border:none;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+                            </div>
                         </div>
                         <div id="mapRenderArea" style="flex:1; width: 100%; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2);"></div>
                     </div>
@@ -4192,17 +4191,140 @@
             }
         }
 
+        // --- Track Animation System ---
+        let animGhostLine = null;
+        let animLine = null;
+        let animMarker = null;
+        let animStartMarker = null;
+        let animEndMarker = null;
+        let animFrameId = null;
+        let animAllPoints = [];
+        let animPlaying = false;
+        let animPaused = false;
+        let animStartTime = null;
+        let animPausedAt = 0;
+
+        function clearAnimation() {
+            if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+            [animGhostLine, animLine, animMarker, animStartMarker, animEndMarker, polylineLayer].forEach(layer => {
+                if (layer && mapInstance) mapInstance.removeLayer(layer);
+            });
+            animGhostLine = animLine = animMarker = animStartMarker = animEndMarker = polylineLayer = null;
+            animPlaying = false;
+            animPaused = false;
+            animStartTime = null;
+            animPausedAt = 0;
+        }
+
         function drawLine(latLngs) {
-            if (polylineLayer) {
-                mapInstance.removeLayer(polylineLayer);
+            clearAnimation();
+            animAllPoints = latLngs;
+
+            // 幽灵轨迹：完整路线的淡色虚线
+            animGhostLine = L.polyline(latLngs, {
+                color: '#ffffff', weight: 2, opacity: 0.2, dashArray: '6,8'
+            }).addTo(mapInstance);
+
+            // 起点标记（绿色）
+            animStartMarker = L.circleMarker(latLngs[0], {
+                radius: 7, color: '#fff', fillColor: '#22c55e', fillOpacity: 1, weight: 2
+            }).addTo(mapInstance);
+
+            // 终点标记（红色）
+            animEndMarker = L.circleMarker(latLngs[latLngs.length - 1], {
+                radius: 7, color: '#fff', fillColor: '#ef4444', fillOpacity: 1, weight: 2
+            }).addTo(mapInstance);
+
+            mapInstance.fitBounds(animGhostLine.getBounds(), { padding: [30, 30] });
+
+            const btn = document.getElementById('animPlayBtn');
+            if (btn) { btn.style.display = 'inline-flex'; btn.innerHTML = '⏸ 暂停'; }
+
+            // 自动开始动画
+            animPausedAt = 0;
+            startTrackAnimation();
+        }
+
+        function startTrackAnimation() {
+            animPlaying = true;
+            animPaused = false;
+            animStartTime = null;
+
+            if (animLine) mapInstance.removeLayer(animLine);
+            animLine = L.polyline([animAllPoints[0]], {
+                color: '#3b82f6', weight: 4.5, opacity: 0.95
+            }).addTo(mapInstance);
+
+            if (animMarker) mapInstance.removeLayer(animMarker);
+            animMarker = L.circleMarker(animAllPoints[0], {
+                radius: 6, color: '#fff', fillColor: '#facc15', fillOpacity: 1, weight: 2
+            }).addTo(mapInstance);
+
+            animFrameId = requestAnimationFrame(animateFrame);
+        }
+
+        function animateFrame(timestamp) {
+            if (!animPlaying || animPaused) return;
+            if (!animStartTime) animStartTime = timestamp - (animPausedAt * 6000);
+
+            const elapsed = timestamp - animStartTime;
+            const totalDuration = 6000;
+            const progress = Math.min(elapsed / totalDuration, 1);
+            const targetIndex = Math.floor(progress * (animAllPoints.length - 1));
+
+            animLine.setLatLngs(animAllPoints.slice(0, targetIndex + 1));
+            animMarker.setLatLng(animAllPoints[targetIndex]);
+
+            if (progress < 1) {
+                animFrameId = requestAnimationFrame(animateFrame);
+            } else {
+                // 动画结束：显示完整实线并清除跑步者标记
+                animPlaying = false;
+                animPausedAt = 0;
+                if (animMarker) { mapInstance.removeLayer(animMarker); animMarker = null; }
+                if (animGhostLine) { mapInstance.removeLayer(animGhostLine); animGhostLine = null; }
+                if (animLine) { mapInstance.removeLayer(animLine); animLine = null; }
+                polylineLayer = L.polyline(animAllPoints, { color: '#ef4444', weight: 4, opacity: 0.8 }).addTo(mapInstance);
+                const btn = document.getElementById('animPlayBtn');
+                if (btn) btn.innerHTML = '🔄 重播';
             }
-            polylineLayer = L.polyline(latLngs, { color: '#ef4444', weight: 4, opacity: 0.8 }).addTo(mapInstance);
-            mapInstance.fitBounds(polylineLayer.getBounds(), { padding: [30, 30] });
+        }
+
+        function toggleAnimation() {
+            if (!animAllPoints || animAllPoints.length === 0) return;
+            const btn = document.getElementById('animPlayBtn');
+
+            if (animPlaying && !animPaused) {
+                // 暂停
+                animPaused = true;
+                animPlaying = false;
+                if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+                const elapsed = performance.now() - animStartTime;
+                animPausedAt = Math.min(elapsed / 6000, 1);
+                if (btn) btn.innerHTML = '▶ 继续';
+            } else if (animPaused) {
+                // 继续
+                animPlaying = true;
+                animPaused = false;
+                animStartTime = null;
+                animFrameId = requestAnimationFrame(animateFrame);
+                if (btn) btn.innerHTML = '⏸ 暂停';
+            } else {
+                // 重播
+                if (polylineLayer) { mapInstance.removeLayer(polylineLayer); polylineLayer = null; }
+                animGhostLine = L.polyline(animAllPoints, {
+                    color: '#ffffff', weight: 2, opacity: 0.2, dashArray: '6,8'
+                }).addTo(mapInstance);
+                animPausedAt = 0;
+                if (btn) btn.innerHTML = '⏸ 暂停';
+                startTrackAnimation();
+            }
         }
 
         function closeMapPreview() {
             const modal = document.getElementById('mapPreviewModal');
             if (modal) modal.classList.remove('active');
+            clearAnimation();
         }
 
         // --- Push Groups Logic ---
