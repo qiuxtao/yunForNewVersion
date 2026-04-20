@@ -2989,98 +2989,23 @@
                         return;
                     }
 
-                    // Dynamically scaffold the map modal just like local previewRoute
-                    let modal = document.getElementById('mapPreviewModal');
-                    if (!modal) {
-                        const modalHtml = `
-                        <div class="modal-overlay" id="mapPreviewModal" style="z-index: 200;">
-                            <div class="modal-box" style="max-width: 800px; height: 80vh; display:flex; flex-direction:column; padding: 20px;">
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
-                                    <h2 class="panel-title" id="mapPreviewTitle">云端路线预览</h2>
-                                    <div style="display:flex; gap: 12px; align-items: center;">
-                                        <button class="btn btn-secondary btn-sm" id="animPlayBtn" onclick="toggleAnimation()" style="display:none; padding:4px 10px; font-size:12px;">▶ 轨迹动画</button>
-                                        <button class="btn btn-secondary btn-sm" id="importInPreviewBtn" style="display:none;">导出至路线组</button>
-                                        <button type="button" onclick="closeMapPreview()" style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.08);color:var(--danger);cursor:pointer;transition:all 0.2s;flex-shrink:0;border:none;">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div id="mapRenderArea" style="flex:1; width: 100%; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2);"></div>
-                            </div>
-                        </div>`;
-                        document.body.insertAdjacentHTML('beforeend', modalHtml);
-                        modal = document.getElementById('mapPreviewModal');
-                    }
+                    const modal = ensureMapModal();
 
                     //绑定并显示入库按钮
                     const importBtn = document.getElementById('importInPreviewBtn');
-                    importBtn.style.display = 'block';
-                    importBtn.onclick = () => promptSaveRoute(runId, mileage);
+                    if (importBtn) {
+                        importBtn.style.display = 'block';
+                        importBtn.onclick = () => promptSaveRoute(runId, mileage);
+                    }
 
                     document.getElementById('mapPreviewTitle').innerText = "云端轨迹解密渲染中...";
                     modal.classList.add('active');
 
-                    // GCJ-02 to WGS-84 Conversion
-                    const PI = 3.1415926535897932384626;
-                    const a = 6378245.0;
-                    const ee = 0.00669342162296594323;
-
-                    function transformLat(x, y) {
-                        let ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
-                        ret += (20.0 * Math.sin(6.0 * x * PI) + 20.0 * Math.sin(2.0 * x * PI)) * 2.0 / 3.0;
-                        ret += (20.0 * Math.sin(y * PI) + 40.0 * Math.sin(y / 3.0 * PI)) * 2.0 / 3.0;
-                        ret += (160.0 * Math.sin(y / 12.0 * PI) + 320 * Math.sin(y * PI / 30.0)) * 2.0 / 3.0;
-                        return ret;
-                    }
-
-                    function transformLng(x, y) {
-                        let ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
-                        ret += (20.0 * Math.sin(6.0 * x * PI) + 20.0 * Math.sin(2.0 * x * PI)) * 2.0 / 3.0;
-                        ret += (20.0 * Math.sin(x * PI) + 40.0 * Math.sin(x / 3.0 * PI)) * 2.0 / 3.0;
-                        ret += (150.0 * Math.sin(x / 12.0 * PI) + 300.0 * Math.sin(x / 30.0 * PI)) * 2.0 / 3.0;
-                        return ret;
-                    }
-
-                    function gcj02towgs84(lng, lat) {
-                        let dlat = transformLat(lng - 105.0, lat - 35.0);
-                        let dlng = transformLng(lng - 105.0, lat - 35.0);
-                        let radlat = lat / 180.0 * PI;
-                        let magic = Math.sin(radlat);
-                        magic = 1 - ee * magic * magic;
-                        let sqrtmagic = Math.sqrt(magic);
-                        dlat = (dlat * 180.0) / ((a * (1 - ee)) / (magic * sqrtmagic) * PI);
-                        dlng = (dlng * 180.0) / (a / sqrtmagic * Math.cos(radlat) * PI);
-                        let mglat = lat + dlat;
-                        let mglng = lng + dlng;
-                        return [lng * 2 - mglng, lat * 2 - mglat];
-                    }
-
-                    let latLngs = [];
-                    points.forEach(pt => {
-                        const coords = pt.point ? pt.point.split(',') : [];
-                        if (coords.length === 2) {
-                            let wgs84Coords = gcj02towgs84(parseFloat(coords[0]), parseFloat(coords[1]));
-                            latLngs.push([wgs84Coords[1], wgs84Coords[0]]);
-                        }
-                    });
+                    let latLngs = parsePointsToLatLngs(points);
 
                     document.getElementById('mapPreviewTitle').innerText = "云端记录 [" + runId + "] 轨迹概览";
 
-                    if (!mapInstance) {
-                        setTimeout(() => {
-                            mapInstance = L.map('mapRenderArea');
-                            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                                attribution: 'Tiles &copy; Esri',
-                                maxZoom: 19
-                            }).addTo(mapInstance);
-                            drawLine(latLngs);
-                        }, 50);
-                    } else {
-                        setTimeout(() => {
-                            mapInstance.invalidateSize();
-                            drawLine(latLngs);
-                        }, 50);
-                    }
+                    initMapAndDraw(latLngs);
                 } else {
                     showAlert('无法读取该记录的路线详情或其为空（官方数据格式无 pointsList）');
                 }
@@ -4074,27 +3999,8 @@
         let polylineLayer = null;
 
         async function previewRoute(groupName, filename) {
-            // Check if map container exists, if not, append to body
-            let modal = document.getElementById('mapPreviewModal');
-            if (!modal) {
-                const modalHtml = `
-                <div class="modal-overlay" id="mapPreviewModal" style="z-index: 200;">
-                    <div class="modal-box" style="max-width: 800px; height: 80vh; display:flex; flex-direction:column; padding: 20px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
-                            <h2 class="panel-title" id="mapPreviewTitle">路线预览</h2>
-                            <div style="display:flex; gap: 12px; align-items: center;">
-                                <button class="btn btn-secondary btn-sm" id="animPlayBtn" onclick="toggleAnimation()" style="display:none; padding:4px 10px; font-size:12px;">▶ 轨迹动画</button>
-                                <button type="button" onclick="closeMapPreview()" style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.08);color:var(--danger);cursor:pointer;transition:all 0.2s;flex-shrink:0;border:none;">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                </button>
-                            </div>
-                        </div>
-                        <div id="mapRenderArea" style="flex:1; width: 100%; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2);"></div>
-                    </div>
-                </div>`;
-                document.body.insertAdjacentHTML('beforeend', modalHtml);
-                modal = document.getElementById('mapPreviewModal');
-            }
+        async function previewRoute(groupName, filename) {
+            const modal = ensureMapModal();
 
             document.getElementById('mapPreviewTitle').innerText = filename + " 轨迹预览中...";
             modal.classList.add('active');
@@ -4116,78 +4022,106 @@
                         return;
                     }
 
-                    // GCJ-02 to WGS-84 Conversion Algorithm block
-                    const PI = 3.1415926535897932384626;
-                    const a = 6378245.0;
-                    const ee = 0.00669342162296594323;
-
-                    function transformLat(x, y) {
-                        let ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
-                        ret += (20.0 * Math.sin(6.0 * x * PI) + 20.0 * Math.sin(2.0 * x * PI)) * 2.0 / 3.0;
-                        ret += (20.0 * Math.sin(y * PI) + 40.0 * Math.sin(y / 3.0 * PI)) * 2.0 / 3.0;
-                        ret += (160.0 * Math.sin(y / 12.0 * PI) + 320 * Math.sin(y * PI / 30.0)) * 2.0 / 3.0;
-                        return ret;
-                    }
-
-                    function transformLng(x, y) {
-                        let ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
-                        ret += (20.0 * Math.sin(6.0 * x * PI) + 20.0 * Math.sin(2.0 * x * PI)) * 2.0 / 3.0;
-                        ret += (20.0 * Math.sin(x * PI) + 40.0 * Math.sin(x / 3.0 * PI)) * 2.0 / 3.0;
-                        ret += (150.0 * Math.sin(x / 12.0 * PI) + 300.0 * Math.sin(x / 30.0 * PI)) * 2.0 / 3.0;
-                        return ret;
-                    }
-
-                    function gcj02towgs84(lng, lat) {
-                        let dlat = transformLat(lng - 105.0, lat - 35.0);
-                        let dlng = transformLng(lng - 105.0, lat - 35.0);
-                        let radlat = lat / 180.0 * PI;
-                        let magic = Math.sin(radlat);
-                        magic = 1 - ee * magic * magic;
-                        let sqrtmagic = Math.sqrt(magic);
-                        dlat = (dlat * 180.0) / ((a * (1 - ee)) / (magic * sqrtmagic) * PI);
-                        dlng = (dlng * 180.0) / (a / sqrtmagic * Math.cos(radlat) * PI);
-                        let mglat = lat + dlat;
-                        let mglng = lng + dlng;
-                        return [lng * 2 - mglng, lat * 2 - mglat];
-                    }
-
-                    let latLngs = [];
-                    points.forEach(pt => {
-                        const coords = pt.point.split(','); // "lng,lat"
-                        if (coords.length === 2) {
-                            // Yun uses GCJ-02 (Mars Coordinates), OSM expects WGS-84
-                            let wgs84Coords = gcj02towgs84(parseFloat(coords[0]), parseFloat(coords[1]));
-                            // Leaflet uses [Lat, Lng]
-                            latLngs.push([wgs84Coords[1], wgs84Coords[0]]);
-                        }
-                    });
-
-                    // Initialize Map if not yet
-                    if (!mapInstance) {
-                        // Delay slightly to ensure DOM is ready and sized right
-                        setTimeout(() => {
-                            mapInstance = L.map('mapRenderArea');
-
-                            // Esri World Imagery (High-res Satellite map without API key requirement)
-                            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                                attribution: 'Tiles &copy; Esri',
-                                maxZoom: 19
-                            }).addTo(mapInstance);
-
-                            drawLine(latLngs);
-                        }, 50);
-                    } else {
-                        // Map exists, just redraw
-                        setTimeout(() => {
-                            mapInstance.invalidateSize();
-                            drawLine(latLngs);
-                        }, 50);
-                    }
+                    let latLngs = parsePointsToLatLngs(points);
+                    initMapAndDraw(latLngs);
                 } else {
                     showAlert("路线解析失败，内部数据格式无 pointsList。");
                 }
             } catch (e) {
                 showAlert("拉取报错: " + e);
+            }
+        }
+
+        // --- Shared Map Preview Helpers ---
+        let mapInstance = null;
+        let polylineLayer = null;
+
+        function ensureMapModal() {
+            let modal = document.getElementById('mapPreviewModal');
+            if (!modal) {
+                const modalHtml = `
+                <div class="modal-overlay" id="mapPreviewModal" style="z-index: 200;">
+                    <div class="modal-box" style="max-width: 800px; height: 80vh; display:flex; flex-direction:column; padding: 20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+                            <h2 class="panel-title" id="mapPreviewTitle">路线预览</h2>
+                            <div style="display:flex; gap: 12px; align-items: center;">
+                                <button class="btn btn-secondary btn-sm" id="animPlayBtn" onclick="toggleAnimation()" style="display:none; padding:4px 10px; font-size:12px;">▶ 轨迹动画</button>
+                                <button class="btn btn-secondary btn-sm" id="importInPreviewBtn" style="display:none;">导出至路线组</button>
+                                <button type="button" onclick="closeMapPreview()" style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.08);color:var(--danger);cursor:pointer;transition:all 0.2s;flex-shrink:0;border:none;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="mapRenderArea" style="flex:1; width: 100%; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2);"></div>
+                    </div>
+                </div>`;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                modal = document.getElementById('mapPreviewModal');
+            }
+            return modal;
+        }
+
+        const GCJ02_PI = 3.1415926535897932384626;
+        const GCJ02_A = 6378245.0;
+        const GCJ02_EE = 0.00669342162296594323;
+
+        function transformLat(x, y) {
+            let ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
+            ret += (20.0 * Math.sin(6.0 * x * GCJ02_PI) + 20.0 * Math.sin(2.0 * x * GCJ02_PI)) * 2.0 / 3.0;
+            ret += (20.0 * Math.sin(y * GCJ02_PI) + 40.0 * Math.sin(y / 3.0 * GCJ02_PI)) * 2.0 / 3.0;
+            ret += (160.0 * Math.sin(y / 12.0 * GCJ02_PI) + 320 * Math.sin(y * GCJ02_PI / 30.0)) * 2.0 / 3.0;
+            return ret;
+        }
+
+        function transformLng(x, y) {
+            let ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
+            ret += (20.0 * Math.sin(6.0 * x * GCJ02_PI) + 20.0 * Math.sin(2.0 * x * GCJ02_PI)) * 2.0 / 3.0;
+            ret += (20.0 * Math.sin(x * GCJ02_PI) + 40.0 * Math.sin(x / 3.0 * GCJ02_PI)) * 2.0 / 3.0;
+            ret += (150.0 * Math.sin(x / 12.0 * GCJ02_PI) + 300.0 * Math.sin(x / 30.0 * GCJ02_PI)) * 2.0 / 3.0;
+            return ret;
+        }
+
+        function gcj02towgs84(lng, lat) {
+            let dlat = transformLat(lng - 105.0, lat - 35.0);
+            let dlng = transformLng(lng - 105.0, lat - 35.0);
+            let radlat = lat / 180.0 * GCJ02_PI;
+            let magic = Math.sin(radlat);
+            magic = 1 - GCJ02_EE * magic * magic;
+            let sqrtmagic = Math.sqrt(magic);
+            dlat = (dlat * 180.0) / ((GCJ02_A * (1 - GCJ02_EE)) / (magic * sqrtmagic) * GCJ02_PI);
+            dlng = (dlng * 180.0) / (GCJ02_A / sqrtmagic * Math.cos(radlat) * GCJ02_PI);
+            let mglat = lat + dlat;
+            let mglng = lng + dlng;
+            return [lng * 2 - mglng, lat * 2 - mglat];
+        }
+
+        function parsePointsToLatLngs(pointsList) {
+            let latLngs = [];
+            pointsList.forEach(pt => {
+                const coords = pt.point ? pt.point.split(',') : [];
+                if (coords.length === 2) {
+                    let wgs84Coords = gcj02towgs84(parseFloat(coords[0]), parseFloat(coords[1]));
+                    latLngs.push([wgs84Coords[1], wgs84Coords[0]]);
+                }
+            });
+            return latLngs;
+        }
+
+        function initMapAndDraw(latLngs) {
+            if (!mapInstance) {
+                setTimeout(() => {
+                    mapInstance = L.map('mapRenderArea');
+                    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                        attribution: 'Tiles &copy; Esri',
+                        maxZoom: 19
+                    }).addTo(mapInstance);
+                    drawLine(latLngs);
+                }, 50);
+            } else {
+                setTimeout(() => {
+                    mapInstance.invalidateSize();
+                    drawLine(latLngs);
+                }, 50);
             }
         }
 
