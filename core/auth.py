@@ -1,5 +1,5 @@
 import time
-import requests
+import httpx
 import json
 import hashlib
 from base64 import b64encode, b64decode
@@ -43,7 +43,7 @@ class AuthManager:
         decrypt_value = crypt_sm4.crypt_ecb(b64decode(value))
         return decrypt_value
 
-    def get_school_url_id(self, school_name, uuid="2211725972932675"):
+    async def get_school_url_id(self, school_name, uuid="2211725972932675"):
         utc = str(int(time.time()))
         sign_data = f'platform=android&utc={utc}&uuid={uuid}&appsecret={self.md5key}'
         sign = self.md5_encryption(sign_data)
@@ -69,9 +69,11 @@ class AuthManager:
             "cipherKey": self.CipherKeyEncrypted,
             "content": self.encrypt_sm4("", b64decode(self.default_key), isBytes=False)
         }
-        res = requests.post(url, headers=headers, json=data_json)
-        result = res.text
+        
         try:
+            async with httpx.AsyncClient() as client:
+                res = await client.post(url, headers=headers, json=data_json, timeout=10)
+            result = res.text
             DecryptedData = json.loads(self.decrypt_sm4(result, b64decode(self.default_key)).decode())
             dataList = DecryptedData['data']
             for school in dataList:
@@ -81,7 +83,7 @@ class AuthManager:
         except Exception as e:
             return None, None
 
-    def login(self, username, password, school_id, school_host, school_login_url, uuid, utc):
+    async def login(self, username, password, school_id, school_host, school_login_url, uuid, utc):
         """
         Performs the login sequence.
         school_login_url usually falls back to 'appLogin'
@@ -115,7 +117,8 @@ class AuthManager:
         
         url = f"{school_host}/login/{school_login_url}"
         
-        response = requests.post(url, headers=headers, json=data)
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, headers=headers, json=data, timeout=10)
         result = response.text
         
         try:

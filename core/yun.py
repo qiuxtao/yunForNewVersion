@@ -1,7 +1,7 @@
 import base64
 import random
 import time
-import requests
+import httpx
 import json
 import hashlib
 import gzip
@@ -113,7 +113,7 @@ class YunCore:
         return m.hexdigest()
 
     @staticmethod
-    def get_global_schools(app_edition, cipherkey, cipherkeyencrypted, md5key):
+    async def get_global_schools(app_edition, cipherkey, cipherkeyencrypted, md5key):
         utc = str(int(time.time()))
         uuid = "2211725972932675"
         sign_data = f'platform=android&utc={utc}&uuid={uuid}&appsecret={md5key}'
@@ -142,7 +142,8 @@ class YunCore:
             "content": YunCore.encrypt_sm4("", b64decode(cipherkey), isBytes=False)
         }
         try:
-            req = requests.post(url=url, data=json.dumps(data_json), headers=headers, timeout=10)
+            async with httpx.AsyncClient() as client:
+                req = await client.post(url=url, content=json.dumps(data_json), headers=headers, timeout=10)
             infojson = json.loads(YunCore.decrypt_sm4(req.text, b64decode(cipherkey)).decode())
             if infojson.get('code') == 200:
                 return True, infojson.get('data', [])
@@ -150,7 +151,7 @@ class YunCore:
         except Exception as e:
             return False, str(e)
 
-    def default_post(self, router, data, headers=None, m_host=None, isBytes=False, gen_sign=True):
+    async def default_post(self, router, data, headers=None, m_host=None, isBytes=False, gen_sign=True):
         m_host = m_host or self.my_host
         url = m_host + router
         
@@ -181,15 +182,16 @@ class YunCore:
             "content": self.encrypt_sm4(data, b64decode(sm4_key), isBytes=isBytes)
         }
         
-        req = requests.post(url=url, data=json.dumps(data_json), headers=headers)
+        async with httpx.AsyncClient() as client:
+            req = await client.post(url=url, content=json.dumps(data_json), headers=headers, timeout=15)
         try:
             return self.decrypt_sm4(req.text, b64decode(sm4_key)).decode()
         except:
             return req.text
 
-    def init_run_info(self):
+    async def init_run_info(self):
         try:
-            resp = self.default_post("/run/getHomeRunInfo", "")
+            resp = await self.default_post("/run/getHomeRunInfo", "")
             data = json.loads(resp)
             if data.get('code') != 200:
                 print(f"Error fetching home run info: {data}")
@@ -212,13 +214,13 @@ class YunCore:
             traceback.print_exc()
             return False, str(e)
 
-    def start_run(self):
+    async def start_run(self):
         data = {
             'raRunArea': self.raRunArea,
             'raType': self.raType,
             'raId': self.raId
         }
-        resp = self.default_post('/run/start', json.dumps(data))
+        resp = await self.default_post('/run/start', json.dumps(data))
         try:
             j = json.loads(resp)
         except Exception as e:
@@ -235,7 +237,7 @@ class YunCore:
         else:
             return False, f"API `/run/start` failed. Full response: {j}"
 
-    def split_by_points_map(self, points, speed_pace):
+    async def split_by_points_map(self, points, speed_pace):
         data = {
             "StepNumber": int(float(points[-1]['runMileage']) - float(points[0]['runMileage'])) / self.strides,
             'a': 0,
@@ -253,10 +255,10 @@ class YunCore:
             "strides": self.strides,
             'userName': self.userName
         }
-        resp = self.default_post("/run/splitPointCheating", gzip.compress(data=json.dumps(data).encode("utf-8")), isBytes=True)
+        resp = await self.default_post("/run/splitPointCheating", gzip.compress(data=json.dumps(data).encode("utf-8")), isBytes=True)
         return resp
 
-    def finish_by_points_map(self, task_map):
+    async def finish_by_points_map(self, task_map):
         data = {
             'recordMileage': task_map['data']['recordMileage'],
             'recodeCadence': task_map['data']['recodeCadence'],
@@ -276,12 +278,12 @@ class YunCore:
             'manageList': task_map['data']['manageList'],
             'remake': '1'
         }
-        resp = self.default_post("/run/finish", json.dumps(data))
+        resp = await self.default_post("/run/finish", json.dumps(data))
         return resp
 
-    def get_terms(self):
+    async def get_terms(self):
         try:
-            resp = self.default_post("/run/listXnYearXqByStudentId", "")
+            resp = await self.default_post("/run/listXnYearXqByStudentId", "")
             try:
                 term_list = json.loads(resp)
             except:
@@ -311,9 +313,9 @@ class YunCore:
             traceback.print_exc()
             return False, str(e)
 
-    def get_term_history(self, term_value):
+    async def get_term_history(self, term_value):
         try:
-            run_list_resp = self.default_post("/run/crsReocordInfoList", json.dumps({"tableName": term_value}))
+            run_list_resp = await self.default_post("/run/crsReocordInfoList", json.dumps({"tableName": term_value}))
             runs = []
             run_list = json.loads(run_list_resp)
             if run_list.get("code") == 200:
@@ -326,7 +328,7 @@ class YunCore:
         except Exception as e:
             return False, str(e)
 
-    def get_run_detail(self, run_id, table_name):
+    async def get_run_detail(self, run_id, table_name):
         try:
             payload = json.dumps({"id": run_id, "tableName": table_name})
             
@@ -354,7 +356,8 @@ class YunCore:
             }
             
             url = self.my_host + "/run/crsReocordInfo"
-            req = requests.post(url=url, data=json.dumps(data_json), headers=headers)
+            async with httpx.AsyncClient() as client:
+                req = await client.post(url=url, content=json.dumps(data_json), headers=headers, timeout=15)
             
             import gzip
             decrypted_bytes = self.decrypt_sm4(req.text, b64decode(sm4_key))

@@ -1,14 +1,14 @@
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import pytz
 import datetime
-import logging
-from sqlalchemy.orm import Session
-import configparser
 import os
 import json
 import random
 import time
-import sys
+import asyncio
+from loguru import logger
+from sqlalchemy.orm import Session
+import configparser
 
 from web.database import SessionLocal
 from web.models import Schedule, User, RunLog
@@ -29,12 +29,8 @@ def _dispatch_notify_failed(chat_id, notify_type, username, error_msg):
     else:
         qq_notify_failed(chat_id, notify_type, username, error_msg)
 
-logger = logging.getLogger(__name__)
+scheduler = AsyncIOScheduler(timezone=pytz.timezone('Asia/Shanghai'))
 
-scheduler = BackgroundScheduler(timezone=pytz.timezone('Asia/Shanghai'))
-
-# 为了避免在数据库里存所有的学校秘钥，目前从统一的config.ini读取学校API静态配置并供所有用户共用
-# (如果系统要支持多个学校，这部分需要迁入数据库或者做个school_config表)
 def load_app_config():
     conf = configparser.ConfigParser()
     conf_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.ini')
@@ -49,7 +45,7 @@ def add_log(db: Session, user: User, status: str, message: str, sched: Schedule 
         sched.last_run_time = datetime.datetime.now()
     db.commit()
 
-def run_job_for_user(user_id: int, schedule_id: int):
+async def run_job_for_user(user_id: int, schedule_id: int):
     db: Session = SessionLocal()
     try:
         user = db.query(User).filter(User.id == user_id).first()
@@ -98,7 +94,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
         utc = str(int(time.time()))
         
         try:
-            login_res = auth.login(user.yun_username, user.yun_password, school_id, school_host, school_login_url, user.uuid, utc)
+            login_res = await auth.login(user.yun_username, user.yun_password, school_id, school_host, school_login_url, user.uuid, utc)
             user.yun_token = login_res['token']
             db.commit()
             logger.info(f"[{user.yun_username}] 登录云运动成功，Token: {user.yun_token[:8]}...")
@@ -117,7 +113,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
             public_key, private_key, cipherkey, cipherkeyencrypted, run_config
         )
         
-        success, msg = core.init_run_info()
+        success, msg = await core.init_run_info()
         if not success:
             error_msg = f"初始化运行参数失败: {msg}"
             logger.error(error_msg)
@@ -126,7 +122,7 @@ def run_job_for_user(user_id: int, schedule_id: int):
             return
         logger.info(f"[{user.yun_username}] 获取首页运行信息成功")
 
-        success, msg = core.start_run()
+        success, msg = await core.start_run()
         if not success:
             error_msg = f"创建跑步记录失败: {msg}"
             logger.error(error_msg)
@@ -190,16 +186,16 @@ def run_job_for_user(user_id: int, schedule_id: int):
                 
             if count == split_count or (idx + 1) == total_points:
                 try:
-                    core.split_by_points_map(points, task_map['data']['recodePace'])
+                    await core.split_by_points_map(points, task_map['data']['recodePace'])
                 except Exception as e:
                     pass
                 if (idx + 1) < total_points:
-                    time.sleep(sleep_time)
+                    await asyncio.sleep(sleep_time)
                 count = 0
                 points = []
 
         logger.info(f"[{user.yun_username}] 发送结束信号...")
-        res = core.finish_by_points_map(task_map)
+        res = await core.finish_by_points_map(task_map)
         try:
             final_info = json.loads(res)
             if final_info.get("code") == 200:
@@ -211,10 +207,10 @@ def run_job_for_user(user_id: int, schedule_id: int):
                 total_runs = 0
                 qualified_runs = 0
                 try:
-                    t_success, terms = core.get_terms()
+                    t_success, terms = await core.get_terms()
                     if t_success and terms:
                         current_term = terms[0]['value']
-                        h_success, h_data = core.get_term_history(current_term)
+                        h_success, h_data = await core.get_term_history(current_term)
                         if h_success and isinstance(h_data, list):
                             total_runs = len(h_data)
                             qualified_runs = sum(1 for r in h_data if str(r.get('qualified', '')) == '1' or r.get('qualified') is True or str(r.get('isQualified', '')) == '1' or r.get('isQualified') is True or str(r.get('qualifiedStatus', '')) in ['1', '合格'])
@@ -239,7 +235,6 @@ def run_job_for_user(user_id: int, schedule_id: int):
             if target_qq: _dispatch_notify_failed(target_qq, target_notify_type, user.username, error_msg)
     finally:
         db.close()
-
 
 def scan_and_run_schedules():
     """
