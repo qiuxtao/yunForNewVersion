@@ -101,9 +101,7 @@ async def get_real_ip_middleware(request: Request, call_next):
     return response
 
 from core.security import create_access_token, verify_token
-
-class NotAuthenticatedException(Exception):
-    pass
+from web.dependencies import NotAuthenticatedException
 
 @app.exception_handler(NotAuthenticatedException)
 async def auth_exception_handler(request: Request, exc: NotAuthenticatedException):
