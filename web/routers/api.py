@@ -79,53 +79,10 @@ router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 # 中间件：尝试从请求头中获取真实真实公网 IP (兼容 Docker/代理环境)
-@router.middleware("http")
-async def get_real_ip_middleware(request: Request, call_next):
-    # 优先检查常见的代理头
-    x_forwarded_for = request.headers.get("x-forwarded-for")
-    if x_forwarded_for:
-        # X-Forwarded-For 可能包含多个 IP，取第一个
-        real_ip = x_forwarded_for.split(",")[0].strip()
-        # 猴子补丁修改 request.scope 里的 client，以便后续及日志调用能读取到真实 IP
-        new_scope = request.scope.copy()
-        new_scope["client"] = (real_ip, request.scope["client"][1])
-        request._scope = new_scope
-    else:
-        x_real_ip = request.headers.get("x-real-ip")
-        if x_real_ip:
-            new_scope = request.scope.copy()
-            new_scope["client"] = (x_real_ip, request.scope["client"][1])
-            request._scope = new_scope
-            
-    response = await call_next(request)
-    return response
 
 from core.security import create_access_token, verify_token
 
-class NotAuthenticatedException(Exception):
-    pass
-
-@router.exception_handler(NotAuthenticatedException)
-async def auth_exception_handler(request: Request, exc: NotAuthenticatedException):
-    return RedirectResponse(url="/login")
-
-def check_admin(request: Request):
-    token = request.cookies.get("admin_session")
-    if not token or not verify_token(token):
-        raise NotAuthenticatedException()
-    return True
-
-@router.on_event("startup")
-def on_startup():
-    init_db()
-    l = logging.getLogger("uvicorn")
-    l.info("Database initialized.")
-    init_scheduler()
-    l.info("APScheduler started.")
-    try:
-        manager.set_loop(asyncio.get_running_loop())
-    except RuntimeError:
-        pass
+from web.dependencies import check_admin
 
 GLOBAL_SCHOOLS_CACHE = []
 
