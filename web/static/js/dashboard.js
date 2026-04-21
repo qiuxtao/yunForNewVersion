@@ -535,29 +535,7 @@
             }
         }
 
-        async function editUser(userId) {
-            try {
-                const response = await fetch(`/api/users/${userId}`);
-                const user = await response.json();
 
-                document.getElementById('edit_user_id').value = user.id;
-                const ms = ModernSelect.instances.get('edit_school_select_modern');
-                if (ms) {
-                    ms.setValue(user.school_id || '');
-                } else {
-                    document.getElementById('edit_school_id').value = user.school_id || '';
-                }
-                document.getElementById('edit_username').value = user.username;
-                document.getElementById('edit_yun_username').value = user.yun_username;
-                document.getElementById('edit_yun_password').value = ''; // Don't show password
-                document.getElementById('edit_qq_number').value = user.qq_number;
-                document.getElementById('edit_qq_notify_type').value = user.qq_notify_type;
-
-                openModal('editUserModal');
-            } catch (error) {
-                showAlert('获取用户信息失败: ' + error);
-            }
-        }
 
         async function validateCredentials(type) {
             const username = document.getElementById(`${type}_yun_username`).value;
@@ -1868,10 +1846,6 @@
             return str.replace(/'/g, "\\'");
         }
 
-        let mapInstance = null;
-        let polylineLayer = null;
-
-        async function previewRoute(groupName, filename) {
         async function previewRoute(groupName, filename) {
             const modal = ensureMapModal();
 
@@ -2275,4 +2249,3 @@
                 showToast('网络异常: ' + e, 'error');
             }
         }
-}
