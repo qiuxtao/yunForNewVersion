@@ -1670,7 +1670,7 @@
         }
 
         // Handle initial load
-        document.addEventListener('DOMContentLoaded', async () => {
+        (async () => {
             // 异步加载学校列表
             let schoolData = [];
             try {
@@ -1718,7 +1718,7 @@
             if (savedTab !== 'routes' && savedTab !== 'schedules') {
                 loadRouteGroups();
             }
-        });
+        })();
 
         async function deleteRouteGroup(groupName) {
             showConfirmModal('确认删除组', `确定要彻底删除整个 ${groupName} 路线组吗？此操作将物理删除文件夹内所有文件，且不可恢复！`, async () => {
@@ -2232,7 +2232,7 @@
         }
 
         // Initialize display logic for edit user popups dynamically
-        window.addEventListener('DOMContentLoaded', () => {
+        (() => {
             window.editUser = async function(id) {
                 try {
                     const response = await fetch(`/api/users/${id}`);
@@ -2255,7 +2255,7 @@
                     showAlert('获取用户信息失败: ' + error);
                 }
             };
-        });
+        })();
 
         async function testPushGroup(target, notifyType) {
             showToast('正在发送测试消息...', 'info');

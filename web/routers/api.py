@@ -86,7 +86,7 @@ from web.dependencies import check_admin
 
 GLOBAL_SCHOOLS_CACHE = []
 
-def load_schools_cache():
+async def load_schools_cache():
     global GLOBAL_SCHOOLS_CACHE
     if GLOBAL_SCHOOLS_CACHE: return
     import configparser
@@ -97,13 +97,13 @@ def load_schools_cache():
     cipherkeyencrypted = conf.get("Yun", "cipherkeyencrypted", fallback="")
     md5key = conf.get("Yun", "md5key", fallback="")
     from core.yun import YunCore
-    suc, res = YunCore.get_global_schools(app_edition, cipherkey, cipherkeyencrypted, md5key)
+    suc, res = await YunCore.get_global_schools(app_edition, cipherkey, cipherkeyencrypted, md5key)
     if suc:
         GLOBAL_SCHOOLS_CACHE = res
 
 @router.get("/api/schools")
 async def get_schools_api(_: bool = Depends(check_admin)):
-    load_schools_cache()
+    await load_schools_cache()
     from fastapi.responses import JSONResponse
     return JSONResponse({"success": True, "data": GLOBAL_SCHOOLS_CACHE})
 
@@ -125,7 +125,7 @@ async def add_user(
     
     school_name = "未知学校"
     school_host = ""
-    load_schools_cache()
+    await load_schools_cache()
     for s in GLOBAL_SCHOOLS_CACHE:
         if str(s.get("schoolId", "")) == str(school_id):
             school_name = s.get("schoolName", "")
@@ -133,7 +133,7 @@ async def add_user(
             break
 
     # 强制校验
-    if not _validate_yun_sync(yun_username, yun_password, school_id, school_host):
+    if not await _validate_yun_sync(yun_username, yun_password, school_id, school_host):
         from fastapi.responses import JSONResponse
         return JSONResponse({"success": False, "message": "【强制校验失败】账号或密码错误，或服务器网络异常。"})
 
@@ -173,7 +173,7 @@ async def edit_user(
 
         school_name = "未知学校"
         school_host = ""
-        load_schools_cache()
+        await load_schools_cache()
         for s in GLOBAL_SCHOOLS_CACHE:
             if str(s.get("schoolId", "")) == str(school_id):
                 school_name = s.get("schoolName", "")
@@ -182,7 +182,7 @@ async def edit_user(
                 
         # 强制校验
         pwd_to_check = yun_password if yun_password else user.yun_password
-        if not _validate_yun_sync(yun_username, pwd_to_check, school_id, school_host):
+        if not await _validate_yun_sync(yun_username, pwd_to_check, school_id, school_host):
             from fastapi.responses import JSONResponse
             return JSONResponse({"success": False, "message": "【强制校验失败】账号或密码错误，或服务器网络异常。"})
             
@@ -198,7 +198,7 @@ async def edit_user(
     from fastapi.responses import JSONResponse
     return JSONResponse({"success": True})
 
-def _validate_yun_sync(yun_username, yun_password, school_id, school_host):
+async def _validate_yun_sync(yun_username, yun_password, school_id, school_host):
     import time as _time
     conf = configparser.ConfigParser()
     conf.read("config.ini", encoding="utf-8")
@@ -213,7 +213,7 @@ def _validate_yun_sync(yun_username, yun_password, school_id, school_host):
     try:
         from core.auth import AuthManager
         auth = AuthManager(temp_device_id, "Xiaomi", "14", app_edition, md5key, platform_str, cipherkey, cipherkeyencrypted)
-        login_res = auth.login(yun_username, yun_password, school_id, school_host, school_login_url, temp_device_id, utc)
+        login_res = await auth.login(yun_username, yun_password, school_id, school_host, school_login_url, temp_device_id, utc)
         return bool(login_res and login_res.get("token"))
     except:
         return False
@@ -234,7 +234,7 @@ async def validate_user_credentials(
     
     school_name = "未知学校"
     school_host = ""
-    load_schools_cache()
+    await load_schools_cache()
     for s in GLOBAL_SCHOOLS_CACHE:
         if str(s.get("schoolId", "")) == str(school_id):
             school_host = s.get("schoolUrl", "").rstrip("/")
@@ -255,7 +255,7 @@ async def validate_user_credentials(
     try:
         from core.auth import AuthManager
         auth = AuthManager(temp_device_id, "Xiaomi", "14", app_edition, md5key, platform_str, cipherkey, cipherkeyencrypted)
-        login_res = auth.login(yun_username, yun_password, school_id, school_host, school_login_url, temp_device_id, utc)
+        login_res = await auth.login(yun_username, yun_password, school_id, school_host, school_login_url, temp_device_id, utc)
         if login_res and login_res.get("token"):
             return JSONResponse({"success": True, "message": "登录验证通过"})
         else:
@@ -584,7 +584,7 @@ async def get_user_terms_json(user_id: int, db: Session = Depends(get_db), _: bo
         from core.yun import YunCore
         
         auth = AuthManager(user.device_id, user.device_name, user.sys_edition, app_edition, md5key, platform_str, cipherkey, cipherkeyencrypted)
-        login_res = auth.login(user.yun_username, user.yun_password, school_id, school_host, school_login_url, user.uuid, utc)
+        login_res = await auth.login(user.yun_username, user.yun_password, school_id, school_host, school_login_url, user.uuid, utc)
         
         if not login_res or not login_res.get("token"):
             return JSONResponse({"success": False, "message": "云运动登录获取Token失败"})
@@ -594,7 +594,7 @@ async def get_user_terms_json(user_id: int, db: Session = Depends(get_db), _: bo
                      school_host, school_id, app_edition, md5key, platform_str,
                      public_key, private_key, cipherkey, cipherkeyencrypted, {})
                      
-        success, data = yun.get_terms()
+        success, data = await yun.get_terms()
         if not success:
             return JSONResponse({"success": False, "message": data})
             
@@ -632,7 +632,7 @@ async def get_user_history_by_term_json(user_id: int, term_value: str, token: st
                      school_host, school_id, app_edition, md5key, platform_str,
                      public_key, private_key, cipherkey, cipherkeyencrypted, {})
                      
-        success, data = yun.get_term_history(term_value)
+        success, data = await yun.get_term_history(term_value)
         if not success:
             return JSONResponse({"success": False, "message": data})
             
@@ -666,7 +666,7 @@ async def get_user_history_detail(user_id: int, term_value: str, run_id: str, to
                      school_host, school_id, app_edition, md5key, platform_str,
                      public_key, private_key, cipherkey, cipherkeyencrypted, {})
                      
-        success, data = yun.get_run_detail(run_id, term_value)
+        success, data = await yun.get_run_detail(run_id, term_value)
         if not success:
             return JSONResponse({"success": False, "message": str(data)})
             
