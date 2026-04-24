@@ -1620,7 +1620,7 @@
                                                 <input type="checkbox" ${s.is_active ? 'checked' : ''} onchange="toggleTaskActive(${s.id}, this)">
                                                 <span class="slider"></span>
                                             </label>
-                                            <span style="margin-left: 10px;">${s.username}</span>
+                                            <span style="margin-left: 10px; ${!s.user_is_active ? 'color: var(--text-muted); text-decoration: line-through;' : ''}">${s.username} ${!s.user_is_active ? '<span style="font-size:10px; color:var(--error); margin-left:4px;">(账号已关闭)</span>' : ''}</span>
                                         </div>
                                     </td>
                                     <td data-label="上次状态" style="vertical-align: middle;">${statusBadge}</td>

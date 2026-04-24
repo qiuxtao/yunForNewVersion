@@ -198,7 +198,7 @@ async def edit_user(
     from fastapi.responses import JSONResponse
     return JSONResponse({"success": True})
 
-@router.post("/users/{user_id}/toggle_active")
+@router.post("/api/users/{user_id}/toggle_active")
 async def toggle_user_active(
     user_id: int,
     db: Session = Depends(get_db),
@@ -521,7 +521,8 @@ async def get_schedules_json(db: Session = Depends(get_db), _: bool = Depends(ch
                 "group_id": s.group_id,
                 "group_name": getattr(s, 'group_name', '未命名任务组'),
                 "run_days": getattr(s, 'run_days', '1,2,3,4,5,6,7'),
-                "is_active": s.is_active
+                "is_active": s.is_active,
+                "user_is_active": s.user.is_active if s.user else False
             })
         return JSONResponse({"success": True, "data": results})
     except Exception as e:
