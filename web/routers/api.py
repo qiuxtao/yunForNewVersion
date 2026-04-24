@@ -198,6 +198,22 @@ async def edit_user(
     from fastapi.responses import JSONResponse
     return JSONResponse({"success": True})
 
+@router.post("/users/{user_id}/toggle_active")
+async def toggle_user_active(
+    user_id: int,
+    db: Session = Depends(get_db),
+    _: bool = Depends(check_admin)
+):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"success": False, "message": "User not found"})
+    
+    user.is_active = not user.is_active
+    db.commit()
+    from fastapi.responses import JSONResponse
+    return JSONResponse({"success": True, "is_active": user.is_active})
+
 async def _validate_yun_sync(yun_username, yun_password, school_id, school_host):
     import time as _time
     conf = configparser.ConfigParser()

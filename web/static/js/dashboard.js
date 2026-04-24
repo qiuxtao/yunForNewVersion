@@ -2207,6 +2207,23 @@
 
         // Initialize display logic for edit user popups dynamically
         (() => {
+            window.toggleUserActive = async function(id, checkbox) {
+                const originalState = !checkbox.checked;
+                try {
+                    const response = await fetch(`/api/users/${id}/toggle_active`, { method: 'POST' });
+                    const result = await response.json();
+                    if (!result.success) {
+                        checkbox.checked = originalState;
+                        showAlert('状态切换失败: ' + (result.message || '未知错误'));
+                    } else {
+                        showToast('账户状态已' + (result.is_active ? '开启' : '关闭'), 'success');
+                    }
+                } catch (e) {
+                    checkbox.checked = originalState;
+                    showAlert('网络异常: ' + e);
+                }
+            };
+
             window.editUser = async function(id) {
                 try {
                     const response = await fetch(`/api/users/${id}`);

@@ -62,6 +62,7 @@
                                 <th>标识名称</th>
                                 <th>所属学校</th>
                                 <th>系统学号</th>
+                                <th>状态</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
@@ -71,6 +72,12 @@
                                 <td data-label="标识名称"><strong>{{ u.username }}</strong></td>
                                 <td data-label="所属学校" style="font-size: 12px; color: var(--text-muted);">{{ u.school_name or '-' }}</td>
                                 <td data-label="系统学号">{{ u.yun_username }}</td>
+                                <td data-label="状态">
+                                    <label class="switch">
+                                        <input type="checkbox" onchange="toggleUserActive({{ u.id }}, this)" {% if u.is_active %}checked{% endif %}>
+                                        <span class="slider"></span>
+                                    </label>
+                                </td>
                                 <td>
                                     <div class="action-cell" style="display:flex; gap:8px;">
                                         <button class="btn btn-info" onclick="viewHistory({{ u.id }}, '{{ u.username }}')">云端记录</button>
