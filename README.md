@@ -110,10 +110,9 @@
 **概览：**
 
 1. `pip install -r requirements.txt`
-2. 配置`config.ini`文件(自己抓包或者详见(proxy.md)，只填uuid, token, device_id, device_name 4个就行)
-3. `python history.py` 拿历史记录(有预置的可以直接跑，外校区需要配置)
-4. `pyhton main.py`(可以附带参数)
-5. 按照提示操作即可
+2. 启动服务：`python run_server.py` (具体启动脚本可能有所不同，通常是运行 web 文件夹下的 app.py)
+3. 访问 Web 后台进行配置：在“系统高级设置”页面中填写 API 密钥、跑步参数等。
+4. 在“账户授权中心”添加云运动账户，在“定时任务管理”配置任务组。
 
 **细节：**
 

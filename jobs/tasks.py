@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 import configparser
 
 from web.database import SessionLocal
-from web.models import Schedule, User, RunLog
+from web.models import Schedule, User, RunLog, SystemConfig
 from core.auth import AuthManager
 from core.yun import YunCore
 from notifications.qq_bot import notify_run_success as qq_notify_success, notify_run_failed as qq_notify_failed
@@ -31,11 +31,6 @@ def _dispatch_notify_failed(chat_id, notify_type, username, error_msg):
 
 scheduler = AsyncIOScheduler(timezone=pytz.timezone('Asia/Shanghai'))
 
-def load_app_config():
-    conf = configparser.ConfigParser()
-    conf_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.ini')
-    conf.read(conf_path, encoding="utf-8")
-    return conf
 
 def add_log(db: Session, user: User, status: str, message: str, sched: Schedule = None):
     log = RunLog(user_id=user.id, status=status, message=message)
@@ -55,7 +50,11 @@ async def run_job_for_user(user_id: int, schedule_id: int):
             return
 
         logger.info(f"[{user.yun_username}] 开始执行自动化跑步调度 (UserID: {user_id}, Name: {user.username})")
-        conf = load_app_config()
+        
+        config = db.query(SystemConfig).first()
+        if not config:
+            logger.error("SystemConfig not found in database.")
+            return
 
         target_qq = user.qq_number
         target_notify_type = user.qq_notify_type
@@ -64,30 +63,29 @@ async def run_job_for_user(user_id: int, schedule_id: int):
             target_notify_type = user.push_group.qq_notify_type
         
         # 提取公共APP参数
-        school_host = getattr(user, "school_host", conf.get("Yun", "school_host", fallback=""))
-        school_id = getattr(user, "school_id", conf.get("Yun", "school_id", fallback=""))
-        app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
-        md5key = conf.get("Yun", "md5key", fallback="")
-        platform = conf.get("Yun", "platform", fallback="android")
-        school_name = conf.get("Yun", "school_name", fallback="")
-        school_login_url = conf.get("Yun", "school_login_url", fallback="appLogin")
+        school_host = getattr(user, "school_host", "")
+        school_id = getattr(user, "school_id", "")
+        app_edition = config.yun_app_edition
+        md5key = config.yun_md5key
+        platform = config.yun_platform
+        school_name = config.school_name if hasattr(config, "school_name") else ""
+        school_login_url = config.yun_school_login_url
         
-        public_key = conf.get("Yun", "PublicKey", fallback="")
-        private_key = conf.get("Yun", "PrivateKey", fallback="")
-        cipherkey = conf.get("Yun", "cipherkey", fallback="")
-        cipherkeyencrypted = conf.get("Yun", "cipherkeyencrypted", fallback="")
+        public_key = config.yun_public_key
+        private_key = config.yun_private_key
+        cipherkey = config.yun_cipherkey
+        cipherkeyencrypted = config.yun_cipherkey_encrypted
         
         run_config = {
-            "strides": conf.get("Run", "strides", fallback="0.8"),
-            "single_mileage_min_offset": conf.get("Run", "single_mileage_min_offset", fallback="0.5"),
-            "single_mileage_max_offset": conf.get("Run", "single_mileage_max_offset", fallback="-0.5"),
-            "cadence_min_offset": conf.get("Run", "cadence_min_offset", fallback="30"),
-            "cadence_max_offset": conf.get("Run", "cadence_max_offset", fallback="-150"),
-            "enable_coord_drift": conf.getboolean("Run", "enable_coord_drift", fallback=True),
-            "enable_duration_random": conf.getboolean("Run", "enable_duration_random", fallback=True),
-            "enable_cadence_random": conf.getboolean("Run", "enable_cadence_random", fallback=True)
+            "strides": config.run_strides,
+            "single_mileage_max_offset": config.run_single_mileage_max_offset,
+            "cadence_min_offset": config.run_cadence_min_offset,
+            "cadence_max_offset": config.run_cadence_max_offset,
+            "enable_coord_drift": config.run_enable_coord_drift,
+            "enable_duration_random": config.run_enable_duration_random,
+            "enable_cadence_random": config.run_enable_cadence_random
         }
-        split_count = int(conf.get("Run", "split_count", fallback="10"))
+        split_count = int(config.run_split_count)
 
         # Auth check & refresh validation 
         auth = AuthManager(user.device_id, user.device_name, user.sys_edition, app_edition, md5key, platform, cipherkey, cipherkeyencrypted)

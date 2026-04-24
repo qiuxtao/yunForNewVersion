@@ -130,17 +130,23 @@ GLOBAL_SCHOOLS_CACHE = []
 def load_schools_cache():
     global GLOBAL_SCHOOLS_CACHE
     if GLOBAL_SCHOOLS_CACHE: return
-    import configparser
-    conf = configparser.ConfigParser()
-    conf.read("config.ini", encoding="utf-8")
-    app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
-    cipherkey = conf.get("Yun", "cipherkey", fallback="")
-    cipherkeyencrypted = conf.get("Yun", "cipherkeyencrypted", fallback="")
-    md5key = conf.get("Yun", "md5key", fallback="")
+    from web.database import SessionLocal
+    from web import models
+    db = SessionLocal()
+    config = db.query(models.SystemConfig).first()
+    if not config:
+        db.close()
+        return
+    
+    app_edition = config.yun_app_edition
+    cipherkey = config.yun_cipherkey
+    cipherkeyencrypted = config.yun_cipherkey_encrypted
+    md5key = config.yun_md5key
     from core.yun import YunCore
     suc, res = YunCore.get_global_schools(app_edition, cipherkey, cipherkeyencrypted, md5key)
     if suc:
         GLOBAL_SCHOOLS_CACHE = res
+    db.close()
 
 
 from web.routers import api, pages, ws

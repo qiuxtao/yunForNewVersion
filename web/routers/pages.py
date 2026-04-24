@@ -18,14 +18,11 @@ async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request, "error": ""})
 
 @router.post("/login")
-async def do_login(request: Request, username: str = Form(...), password: str = Form(...)):
-    conf = configparser.ConfigParser()
-    conf_path = "config.ini"
-    if os.path.exists(conf_path):
-        conf.read(conf_path, encoding="utf-8")
-        
-    admin_u = conf.get("WebAdmin", "username", fallback="admin")
-    admin_p = conf.get("WebAdmin", "password", fallback="admin")
+async def do_login(request: Request, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+    config = db.query(models.SystemConfig).first()
+    
+    admin_u = config.web_admin_username if config else "admin"
+    admin_p = config.web_admin_password if config else "admin"
     
     if username == admin_u and password == admin_p:
         session_token = create_access_token({"sub": "admin"})
@@ -53,4 +50,12 @@ async def read_dashboard(request: Request, db: Session = Depends(get_db), _: boo
         "schedules": schedules,
         "logs": logs,
         "push_groups": push_groups
+    })
+
+@router.get("/settings", response_class=HTMLResponse)
+async def read_settings(request: Request, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    config = db.query(models.SystemConfig).first()
+    return templates.TemplateResponse("settings.html", {
+        "request": request,
+        "config": config
     })

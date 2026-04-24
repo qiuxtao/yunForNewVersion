@@ -3,6 +3,29 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+
+class SystemConfigUpdate(BaseModel):
+    web_admin_username: str
+    web_admin_password: str
+    qq_bot_access_token: str
+    tg_bot_token: str
+    tg_bot_proxy: str
+    yun_public_key: str
+    yun_private_key: str
+    yun_cipherkey: str
+    yun_cipherkey_encrypted: str
+    yun_md5key: str
+    yun_platform: str
+    yun_app_edition: str
+    yun_school_login_url: str
+    run_single_mileage_max_offset: str
+    run_cadence_min_offset: str
+    run_cadence_max_offset: str
+    run_split_count: int
+    run_strides: str
+    run_enable_coord_drift: bool
+    run_enable_duration_random: bool
+    run_enable_cadence_random: bool
 from sqlalchemy.orm import Session
 import os
 import random
@@ -86,24 +109,24 @@ from web.dependencies import check_admin
 
 GLOBAL_SCHOOLS_CACHE = []
 
-async def load_schools_cache():
+async def load_schools_cache(db: Session):
     global GLOBAL_SCHOOLS_CACHE
     if GLOBAL_SCHOOLS_CACHE: return
-    import configparser
-    conf = configparser.ConfigParser()
-    conf.read("config.ini", encoding="utf-8")
-    app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
-    cipherkey = conf.get("Yun", "cipherkey", fallback="")
-    cipherkeyencrypted = conf.get("Yun", "cipherkeyencrypted", fallback="")
-    md5key = conf.get("Yun", "md5key", fallback="")
+    config = db.query(models.SystemConfig).first()
+    if not config:
+        return
+    
+    app_edition = config.yun_app_edition
+    cipherkey = config.yun_cipherkey
+    cipherkeyencrypted = config.yun_cipherkey_encrypted
+    md5key = config.yun_md5key
     from core.yun import YunCore
     suc, res = await YunCore.get_global_schools(app_edition, cipherkey, cipherkeyencrypted, md5key)
     if suc:
         GLOBAL_SCHOOLS_CACHE = res
-
 @router.get("/api/schools")
-async def get_schools_api(_: bool = Depends(check_admin)):
-    await load_schools_cache()
+async def get_schools_api(db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    await load_schools_cache(db)
     from fastapi.responses import JSONResponse
     return JSONResponse({"success": True, "data": GLOBAL_SCHOOLS_CACHE})
 
@@ -214,16 +237,19 @@ async def toggle_user_active(
     from fastapi.responses import JSONResponse
     return JSONResponse({"success": True, "is_active": user.is_active})
 
-async def _validate_yun_sync(yun_username, yun_password, school_id, school_host):
+async def _validate_yun_sync(db, yun_username, yun_password, school_id, school_host):
     import time as _time
-    conf = configparser.ConfigParser()
-    conf.read("config.ini", encoding="utf-8")
-    app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
-    md5key = conf.get("Yun", "md5key", fallback="")
-    platform_str = conf.get("Yun", "platform", fallback="android")
-    school_login_url = conf.get("Yun", "school_login_url", fallback="appLogin")
-    cipherkey = conf.get("Yun", "cipherkey", fallback="")
-    cipherkeyencrypted = conf.get("Yun", "cipherkeyencrypted", fallback="")
+    config = db.query(models.SystemConfig).first()
+    if not config:
+        return False
+        
+    app_edition = config.yun_app_edition
+    md5key = config.yun_md5key
+    platform_str = config.yun_platform
+    school_login_url = config.yun_school_login_url
+    cipherkey = config.yun_cipherkey
+    cipherkeyencrypted = config.yun_cipherkey_encrypted
+    
     temp_device_id = str(random.randint(1000000000000000, 9999999999999999))
     utc = str(int(_time.time()))
     try:
@@ -239,6 +265,7 @@ async def validate_user_credentials(
     yun_username: str = Form(...),
     yun_password: str = Form(...),
     school_id = Form(""),
+    db: Session = Depends(get_db),
     _: bool = Depends(check_admin)
 ):
     """在添加/编辑用户前，实时验证云运动学号密码是否能正常登录"""
@@ -250,34 +277,17 @@ async def validate_user_credentials(
     
     school_name = "未知学校"
     school_host = ""
-    await load_schools_cache()
+    await load_schools_cache(db)
     for s in GLOBAL_SCHOOLS_CACHE:
         if str(s.get("schoolId", "")) == str(school_id):
             school_host = s.get("schoolUrl", "").rstrip("/")
             break
 
-    conf = configparser.ConfigParser()
-    conf.read("config.ini", encoding="utf-8")
-    app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
-    md5key = conf.get("Yun", "md5key", fallback="")
-    platform_str = conf.get("Yun", "platform", fallback="android")
-    school_login_url = conf.get("Yun", "school_login_url", fallback="appLogin")
-    cipherkey = conf.get("Yun", "cipherkey", fallback="")
-    cipherkeyencrypted = conf.get("Yun", "cipherkeyencrypted", fallback="")
-    
-    temp_device_id = str(random.randint(1000000000000000, 9999999999999999))
-    utc = str(int(_time.time()))
-    
-    try:
-        from core.auth import AuthManager
-        auth = AuthManager(temp_device_id, "Xiaomi", "14", app_edition, md5key, platform_str, cipherkey, cipherkeyencrypted)
-        login_res = await auth.login(yun_username, yun_password, school_id, school_host, school_login_url, temp_device_id, utc)
-        if login_res and login_res.get("token"):
-            return JSONResponse({"success": True, "message": "登录验证通过"})
-        else:
-            return JSONResponse({"success": False, "message": f"登录返回异常: {login_res}"})
-    except Exception as e:
-        return JSONResponse({"success": False, "message": f"登录失败: {str(e)}"})
+    is_valid = await _validate_yun_sync(db, yun_username, yun_password, school_id, school_host)
+    if is_valid:
+        return JSONResponse({"success": True, "message": "登录验证通过"})
+    else:
+        return JSONResponse({"success": False, "message": "学号或密码错误，验证失败"})
 
 @router.post("/test_qq_notify")
 async def test_qq_notify(
@@ -461,7 +471,7 @@ async def test_push_group(data: TestPushSchema, _: bool = Depends(check_admin)):
             from notifications.tg_bot import _send_tg_message, get_tg_config
             tg_token, tg_proxy = get_tg_config()
             if not tg_token:
-                return {"success": False, "msg": "config.ini 中未配置 [TGBot] token"}
+                return {"success": False, "msg": "系统设置中未配置 Telegram Bot Token"}
             _send_tg_message(data.qq_number, tg_token, "✅ 这是一条来自云运动控制台的测试推送消息。", tg_proxy)
         else:
             from notifications.qq_bot import send_private_msg, send_group_msg
@@ -580,20 +590,21 @@ async def get_user_terms_json(user_id: int, db: Session = Depends(get_db), _: bo
     if not user:
         return JSONResponse({"success": False, "message": "账户不存在"})
         
-    conf = configparser.ConfigParser()
-    conf.read("config.ini", encoding="utf-8")
+    config = db.query(models.SystemConfig).first()
+    if not config:
+        return JSONResponse({"success": False, "message": "系统配置缺失"})
+
+    school_host = getattr(user, "school_host", "")
+    school_id = getattr(user, "school_id", "")
+    app_edition = config.yun_app_edition
+    md5key = config.yun_md5key
+    platform_str = config.yun_platform
+    school_login_url = config.yun_school_login_url
     
-    school_host = getattr(user, "school_host", conf.get("Yun", "school_host", fallback=""))
-    school_id = getattr(user, "school_id", conf.get("Yun", "school_id", fallback=""))
-    app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
-    md5key = conf.get("Yun", "md5key", fallback="")
-    platform_str = conf.get("Yun", "platform", fallback="android")
-    school_login_url = conf.get("Yun", "school_login_url", fallback="appLogin")
-    
-    public_key = conf.get("Yun", "PublicKey", fallback="")
-    private_key = conf.get("Yun", "PrivateKey", fallback="")
-    cipherkey = conf.get("Yun", "cipherkey", fallback="")
-    cipherkeyencrypted = conf.get("Yun", "cipherkeyencrypted", fallback="")
+    public_key = config.yun_public_key
+    private_key = config.yun_private_key
+    cipherkey = config.yun_cipherkey
+    cipherkeyencrypted = config.yun_cipherkey_encrypted
     
     utc = str(int(_time.time()))
     try:
@@ -629,19 +640,20 @@ async def get_user_history_by_term_json(user_id: int, term_value: str, token: st
     if not user:
         return JSONResponse({"success": False, "message": "账户不存在"})
         
-    conf = configparser.ConfigParser()
-    conf.read("config.ini", encoding="utf-8")
+    config = db.query(models.SystemConfig).first()
+    if not config:
+        return JSONResponse({"success": False, "message": "系统配置缺失"})
+
+    school_host = getattr(user, "school_host", "")
+    school_id = getattr(user, "school_id", "")
+    app_edition = config.yun_app_edition
+    md5key = config.yun_md5key
+    platform_str = config.yun_platform
     
-    school_host = getattr(user, "school_host", conf.get("Yun", "school_host", fallback=""))
-    school_id = getattr(user, "school_id", conf.get("Yun", "school_id", fallback=""))
-    app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
-    md5key = conf.get("Yun", "md5key", fallback="")
-    platform_str = conf.get("Yun", "platform", fallback="android")
-    
-    public_key = conf.get("Yun", "PublicKey", fallback="")
-    private_key = conf.get("Yun", "PrivateKey", fallback="")
-    cipherkey = conf.get("Yun", "cipherkey", fallback="")
-    cipherkeyencrypted = conf.get("Yun", "cipherkeyencrypted", fallback="")
+    public_key = config.yun_public_key
+    private_key = config.yun_private_key
+    cipherkey = config.yun_cipherkey
+    cipherkeyencrypted = config.yun_cipherkey_encrypted
     
     try:
         from core.yun import YunCore
@@ -664,17 +676,20 @@ async def get_user_history_detail(user_id: int, term_value: str, run_id: str, to
     if not user:
         return JSONResponse({"success": False, "message": "User not found."})
         
-    conf = configparser.ConfigParser()
-    conf.read("config.ini", encoding="utf-8")
-    school_host = getattr(user, "school_host", conf.get("Yun", "school_host", fallback=""))
-    school_id = getattr(user, "school_id", conf.get("Yun", "school_id", fallback=""))
-    app_edition = conf.get("Yun", "app_edition", fallback="3.5.1")
-    md5key = conf.get("Yun", "md5key", fallback="")
-    platform_str = conf.get("Yun", "platform", fallback="android")
-    public_key = conf.get("Yun", "PublicKey", fallback="")
-    private_key = conf.get("Yun", "PrivateKey", fallback="")
-    cipherkey = conf.get("Yun", "cipherkey", fallback="")
-    cipherkeyencrypted = conf.get("Yun", "cipherkeyencrypted", fallback="")
+    config = db.query(models.SystemConfig).first()
+    if not config:
+        return JSONResponse({"success": False, "message": "系统配置缺失"})
+
+    school_host = getattr(user, "school_host", "")
+    school_id = getattr(user, "school_id", "")
+    app_edition = config.yun_app_edition
+    md5key = config.yun_md5key
+    platform_str = config.yun_platform
+    
+    public_key = config.yun_public_key
+    private_key = config.yun_private_key
+    cipherkey = config.yun_cipherkey
+    cipherkeyencrypted = config.yun_cipherkey_encrypted
     
     try:
         from core.yun import YunCore
@@ -1000,3 +1015,51 @@ async def get_user_local_logs(user_id: int, limit: int = 50, db: Session = Depen
             "message": l.message
         })
     return {"success": True, "data": data}
+
+@router.get("/api/settings")
+async def get_settings(db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    config = db.query(models.SystemConfig).first()
+    if not config:
+        return {"success": False, "message": "配置未初始化"}
+    return {"success": True, "data": config}
+
+@router.post("/api/settings")
+async def save_settings(data: SystemConfigUpdate, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
+    config = db.query(models.SystemConfig).first()
+    if not config:
+        config = models.SystemConfig()
+        db.add(config)
+    
+    # WebAdmin
+    config.web_admin_username = data.web_admin_username
+    config.web_admin_password = data.web_admin_password
+    
+    # QQBot
+    config.qq_bot_access_token = data.qq_bot_access_token
+    
+    # TGBot
+    config.tg_bot_token = data.tg_bot_token
+    config.tg_bot_proxy = data.tg_bot_proxy
+    
+    # Yun
+    config.yun_public_key = data.yun_public_key
+    config.yun_private_key = data.yun_private_key
+    config.yun_cipherkey = data.yun_cipherkey
+    config.yun_cipherkey_encrypted = data.yun_cipherkey_encrypted
+    config.yun_md5key = data.yun_md5key
+    config.yun_platform = data.yun_platform
+    config.yun_app_edition = data.yun_app_edition
+    config.yun_school_login_url = data.yun_school_login_url
+    
+    # Run
+    config.run_single_mileage_max_offset = data.run_single_mileage_max_offset
+    config.run_cadence_min_offset = data.run_cadence_min_offset
+    config.run_cadence_max_offset = data.run_cadence_max_offset
+    config.run_split_count = data.run_split_count
+    config.run_strides = data.run_strides
+    config.run_enable_coord_drift = data.run_enable_coord_drift
+    config.run_enable_duration_random = data.run_enable_duration_random
+    config.run_enable_cadence_random = data.run_enable_cadence_random
+    
+    db.commit()
+    return {"success": True}

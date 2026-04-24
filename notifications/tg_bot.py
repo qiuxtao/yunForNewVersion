@@ -1,17 +1,17 @@
 import logging
 import requests
-import configparser
-import os
+from web.database import SessionLocal
+from web.models import SystemConfig
 
 logger = logging.getLogger(__name__)
 
 def get_tg_config():
     """读取 Telegram 配置信息"""
-    conf = configparser.ConfigParser()
-    conf_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.ini')
-    conf.read(conf_path, encoding="utf-8")
-    token = conf.get("TGBot", "token", fallback="")
-    proxy = conf.get("TGBot", "proxy", fallback="")
+    db = SessionLocal()
+    config = db.query(SystemConfig).first()
+    token = config.tg_bot_token if config else ""
+    proxy = config.tg_bot_proxy if config else ""
+    db.close()
     return token, proxy
 
 def notify_run_success(chat_id: str, notify_type: str, username: str, mileage: float, time_minutes: float, raw_res: str = ""):

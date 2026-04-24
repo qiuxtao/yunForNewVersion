@@ -103,3 +103,38 @@ class RunLog(Base):
     message = Column(String) # 包含距离、配速 或 错误日志详情
     
     user = relationship("User", back_populates="run_logs")
+class SystemConfig(Base):
+    __tablename__ = 'system_configs'
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # [WebAdmin]
+    web_admin_username = Column(String, default="admin")
+    web_admin_password = Column(String, default="admin")
+    
+    # [QQBot]
+    qq_bot_access_token = Column(String, default="")
+    
+    # [TGBot]
+    tg_bot_token = Column(String, default="")
+    tg_bot_proxy = Column(String, default="")
+    
+    # [Yun]
+    yun_public_key = Column(String, default="")
+    yun_private_key = Column(String, default="")
+    yun_cipherkey = Column(String, default="")
+    yun_cipherkey_encrypted = Column(String, default="")
+    yun_md5key = Column(String, default="")
+    yun_platform = Column(String, default="android")
+    yun_app_edition = Column(String, default="3.5.1")
+    yun_school_login_url = Column(String, default="appLogin")
+    
+    # [Run]
+    run_single_mileage_max_offset = Column(String, default="-0.5")
+    run_cadence_min_offset = Column(String, default="30")
+    run_cadence_max_offset = Column(String, default="-150")
+    run_split_count = Column(Integer, default=10)
+    run_strides = Column(String, default="0.8")
+    run_enable_coord_drift = Column(Boolean, default=True)
+    run_enable_duration_random = Column(Boolean, default=True)
+    run_enable_cadence_random = Column(Boolean, default=True)
