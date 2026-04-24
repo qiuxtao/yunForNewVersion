@@ -13,7 +13,7 @@ import json
 
 from web.database import engine, get_db, init_db
 from web import models
-from scheduler.tasks import init_scheduler, run_job_for_user
+from jobs.tasks import init_scheduler, run_job_for_user
 
 import sys
 import os

@@ -54,7 +54,3 @@ async def read_dashboard(request: Request, db: Session = Depends(get_db), _: boo
         "logs": logs,
         "push_groups": push_groups
     })
-
-@router.get("/logs", response_class=HTMLResponse)
-async def view_logs(request: Request, db: Session = Depends(get_db), _: bool = Depends(check_admin)):
-    return templates.TemplateResponse("logs.html", {"request": request})

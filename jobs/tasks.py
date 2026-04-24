@@ -153,7 +153,7 @@ async def run_job_for_user(user_id: int, schedule_id: int):
         with open(file, 'r', encoding='utf-8') as f:
             task_map = json.loads(f.read())
             
-        from tools.drift import add_drift
+        from utils.route_drift import add_drift
         enable_coord_drift = run_config.get("enable_coord_drift", True)
         enable_duration_random = run_config.get("enable_duration_random", True)
         enable_cadence_random = run_config.get("enable_cadence_random", True)

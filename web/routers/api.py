@@ -13,7 +13,7 @@ import json
 
 from web.database import engine, get_db, init_db
 from web import models
-from scheduler.tasks import init_scheduler, run_job_for_user
+from jobs.tasks import init_scheduler, run_job_for_user
 
 import sys
 import os
@@ -366,7 +366,7 @@ async def manual_trigger_single(
     db: Session = Depends(get_db),
     _: bool = Depends(check_admin)
 ):
-    from scheduler.tasks import scheduler, run_job_for_user
+    from jobs.tasks import scheduler, run_job_for_user
     s = db.query(models.Schedule).filter(models.Schedule.id == schedule_id).first()
     if s:
         scheduler.add_job(
@@ -383,7 +383,7 @@ async def run_schedule(
     db: Session = Depends(get_db),
     _: bool = Depends(check_admin)
 ):
-    from scheduler.tasks import run_job_for_user
+    from jobs.tasks import run_job_for_user
     import threading
     t = threading.Thread(target=run_job_for_user, args=(user_id, group_id))
     t.start()
