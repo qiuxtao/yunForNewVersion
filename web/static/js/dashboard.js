@@ -1574,6 +1574,8 @@
 
                             const isMissing = window.availableGroups && !window.availableGroups.includes(group.route_type);
                             const routeDisplay = isMissing ? `<span style="text-decoration:line-through;">${group.route_type}</span>(丢失)` : `${group.route_type}`;
+                            
+                            const activeTasksCount = group.tasks.filter(t => t.user_is_active).length;
 
                             html += `
                                 <tr class="group-row" style="cursor: pointer; background-color: rgba(255,255,255,0.05);" onclick="toggleGroupRows('${safeGroupId}')">
@@ -1583,7 +1585,7 @@
                                                 <i class="fas fa-chevron-right" id="icon-${safeGroupId}" style="margin-right: 2px; width: 14px;"></i>
                                                 <span style="font-size: 15px; font-weight: bold; color:var(--text-main);">${group.group_name || '未命名任务组'}</span>
                                                 <span style="background:rgba(59,130,246,0.1); color:var(--primary); padding:1px 10px; border-radius:12px; font-weight:500; font-size:11px; border:1px solid rgba(59,130,246,0.2);">
-                                                    包含 ${group.tasks.length} 个账户
+                                                    包含 ${activeTasksCount} 个活跃账户
                                                 </span>
                                             </div>
                                             <div style="font-size: 12px; margin-left:24px; color:var(--text-muted); display:flex; align-items:center; gap:12px; margin-top:2px;">
@@ -1620,7 +1622,8 @@
                                                 <input type="checkbox" ${s.is_active ? 'checked' : ''} onchange="toggleTaskActive(${s.id}, this)">
                                                 <span class="slider"></span>
                                             </label>
-                                            <span style="margin-left: 10px; ${!s.user_is_active ? 'color: var(--text-muted); text-decoration: line-through;' : ''}">${s.username} ${!s.user_is_active ? '<span style="font-size:10px; color:var(--error); margin-left:4px;">(账号已关闭)</span>' : ''}</span>
+                                            <span style="margin-left: 10px; ${!s.user_is_active ? 'color: var(--text-muted); text-decoration: line-through;' : ''}">${s.username}</span>
+                                            ${!s.user_is_active ? '<span style="background:rgba(239,68,68,0.1); color:var(--error); border: 1px solid rgba(239,68,68,0.2); padding: 2px 6px; border-radius: 8px; font-size: 10px; font-weight: 500; margin-left: 8px;">已关闭</span>' : ''}
                                         </div>
                                     </td>
                                     <td data-label="上次状态" style="vertical-align: middle;">${statusBadge}</td>
