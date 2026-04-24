@@ -11,7 +11,7 @@ from web.dependencies import check_admin
 from core.security import create_access_token
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="web/templates")
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):

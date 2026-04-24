@@ -69,14 +69,12 @@ for name in ("uvicorn", "uvicorn.access", "uvicorn.error", "fastapi"):
     l.propagate = False
 # =============================================================
 
-# Ensure templates and static dirs exist
-os.makedirs("templates", exist_ok=True)
-os.makedirs("static", exist_ok=True)
+
 
 app = FastAPI(title="云运动 Web 控制台")
 app.mount("/static", StaticFiles(directory="web/static"), name="static")
 
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="web/templates")
 
 # 中间件：尝试从请求头中获取真实真实公网 IP (兼容 Docker/代理环境)
 @app.middleware("http")

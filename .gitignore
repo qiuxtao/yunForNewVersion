@@ -5,7 +5,10 @@ t.ipynb
 show.json
 data/
 logs/
+web/logs/
 config.ini
 tasks_*/
 tmp_*
 *.log
+*.pyc
+.env
