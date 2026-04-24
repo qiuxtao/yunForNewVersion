@@ -149,7 +149,9 @@ async def run_job_for_user(user_id: int, schedule_id: int):
             if target_qq: _dispatch_notify_failed(target_qq, target_notify_type, user.username, error_msg)
             return
 
-        file = os.path.join(path_dir, random.choice(files))
+        route_filename = random.choice(files)
+        file = os.path.join(path_dir, route_filename)
+        logger.info(f"[{user.yun_username}] 随机选中路线文件: {route_filename}")
         with open(file, 'r', encoding='utf-8') as f:
             task_map = json.loads(f.read())
             
@@ -217,11 +219,11 @@ async def run_job_for_user(user_id: int, schedule_id: int):
                 except Exception as e:
                     logger.warning(f"[{user.yun_username}] Failed to fetch history for notification: {e}")
 
-                full_log_msg = f"开始时间: {start_run_time_str}\n结束时间: {end_run_time_str}\n结算数据: {res}"
+                full_log_msg = f"选用路线: {route_filename}\n开始时间: {start_run_time_str}\n结束时间: {end_run_time_str}\n结算数据: {res}"
                 if total_runs > 0:
-                    stats_msg = f"🏁 总计次数: {total_runs}次\n🎯 合格次数: {qualified_runs}次\n📅 开始时间: {start_run_time_str}\n⏳ 结束时间: {end_run_time_str}\n📄 结算数据: {res}"
+                    stats_msg = f"🗺️ 选用路线: {route_filename}\n🏁 总计次数: {total_runs}次\n🎯 合格次数: {qualified_runs}次\n📅 开始时间: {start_run_time_str}\n⏳ 结束时间: {end_run_time_str}\n📄 结算数据: {res}"
                 else:
-                    stats_msg = f"📅 开始时间: {start_run_time_str}\n⏳ 结束时间: {end_run_time_str}\n📄 结算数据: {res}"
+                    stats_msg = f"🗺️ 选用路线: {route_filename}\n📅 开始时间: {start_run_time_str}\n⏳ 结束时间: {end_run_time_str}\n📄 结算数据: {res}"
 
                 add_log(db, user, "Success", full_log_msg, sched)
                 if target_qq:
